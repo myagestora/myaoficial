@@ -10,11 +10,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Bell, Moon, Sun, User, LogOut, Settings } from 'lucide-react';
+import { Bell, Moon, Sun, User, LogOut, Settings, Shield } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
+import { useAuth } from '@/hooks/useAuth';
+import { Link } from 'react-router-dom';
 
 export const Header = () => {
   const { theme, toggleTheme } = useTheme();
+  const { user, isAdmin, signOut } = useAuth();
 
   return (
     <header className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6">
@@ -62,7 +65,7 @@ export const Header = () => {
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">Usuário</p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  usuario@exemplo.com
+                  {user?.email}
                 </p>
               </div>
             </DropdownMenuLabel>
@@ -75,8 +78,19 @@ export const Header = () => {
               <Settings className="mr-2 h-4 w-4" />
               <span>Configurações</span>
             </DropdownMenuItem>
+            {isAdmin && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/admin">
+                    <Shield className="mr-2 h-4 w-4" />
+                    <span>Painel Admin</span>
+                  </Link>
+                </DropdownMenuItem>
+              </>
+            )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={signOut}>
               <LogOut className="mr-2 h-4 w-4" />
               <span>Sair</span>
             </DropdownMenuItem>
