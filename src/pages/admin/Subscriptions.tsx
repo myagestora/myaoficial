@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -44,7 +43,7 @@ const AdminSubscriptions = () => {
         .select(`
           *,
           subscription_plans (name),
-          profiles (full_name)
+          profiles!user_subscriptions_user_id_fkey (full_name)
         `)
         .order('created_at', { ascending: false });
       
