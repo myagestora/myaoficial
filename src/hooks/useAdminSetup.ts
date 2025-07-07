@@ -9,64 +9,41 @@ export const useAdminSetup = () => {
         console.log('Checking for admin user...');
         
         // Verificar se o admin já existe na tabela profiles
-        const { data: existingProfile } = await supabase
+        const { data: existingProfile, error: profileError } = await supabase
           .from('profiles')
-          .select('id')
+          .select('id, email')
           .eq('email', 'adm@myagestora.com.br')
           .maybeSingle();
 
+        console.log('Existing admin profile:', existingProfile, profileError);
+
         if (!existingProfile) {
-          console.log('Admin profile not found, creating admin user...');
+          console.log('Admin profile not found in profiles table');
           
-          // Primeiro, verificar se o usuário existe na auth mas sem profile
-          const { data: authUsers } = await supabase.auth.admin.listUsers();
-          const existingAuthUser = authUsers.users?.find((u: any) => u.email === 'adm@myagestora.com.br');
+          // Verificar se existe na auth.users (usando uma query que não requer admin)
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: 'adm@myagestora.com.br',  
+            password: 'test-password' // senha fake só para testar se o usuário existe
+          });
           
-          if (existingAuthUser) {
-            console.log('Admin auth user exists, creating profile...');
-            
-            // Criar o perfil manualmente
-            const { error: profileError } = await supabase
-              .from('profiles')
-              .insert({
-                id: existingAuthUser.id,
-                full_name: 'Fabiano Bim',
-                email: 'adm@myagestora.com.br'
-              });
-
-            if (profileError) {
-              console.error('Error creating admin profile:', profileError);
-            } else {
-              console.log('Admin profile created successfully');
-            }
-
-            // Verificar e criar role de admin se não existir
-            const { data: existingRole } = await supabase
-              .from('user_roles')
-              .select('id')
-              .eq('user_id', existingAuthUser.id)
-              .eq('role', 'admin')
-              .maybeSingle();
-
-            if (!existingRole) {
-              const { error: roleError } = await supabase
-                .from('user_roles')
-                .insert({
-                  user_id: existingAuthUser.id,
-                  role: 'admin'
-                });
-
-              if (roleError) {
-                console.error('Error adding admin role:', roleError);
-              } else {
-                console.log('Admin role added successfully');
-              }
-            }
+          // Se o erro não for "invalid_credentials", significa que o usuário não existe
+          if (signInError && signInError.message !== 'Invalid login credentials') {
+            console.log('Admin user does not exist, needs to be created by migration');
           } else {
-            console.log('No admin user found in auth, will be created by migration');
+            console.log('Admin user exists in auth but not in profiles - this should be fixed by migration');
           }
         } else {
-          console.log('Admin profile already exists');
+          console.log('Admin profile already exists:', existingProfile);
+          
+          // Verificar se tem a role de admin
+          const { data: adminRole } = await supabase
+            .from('user_roles')
+            .select('id, role')
+            .eq('user_id', existingProfile.id)
+            .eq('role', 'admin')
+            .maybeSingle();
+            
+          console.log('Admin role check:', adminRole);
         }
       } catch (error) {
         console.error('Error in admin user setup:', error);

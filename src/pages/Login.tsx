@@ -81,19 +81,43 @@ const Login = () => {
         
         if (error) {
           console.error('Login error details:', error);
+          
+          // Mensagem de erro mais específica
+          let errorMessage = 'Erro ao fazer login';
+          if (error.message === 'Invalid login credentials') {
+            errorMessage = 'Email ou senha incorretos. Verifique suas credenciais.';
+          } else if (error.message.includes('Email not confirmed')) {
+            errorMessage = 'Email ainda não foi confirmado. Verifique sua caixa de entrada.';
+          }
+          
+          toast({
+            title: 'Erro de Login',
+            description: errorMessage,
+            variant: 'destructive',
+          });
+          
           throw error;
         }
         
         console.log('Login successful, navigating to home');
+        
+        toast({
+          title: 'Sucesso',
+          description: 'Login realizado com sucesso!',
+        });
+        
         navigate('/');
       }
     } catch (error: any) {
       console.error('Auth error:', error);
-      toast({
-        title: 'Erro',
-        description: error.message,
-        variant: 'destructive',
-      });
+      // O toast de erro já foi mostrado acima para o caso de login
+      if (isSignUp) {
+        toast({
+          title: 'Erro',
+          description: error.message || 'Erro ao criar conta',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setLoading(false);
     }
