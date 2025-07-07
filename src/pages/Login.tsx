@@ -66,21 +66,8 @@ const Login = () => {
         setFullName('');
         setWhatsapp('');
       } else {
-        console.log('🚀 Tentando fazer login com:', email);
-        console.log('🔑 Senha fornecida:', password ? 'Senha preenchida' : 'Senha vazia');
-        
-        // Verificar se é o admin e se existe no banco
-        if (email === 'adm@myagestora.com.br') {
-          console.log('👑 Tentativa de login de admin detectada');
-          
-          const { data: adminProfile } = await supabase
-            .from('profiles')
-            .select('id, email, full_name')
-            .eq('email', 'adm@myagestora.com.br')
-            .maybeSingle();
-            
-          console.log('📋 Perfil admin encontrado:', adminProfile);
-        }
+        console.log('🔐 Tentando fazer login...');
+        console.log('📧 Email:', email);
         
         // Fazer login
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -88,29 +75,14 @@ const Login = () => {
           password,
         });
         
-        console.log('📊 Resultado do login:', { 
-          user: data?.user?.email, 
-          session: !!data?.session,
-          error: error?.message 
-        });
-        
         if (error) {
-          console.error('❌ Detalhes do erro de login:', {
-            message: error.message,
-            status: error.status,
-            code: error.code,
-            details: error
-          });
+          console.error('❌ Erro de login:', error);
           
           let errorMessage = 'Erro ao fazer login';
           if (error.message === 'Invalid login credentials') {
-            if (email === 'adm@myagestora.com.br') {
-              errorMessage = 'Credenciais de admin inválidas. Verifique se o usuário admin foi criado corretamente no banco de dados.';
-            } else {
-              errorMessage = 'Email ou senha incorretos. Verifique suas credenciais.';
-            }
-          } else if (error.message.includes('Email not confirmed')) {
-            errorMessage = 'Email ainda não foi confirmado. Verifique sua caixa de entrada.';
+            errorMessage = email === 'adm@myagestora.com.br' 
+              ? 'Usuário admin não encontrado. Aguarde alguns segundos e tente novamente - o sistema está configurando automaticamente.'
+              : 'Email ou senha incorretos.';
           }
           
           toast({
