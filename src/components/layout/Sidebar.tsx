@@ -12,6 +12,8 @@ import {
   PieChart
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Home },
@@ -26,15 +28,75 @@ const navigation = [
 export const Sidebar = () => {
   const location = useLocation();
 
+  // Buscar configurações do sistema para logo e nome
+  const { data: systemConfig } = useQuery({
+    queryKey: ['system-config-sidebar'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('system_config')
+        .select('*')
+        .in('key', ['app_name', 'app_logo']);
+      
+      if (error) throw error;
+      
+      const configObj: Record<string, string> = {};
+      data.forEach(item => {
+        configObj[item.key] = typeof item.value === 'string' ? 
+          item.value.replace(/^"|"$/g, '') : 
+          JSON.stringify(item.value);
+      });
+      
+      return configObj;
+    }
+  });
+
+  // Buscar frase motivacional aleatória
+  const { data: motivationalPhrase } = useQuery({
+    queryKey: ['motivational-phrase'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('motivational_phrases')
+        .select('phrase')
+        .eq('is_active', true);
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const randomIndex = Math.floor(Math.random() * data.length);
+        return data[randomIndex].phrase;
+      }
+      
+      return 'MYA registra. MYA lembra. MYA cuida! 💰';
+    }
+  });
+
+  const appName = systemConfig?.app_name || 'Controle Financeiro';
+  const appLogo = systemConfig?.app_logo;
+
   return (
     <div className="flex flex-col w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
       {/* Logo */}
       <div className="flex items-center justify-center h-16 px-4 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <DollarSign className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-xl font-bold text-gray-900 dark:text-white">MYA</span>
+        <div className="flex items-center space-x-3">
+          {appLogo ? (
+            <img 
+              src={appLogo} 
+              alt={appName}
+              className="h-8 w-auto object-contain"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                target.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+          ) : (
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <DollarSign className="w-5 h-5 text-white" />
+            </div>
+          )}
+          <span className="text-xl font-bold text-gray-900 dark:text-white">
+            {appName}
+          </span>
         </div>
       </div>
 
@@ -63,8 +125,8 @@ export const Sidebar = () => {
       {/* Footer */}
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">
         <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
-          <p>MYA registra. MYA lembra. MYA cuida</p>
-          <p className="mt-1">© 2024 MYA Gestora</p>
+          <p>{motivationalPhrase}</p>
+          <p className="mt-1">© 2024 {systemConfig?.app_name || 'MYA Gestora'}</p>
         </div>
       </div>
     </div>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -134,6 +133,7 @@ const AdminSettings = () => {
           <TabsTrigger value="branding">Marca</TabsTrigger>
           <TabsTrigger value="appearance">Aparência</TabsTrigger>
           <TabsTrigger value="notifications">Notificações</TabsTrigger>
+          <TabsTrigger value="phrases">Frases Motivacionais</TabsTrigger>
         </TabsList>
 
         <TabsContent value="branding" className="space-y-6">
@@ -259,6 +259,10 @@ const AdminSettings = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="phrases" className="space-y-6">
+          <MotivationalPhrasesManager />
         </TabsContent>
       </Tabs>
 
