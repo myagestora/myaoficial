@@ -23,21 +23,24 @@ const Login = () => {
   useEffect(() => {
     const createAdminUser = async () => {
       try {
+        console.log('Checking for admin user...');
+        
         // Verificar se o admin já existe
         const { data: existingProfile } = await supabase
           .from('profiles')
           .select('id')
           .eq('email', 'adm@myagestora.com.br')
-          .single();
+          .maybeSingle();
 
         if (!existingProfile) {
-          console.log('Creating admin user...');
+          console.log('Admin user not found, creating...');
           
           // Criar o usuário admin
           const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email: 'adm@myagestora.com.br',
             password: 'mYa@adm2025',
             options: {
+              emailRedirectTo: `${window.location.origin}/`,
               data: {
                 full_name: 'Fabiano Bim'
               }
@@ -51,6 +54,18 @@ const Login = () => {
 
           if (signUpData.user) {
             console.log('Admin user created:', signUpData.user.id);
+            
+            // Confirmar o email automaticamente
+            const { error: confirmError } = await supabase.auth.admin.updateUserById(
+              signUpData.user.id,
+              { email_confirm: true }
+            );
+
+            if (confirmError) {
+              console.error('Error confirming admin email:', confirmError);
+            } else {
+              console.log('Admin email confirmed');
+            }
             
             // Adicionar role de admin
             const { error: roleError } = await supabase
@@ -68,6 +83,8 @@ const Login = () => {
               console.log('Admin role added successfully');
             }
           }
+        } else {
+          console.log('Admin user already exists');
         }
       } catch (error) {
         console.error('Error in admin user creation:', error);
@@ -129,6 +146,25 @@ const Login = () => {
       } else {
         console.log('Attempting login with email:', email);
         
+        // Verificar primeiro se o usuário existe na tabela profiles
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('id, email')
+          .eq('email', email)
+          .maybeSingle();
+
+        console.log('Profile data found:', profileData);
+        
+        if (!profileData) {
+          toast({
+            title: 'Erro',
+            description: 'Usuário não encontrado. Verifique o email.',
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return;
+        }
+        
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -136,7 +172,42 @@ const Login = () => {
         
         console.log('Login result:', { data, error });
         
-        if (error) throw error;
+        if (error) {
+          console.error('Login error details:', error);
+          
+          if (error.message.includes('Invalid login credentials')) {
+            // Tentar reconfirmar o email do usuário admin
+            if (email === 'adm@myagestora.com.br') {
+              console.log('Attempting to fix admin user...');
+              
+              // Buscar o usuário admin na tabela auth
+              const { data: userData } = await supabase.auth.admin.listUsers();
+              const adminUser = userData.users?.find(u => u.email === 'adm@myagestora.com.br');
+              
+              if (adminUser) {
+                console.log('Admin user found, confirming email...');
+                
+                // Confirmar o email
+                const { error: confirmError } = await supabase.auth.admin.updateUserById(
+                  adminUser.id,
+                  { email_confirm: true }
+                );
+                
+                if (confirmError) {
+                  console.error('Error confirming admin email:', confirmError);
+                } else {
+                  console.log('Admin email confirmed, try login again');
+                  toast({
+                    title: 'Usuário admin configurado',
+                    description: 'Tente fazer login novamente.',
+                  });
+                }
+              }
+            }
+          }
+          
+          throw error;
+        }
         
         console.log('Login successful, navigating to home');
         navigate('/');
@@ -163,6 +234,9 @@ const Login = () => {
             <div className="text-sm text-blue-700">
               <p><strong>Email:</strong> adm@myagestora.com.br</p>
               <p><strong>Senha:</strong> mYa@adm2025</p>
+            </div>
+            <div className="mt-2 text-xs text-blue-600">
+              <p>Se der erro de login, clique em "Entrar" novamente após alguns segundos.</p>
             </div>
           </CardContent>
         </Card>
