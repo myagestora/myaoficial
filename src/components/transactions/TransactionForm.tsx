@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -17,14 +17,17 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 const transactionSchema = z.object({
-  description: z.string().min(1, 'Descrição é obrigatória'),
+  title: z.string().min(1, 'Título é obrigatório'),
   amount: z.number().min(0.01, 'Valor deve ser maior que zero'),
   type: z.enum(['income', 'expense'], { required_error: 'Tipo é obrigatório' }),
-  category: z.string().min(1, 'Categoria é obrigatória'),
+  category_id: z.string().min(1, 'Categoria é obrigatória'),
   date: z.string().min(1, 'Data é obrigatória'),
-  notes: z.string().optional(),
+  description: z.string().optional(),
 });
 
 type TransactionFormData = z.infer<typeof transactionSchema>;
@@ -36,6 +39,9 @@ interface TransactionFormProps {
 }
 
 export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFormProps) => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
   const {
     register,
     handleSubmit,
@@ -53,31 +59,64 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
 
   const transactionType = watch('type');
 
-  const categories = {
-    income: ['Salário', 'Freelance', 'Investimentos', 'Outros'],
-    expense: ['Alimentação', 'Transporte', 'Utilidades', 'Saúde', 'Entretenimento', 'Outros'],
-  };
-
-  const onSubmit = async (data: TransactionFormData) => {
-    try {
-      // Aqui você faria a chamada para a API
-      console.log('Transaction data:', data);
+  // Buscar categorias do banco de dados
+  const { data: categories } = useQuery({
+    queryKey: ['categories', transactionType],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('type', transactionType)
+        .order('is_default', { ascending: false })
+        .order('name');
       
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && isOpen,
+  });
+
+  const createTransactionMutation = useMutation({
+    mutationFn: async (data: TransactionFormData) => {
+      if (!user) throw new Error('Usuário não autenticado');
+
+      const { error } = await supabase
+        .from('transactions')
+        .insert({
+          ...data,
+          user_id: user.id,
+        });
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
       toast({
         title: 'Sucesso!',
         description: 'Transação salva com sucesso.',
       });
-      
       reset();
       onClose();
-    } catch (error) {
+    },
+    onError: (error) => {
       toast({
         title: 'Erro!',
         description: 'Erro ao salvar transação.',
         variant: 'destructive',
       });
     }
+  });
+
+  const onSubmit = async (data: TransactionFormData) => {
+    createTransactionMutation.mutate(data);
   };
+
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!isOpen) {
+      reset();
+    }
+  }, [isOpen, reset]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -128,34 +167,43 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
+            <Label htmlFor="title">Título</Label>
             <Input
-              id="description"
+              id="title"
               placeholder="Ex: Supermercado, Salário..."
-              {...register('description')}
+              {...register('title')}
             />
-            {errors.description && (
-              <p className="text-sm text-red-600">{errors.description.message}</p>
+            {errors.title && (
+              <p className="text-sm text-red-600">{errors.title.message}</p>
             )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="category">Categoria</Label>
-              <Select onValueChange={(value) => setValue('category', value)}>
+              <Label htmlFor="category_id">Categoria</Label>
+              <Select onValueChange={(value) => setValue('category_id', value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione a categoria" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories[transactionType]?.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
+                  {categories?.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: category.color }}
+                        />
+                        {category.name}
+                        {category.is_default && (
+                          <span className="text-xs text-muted-foreground">(padrão)</span>
+                        )}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {errors.category && (
-                <p className="text-sm text-red-600">{errors.category.message}</p>
+              {errors.category_id && (
+                <p className="text-sm text-red-600">{errors.category_id.message}</p>
               )}
             </div>
 
@@ -173,11 +221,11 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Observações (opcional)</Label>
+            <Label htmlFor="description">Observações (opcional)</Label>
             <Textarea
-              id="notes"
+              id="description"
               placeholder="Adicione observações..."
-              {...register('notes')}
+              {...register('description')}
             />
           </div>
 
