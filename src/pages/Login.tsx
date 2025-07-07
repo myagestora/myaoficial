@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -69,16 +68,22 @@ const Login = () => {
         setFullName('');
         setWhatsapp('');
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        console.log('Attempting login with email:', email);
+        
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         
+        console.log('Login result:', { data, error });
+        
         if (error) throw error;
         
+        console.log('Login successful, navigating to home');
         navigate('/');
       }
     } catch (error: any) {
+      console.error('Auth error:', error);
       toast({
         title: 'Erro',
         description: error.message,
