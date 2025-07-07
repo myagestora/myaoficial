@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,13 +43,28 @@ const AdminSubscriptions = () => {
         .from('user_subscriptions')
         .select(`
           *,
-          subscription_plans!inner(name),
-          profiles!inner(full_name)
+          subscription_plans (
+            name
+          )
         `)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data;
+      
+      // Buscar perfis dos usuários separadamente
+      const userIds = data?.map(sub => sub.user_id) || [];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds);
+      
+      // Combinar os dados
+      const subscriptionsWithProfiles = data?.map(subscription => ({
+        ...subscription,
+        user_profile: profiles?.find(profile => profile.id === subscription.user_id)
+      }));
+      
+      return subscriptionsWithProfiles;
     }
   });
 
@@ -278,7 +294,7 @@ const AdminSubscriptions = () => {
                   {subscriptions?.map((subscription) => (
                     <TableRow key={subscription.id}>
                       <TableCell>
-                        {subscription.profiles?.full_name || 'Nome não informado'}
+                        {subscription.user_profile?.full_name || 'Nome não informado'}
                       </TableCell>
                       <TableCell>{subscription.subscription_plans?.name}</TableCell>
                       <TableCell>

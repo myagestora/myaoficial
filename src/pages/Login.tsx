@@ -32,13 +32,9 @@ const Login = () => {
           .from('profiles')
           .select('id')
           .eq('id', email)
-          .single();
+          .maybeSingle();
 
-        // Também verificar através do auth se possível
-        const { data: authUsers } = await supabase.auth.admin.listUsers();
-        const userExists = authUsers.users?.some(user => user.email === email);
-        
-        if (existingProfile || userExists) {
+        if (existingProfile) {
           toast({
             title: 'Erro',
             description: 'Já existe um usuário cadastrado com este email.',
