@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PhoneInput } from '@/components/ui/phone-input';
+import { CpfInput } from '@/components/ui/cpf-input';
 import { DollarSign } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -12,6 +14,9 @@ import { useNavigate } from 'react-router-dom';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
+  const [cpf, setCpf] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
@@ -22,17 +27,46 @@ const Login = () => {
 
     try {
       if (isSignUp) {
+        // Verificar se o usuário já existe
+        const { data: existingUser } = await supabase.auth.admin.getUserByEmail(email);
+        
+        if (existingUser.user) {
+          toast({
+            title: 'Erro',
+            description: 'Já existe um usuário cadastrado com este email.',
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return;
+        }
+
+        // Criar o usuário sem verificação de email
         const { error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              full_name: fullName,
+              whatsapp: whatsapp,
+              cpf: cpf
+            }
+          }
         });
         
         if (error) throw error;
         
         toast({
           title: 'Sucesso',
-          description: 'Conta criada com sucesso! Verifique seu email.',
+          description: 'Conta criada com sucesso! Você já pode fazer login.',
         });
+        
+        // Resetar o formulário e voltar para login
+        setIsSignUp(false);
+        setEmail('');
+        setPassword('');
+        setFullName('');
+        setWhatsapp('');
+        setCpf('');
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -69,6 +103,19 @@ const Login = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleAuth} className="space-y-4">
+            {isSignUp && (
+              <div>
+                <Label htmlFor="fullName">Nome Completo</Label>
+                <Input
+                  id="fullName"
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                />
+              </div>
+            )}
+            
             <div>
               <Label htmlFor="email">Email</Label>
               <Input
@@ -79,6 +126,31 @@ const Login = () => {
                 required
               />
             </div>
+            
+            {isSignUp && (
+              <>
+                <div>
+                  <Label htmlFor="whatsapp">WhatsApp</Label>
+                  <PhoneInput
+                    id="whatsapp"
+                    value={whatsapp}
+                    onChange={(e) => setWhatsapp(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="cpf">CPF</Label>
+                  <CpfInput
+                    id="cpf"
+                    value={cpf}
+                    onChange={(e) => setCpf(e.target.value)}
+                    required
+                  />
+                </div>
+              </>
+            )}
+            
             <div>
               <Label htmlFor="password">Senha</Label>
               <Input
@@ -89,6 +161,7 @@ const Login = () => {
                 required
               />
             </div>
+            
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Processando...' : (isSignUp ? 'Criar Conta' : 'Entrar')}
             </Button>
