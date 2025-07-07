@@ -27,10 +27,18 @@ const Login = () => {
 
     try {
       if (isSignUp) {
-        // Verificar se o usuário já existe
-        const { data: existingUser } = await supabase.auth.admin.getUserByEmail(email);
+        // Verificar se o usuário já existe consultando a tabela profiles
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', email)
+          .single();
+
+        // Também verificar através do auth se possível
+        const { data: authUsers } = await supabase.auth.admin.listUsers();
+        const userExists = authUsers.users?.some(user => user.email === email);
         
-        if (existingUser.user) {
+        if (existingProfile || userExists) {
           toast({
             title: 'Erro',
             description: 'Já existe um usuário cadastrado com este email.',
@@ -45,6 +53,7 @@ const Login = () => {
           email,
           password,
           options: {
+            emailRedirectTo: `${window.location.origin}/`,
             data: {
               full_name: fullName,
               whatsapp: whatsapp,
@@ -134,7 +143,7 @@ const Login = () => {
                   <PhoneInput
                     id="whatsapp"
                     value={whatsapp}
-                    onChange={(e) => setWhatsapp(e.target.value)}
+                    onChange={(value) => setWhatsapp(value || '')}
                     required
                   />
                 </div>

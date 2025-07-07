@@ -1,45 +1,30 @@
 
 import * as React from "react"
-import { Input } from "@/components/ui/input"
+import PhoneInputComponent from 'react-phone-number-input'
+import 'react-phone-number-input/style.css'
 import { cn } from "@/lib/utils"
 
-const PhoneInput = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
+interface PhoneInputProps {
+  value?: string
+  onChange?: (value?: string) => void
+  className?: string
+  id?: string
+  required?: boolean
+}
+
+const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
   ({ className, onChange, value, ...props }, ref) => {
-    const formatPhoneNumber = (value: string) => {
-      if (!value) return value
-      const phoneNumber = value.replace(/[^\d]/g, '')
-      const phoneNumberLength = phoneNumber.length
-      
-      if (phoneNumberLength < 3) return phoneNumber
-      if (phoneNumberLength < 7) {
-        return `(${phoneNumber.slice(0, 2)}) ${phoneNumber.slice(2)}`
-      }
-      return `(${phoneNumber.slice(0, 2)}) ${phoneNumber.slice(2, 7)}-${phoneNumber.slice(7, 11)}`
-    }
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const formatted = formatPhoneNumber(e.target.value)
-      if (onChange) {
-        const syntheticEvent = {
-          ...e,
-          target: {
-            ...e.target,
-            value: formatted
-          }
-        }
-        onChange(syntheticEvent as React.ChangeEvent<HTMLInputElement>)
-      }
-    }
-
     return (
-      <Input
-        type="tel"
-        className={cn(className)}
-        ref={ref}
+      <PhoneInputComponent
+        international
+        countryCallingCodeEditable={false}
+        defaultCountry="BR"
         value={value}
-        onChange={handleChange}
-        placeholder="(11) 99999-9999"
-        maxLength={15}
+        onChange={onChange}
+        className={cn(
+          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+          className
+        )}
         {...props}
       />
     )
