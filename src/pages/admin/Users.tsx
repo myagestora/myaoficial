@@ -21,12 +21,11 @@ const AdminUsers = () => {
         .from('profiles')
         .select(`
           *,
-          user_roles (role),
-          user_subscriptions (status, subscription_plans (name))
+          user_roles (role)
         `);
 
       if (searchTerm) {
-        query = query.ilike('full_name', `%${searchTerm}%`);
+        query = query.or(`full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
       }
 
       const { data, error } = await query.order('created_at', { ascending: false });
@@ -72,8 +71,34 @@ const AdminUsers = () => {
     return user.user_roles?.some((role: any) => role.role === 'admin') ? 'admin' : 'user';
   };
 
-  const getSubscriptionStatus = (user: any) => {
-    return user.user_subscriptions?.[0]?.status || 'inactive';
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'default';
+      case 'inactive':
+        return 'outline';
+      case 'canceled':
+        return 'destructive';
+      case 'past_due':
+        return 'secondary';
+      default:
+        return 'outline';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'Ativo';
+      case 'inactive':
+        return 'Inativo';
+      case 'canceled':
+        return 'Cancelado';
+      case 'past_due':
+        return 'Em Atraso';
+      default:
+        return 'Inativo';
+    }
   };
 
   return (
@@ -118,24 +143,21 @@ const AdminUsers = () => {
             <TableBody>
               {users?.map((user) => {
                 const isAdmin = getUserRole(user) === 'admin';
-                const subscriptionStatus = getSubscriptionStatus(user);
                 
                 return (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">
                       {user.full_name || 'Nome não informado'}
                     </TableCell>
-                    <TableCell>{user.id}</TableCell>
+                    <TableCell>{user.email || 'Email não informado'}</TableCell>
                     <TableCell>
                       <Badge variant={isAdmin ? 'destructive' : 'secondary'}>
                         {isAdmin ? 'Admin' : 'Usuário'}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge 
-                        variant={subscriptionStatus === 'active' ? 'default' : 'outline'}
-                      >
-                        {subscriptionStatus === 'active' ? 'Ativo' : 'Inativo'}
+                      <Badge variant={getStatusVariant(user.subscription_status || 'inactive')}>
+                        {getStatusLabel(user.subscription_status || 'inactive')}
                       </Badge>
                     </TableCell>
                     <TableCell>

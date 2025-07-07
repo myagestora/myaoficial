@@ -45,26 +45,16 @@ const AdminSubscriptions = () => {
           *,
           subscription_plans (
             name
+          ),
+          profiles!user_subscriptions_user_id_fkey (
+            full_name,
+            email
           )
         `)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      
-      // Buscar perfis dos usuários separadamente
-      const userIds = data?.map(sub => sub.user_id) || [];
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .in('id', userIds);
-      
-      // Combinar os dados
-      const subscriptionsWithProfiles = data?.map(subscription => ({
-        ...subscription,
-        user_profile: profiles?.find(profile => profile.id === subscription.user_id)
-      }));
-      
-      return subscriptionsWithProfiles;
+      return data;
     }
   });
 
@@ -284,6 +274,7 @@ const AdminSubscriptions = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Usuário</TableHead>
+                    <TableHead>Email</TableHead>
                     <TableHead>Plano</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Início</TableHead>
@@ -294,7 +285,10 @@ const AdminSubscriptions = () => {
                   {subscriptions?.map((subscription) => (
                     <TableRow key={subscription.id}>
                       <TableCell>
-                        {subscription.user_profile?.full_name || 'Nome não informado'}
+                        {subscription.profiles?.full_name || 'Nome não informado'}
+                      </TableCell>
+                      <TableCell>
+                        {subscription.profiles?.email || 'Email não informado'}
                       </TableCell>
                       <TableCell>{subscription.subscription_plans?.name}</TableCell>
                       <TableCell>
