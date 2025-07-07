@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +34,13 @@ const AdminSettings = () => {
     }
   });
 
+  // Sincronizar settings quando systemConfig muda
+  useEffect(() => {
+    if (systemConfig) {
+      setSettings(systemConfig);
+    }
+  }, [systemConfig]);
+
   const updateSettingsMutation = useMutation({
     mutationFn: async (settingsData: Record<string, string>) => {
       const updates = Object.entries(settingsData).map(([key, value]) => ({
@@ -42,6 +49,7 @@ const AdminSettings = () => {
       }));
 
       for (const update of updates) {
+        console.log('Salvando configuração:', update);
         const { error } = await supabase
           .from('system_config')
           .upsert({
@@ -50,11 +58,15 @@ const AdminSettings = () => {
             updated_at: new Date().toISOString()
           });
         
-        if (error) throw error;
+        if (error) {
+          console.error('Erro ao salvar configuração:', update.key, error);
+          throw error;
+        }
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['system-config'] });
+      queryClient.invalidateQueries({ queryKey: ['system-config-header'] });
       toast({
         title: 'Sucesso',
         description: 'Configurações atualizadas com sucesso',
@@ -82,6 +94,7 @@ const AdminSettings = () => {
   };
 
   const handleSave = () => {
+    console.log('Salvando configurações:', settings);
     updateSettingsMutation.mutate(settings);
   };
 

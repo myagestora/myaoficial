@@ -19,7 +19,7 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
   onSave
 }) => {
   const [uploading, setUploading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>(currentLogoUrl || '');
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -49,9 +49,15 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
     setUploading(true);
 
     try {
+      // Mostrar preview imediatamente
+      const objectUrl = URL.createObjectURL(file);
+      setPreviewUrl(objectUrl);
+
       // Gerar nome único para o arquivo
       const fileExt = file.name.split('.').pop();
       const fileName = `logo-${Date.now()}.${fileExt}`;
+
+      console.log('Iniciando upload do arquivo:', fileName);
 
       // Upload para o bucket
       const { data, error } = await supabase.storage
@@ -61,16 +67,26 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
           upsert: false
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro no upload:', error);
+        throw error;
+      }
+
+      console.log('Upload realizado com sucesso:', data);
 
       // Obter URL pública
       const { data: { publicUrl } } = supabase.storage
         .from('logos')
         .getPublicUrl(data.path);
 
-      // Atualizar a configuração localmente
-      onLogoChange(publicUrl);
+      console.log('URL pública gerada:', publicUrl);
+
+      // Limpar o URL temporário
+      URL.revokeObjectURL(objectUrl);
+      
+      // Atualizar com a URL real
       setPreviewUrl(publicUrl);
+      onLogoChange(publicUrl);
 
       // Salvar automaticamente
       onSave();
@@ -82,6 +98,8 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
 
     } catch (error) {
       console.error('Erro no upload:', error);
+      // Reverter o preview em caso de erro
+      setPreviewUrl(currentLogoUrl || '');
       toast({
         title: 'Erro',
         description: 'Erro ao enviar logo. Tente novamente.',
@@ -89,47 +107,59 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
       });
     } finally {
       setUploading(false);
+      // Limpar o input
+      event.target.value = '';
     }
   };
 
-  const handleRemovePreview = () => {
-    setPreviewUrl(null);
+  const handleRemoveLogo = () => {
+    setPreviewUrl('');
+    onLogoChange('');
+    toast({
+      title: 'Logo removido',
+      description: 'Logo removido com sucesso. Clique em "Salvar Configurações" para confirmar.',
+    });
   };
-
-  const displayUrl = previewUrl || currentLogoUrl;
 
   return (
     <div className="space-y-4">
       <div>
         <Label htmlFor="logo_upload">Logo da Aplicação</Label>
         <div className="mt-2 space-y-4">
-          {/* Preview do logo atual */}
-          {displayUrl && (
-            <div className="relative inline-block">
-              <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+          {/* Preview do logo */}
+          <div className="relative inline-block">
+            <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden">
+              {previewUrl ? (
                 <img 
-                  src={displayUrl} 
+                  src={previewUrl} 
                   alt="Logo preview" 
                   className="max-w-full max-h-full object-contain"
                   onError={(e) => {
+                    console.error('Erro ao carregar imagem:', previewUrl);
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';
                   }}
                 />
-              </div>
-              {previewUrl && (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
-                  onClick={handleRemovePreview}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
+              ) : (
+                <div className="text-center text-gray-500 text-sm">
+                  <Upload className="mx-auto h-8 w-8 mb-2" />
+                  <p>Nenhuma logo</p>
+                </div>
               )}
             </div>
-          )}
+            {previewUrl && (
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                onClick={handleRemoveLogo}
+                disabled={uploading}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
           
           {/* Input de upload */}
           <div className="flex items-center gap-4">
