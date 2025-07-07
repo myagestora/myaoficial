@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,20 +33,20 @@ const AdminSystem = () => {
 
         const dbStatus = !dbError ? 'healthy' : 'error';
 
-        // Verificar estatísticas básicas
-        const { data: userCount } = await supabase
+        // Verificar estatísticas básicas - usar count corretamente
+        const { count: userCount, error: userError } = await supabase
           .from('profiles')
           .select('*', { count: 'exact', head: true });
 
-        const { data: transactionCount } = await supabase
+        const { count: transactionCount, error: transactionError } = await supabase
           .from('transactions')
           .select('*', { count: 'exact', head: true });
 
         return {
           database: {
             status: dbStatus,
-            users: userCount?.count || 0,
-            transactions: transactionCount?.count || 0
+            users: userCount || 0,
+            transactions: transactionCount || 0
           },
           api: {
             status: 'healthy',
