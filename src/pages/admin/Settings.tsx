@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { LogoUpload } from '@/components/admin/LogoUpload';
 
 const AdminSettings = () => {
   const [settings, setSettings] = useState<Record<string, string>>({});
@@ -76,6 +76,10 @@ const AdminSettings = () => {
     }));
   };
 
+  const handleLogoChange = (newUrl: string) => {
+    handleInputChange('app_logo', newUrl);
+  };
+
   const handleSave = () => {
     updateSettingsMutation.mutate(settings);
   };
@@ -120,6 +124,11 @@ const AdminSettings = () => {
                   />
                 </div>
               </div>
+
+              <LogoUpload 
+                currentLogoUrl={settings.app_logo || ''}
+                onLogoChange={handleLogoChange}
+              />
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
