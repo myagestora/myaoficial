@@ -83,7 +83,12 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
       const { error } = await supabase
         .from('transactions')
         .insert({
-          ...data,
+          title: data.title,
+          amount: data.amount,
+          type: data.type,
+          category_id: data.category_id,
+          date: data.date,
+          description: data.description || null,
           user_id: user.id,
         });
       
@@ -194,7 +199,7 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
                           style={{ backgroundColor: category.color }}
                         />
                         {category.name}
-                        {category.is_default && (
+                        {(category as any).is_default && (
                           <span className="text-xs text-muted-foreground">(padrão)</span>
                         )}
                       </div>

@@ -199,13 +199,13 @@ export const CategoryManager = () => {
                         style={{ backgroundColor: category.color }}
                       />
                       <span>{category.name}</span>
-                      {category.is_default && (
+                      {(category as any).is_default && (
                         <Badge variant="secondary" className="text-xs">
                           Padrão
                         </Badge>
                       )}
                     </div>
-                    {!category.is_default && (
+                    {!(category as any).is_default && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -233,13 +233,13 @@ export const CategoryManager = () => {
                         style={{ backgroundColor: category.color }}
                       />
                       <span>{category.name}</span>
-                      {category.is_default && (
+                      {(category as any).is_default && (
                         <Badge variant="secondary" className="text-xs">
                           Padrão
                         </Badge>
                       )}
                     </div>
-                    {!category.is_default && (
+                    {!(category as any).is_default && (
                       <Button
                         variant="ghost"
                         size="sm"
