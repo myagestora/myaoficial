@@ -59,7 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log('Admin role check result:', { data, error });
       
-      if (error) {
+      if (error && error.code !== 'PGRST116') {
         console.error('Error checking admin role:', error);
         setIsAdmin(false);
       } else {

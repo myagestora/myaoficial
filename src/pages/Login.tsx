@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,64 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
+
+  // Criar usuário admin automaticamente na primeira execução
+  useEffect(() => {
+    const createAdminUser = async () => {
+      try {
+        // Verificar se o admin já existe
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', 'adm@myagestora.com.br')
+          .single();
+
+        if (!existingProfile) {
+          console.log('Creating admin user...');
+          
+          // Criar o usuário admin
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email: 'adm@myagestora.com.br',
+            password: 'mYa@adm2025',
+            options: {
+              data: {
+                full_name: 'Fabiano Bim'
+              }
+            }
+          });
+
+          if (signUpError) {
+            console.error('Error creating admin user:', signUpError);
+            return;
+          }
+
+          if (signUpData.user) {
+            console.log('Admin user created:', signUpData.user.id);
+            
+            // Adicionar role de admin
+            const { error: roleError } = await supabase
+              .from('user_roles')
+              .insert([
+                {
+                  user_id: signUpData.user.id,
+                  role: 'admin'
+                }
+              ]);
+
+            if (roleError) {
+              console.error('Error adding admin role:', roleError);
+            } else {
+              console.log('Admin role added successfully');
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error in admin user creation:', error);
+      }
+    };
+
+    createAdminUser();
+  }, []);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
