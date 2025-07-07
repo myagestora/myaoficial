@@ -6,20 +6,28 @@ export const useAdminSetup = () => {
   useEffect(() => {
     const setupAdminUser = async () => {
       try {
-        console.log('🔧 Configurando usuário admin...');
+        console.log('🔧 Verificando usuário admin...');
         
-        // Primeiro, verificar se o admin já existe na auth.users
-        const { data: existingUser } = await supabase.auth.admin.listUsers();
-        const adminExists = existingUser?.users?.some(user => user.email === 'adm@myagestora.com.br');
+        // Verificar se o perfil admin já existe
+        const { data: adminProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', 'adm@myagestora.com.br')
+          .maybeSingle();
         
-        if (adminExists) {
-          console.log('✅ Usuário admin já existe na auth.users');
+        if (profileError) {
+          console.error('❌ Erro ao verificar perfil admin:', profileError);
+          return;
+        }
+        
+        if (adminProfile) {
+          console.log('✅ Perfil admin já existe');
           return;
         }
         
         console.log('🚀 Criando usuário admin...');
         
-        // Criar o usuário admin usando signUp
+        // Criar o usuário admin
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: 'adm@myagestora.com.br',
           password: 'mYa@adm2025',
@@ -31,40 +39,17 @@ export const useAdminSetup = () => {
         });
         
         if (signUpError) {
+          if (signUpError.message === 'User already registered') {
+            console.log('✅ Usuário admin já existe no auth');
+            return;
+          }
           console.error('❌ Erro ao criar usuário admin:', signUpError);
           return;
         }
         
-        console.log('✅ Usuário admin criado com sucesso:', signUpData);
+        console.log('✅ Usuário admin criado com sucesso');
         
-        // Verificar se o usuário foi criado e tem ID
-        if (signUpData.user?.id) {
-          // Verificar se já tem role de admin
-          const { data: roleData } = await supabase
-            .from('user_roles')
-            .select('*')
-            .eq('user_id', signUpData.user.id)
-            .eq('role', 'admin')
-            .maybeSingle();
-            
-          if (!roleData) {
-            console.log('🔑 Adicionando role de admin...');
-            const { error: roleError } = await supabase
-              .from('user_roles')
-              .insert({
-                user_id: signUpData.user.id,
-                role: 'admin'
-              });
-              
-            if (roleError) {
-              console.error('❌ Erro ao adicionar role admin:', roleError);
-            } else {
-              console.log('✅ Role de admin adicionada com sucesso');
-            }
-          }
-        }
-        
-        // Fazer logout após a criação para não logar automaticamente
+        // Fazer logout imediatamente após criar
         await supabase.auth.signOut();
         
       } catch (error) {
@@ -72,6 +57,7 @@ export const useAdminSetup = () => {
       }
     };
 
+    // Executar apenas uma vez
     setupAdminUser();
   }, []);
 };
