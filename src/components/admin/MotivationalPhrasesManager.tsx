@@ -34,7 +34,7 @@ export const MotivationalPhrasesManager = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return (data || []) as MotivationalPhrase[];
+      return ((data || []) as unknown) as MotivationalPhrase[];
     }
   });
 
@@ -327,3 +327,4 @@ export const MotivationalPhrasesManager = () => {
     </Card>
   );
 };
+

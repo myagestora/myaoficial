@@ -61,7 +61,7 @@ export const Sidebar = () => {
       
       if (error) throw error;
       
-      const phrases = (data || []) as Array<{phrase: string}>;
+      const phrases = ((data || []) as unknown) as Array<{phrase: string}>;
       
       if (phrases.length > 0) {
         const randomIndex = Math.floor(Math.random() * phrases.length);
@@ -134,3 +134,4 @@ export const Sidebar = () => {
     </div>
   );
 };
+
