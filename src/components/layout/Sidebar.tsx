@@ -55,7 +55,7 @@ export const Sidebar = () => {
     queryKey: ['motivational-phrase'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('motivational_phrases')
+        .from('motivational_phrases' as any)
         .select('phrase')
         .eq('is_active', true);
       

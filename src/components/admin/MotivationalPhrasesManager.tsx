@@ -29,7 +29,7 @@ export const MotivationalPhrasesManager = () => {
     queryKey: ['motivational-phrases-admin'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('motivational_phrases')
+        .from('motivational_phrases' as any)
         .select('*')
         .order('created_at', { ascending: false });
       
@@ -41,7 +41,7 @@ export const MotivationalPhrasesManager = () => {
   const createPhraseMutation = useMutation({
     mutationFn: async (phrase: string) => {
       const { data, error } = await supabase
-        .from('motivational_phrases')
+        .from('motivational_phrases' as any)
         .insert([{ phrase, is_active: true }])
         .select()
         .single();
@@ -72,7 +72,7 @@ export const MotivationalPhrasesManager = () => {
   const updatePhraseMutation = useMutation({
     mutationFn: async ({ id, phrase }: { id: string; phrase: string }) => {
       const { data, error } = await supabase
-        .from('motivational_phrases')
+        .from('motivational_phrases' as any)
         .update({ phrase, updated_at: new Date().toISOString() })
         .eq('id', id)
         .select()
@@ -104,7 +104,7 @@ export const MotivationalPhrasesManager = () => {
   const toggleActiveMutation = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
       const { data, error } = await supabase
-        .from('motivational_phrases')
+        .from('motivational_phrases' as any)
         .update({ is_active, updated_at: new Date().toISOString() })
         .eq('id', id)
         .select()
@@ -134,7 +134,7 @@ export const MotivationalPhrasesManager = () => {
   const deletePhraseMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('motivational_phrases')
+        .from('motivational_phrases' as any)
         .delete()
         .eq('id', id);
       
