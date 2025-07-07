@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -45,7 +46,7 @@ const AdminSettings = () => {
     mutationFn: async (settingsData: Record<string, string>) => {
       const updates = Object.entries(settingsData).map(([key, value]) => ({
         key,
-        value: JSON.stringify(value)
+        value: value || '' // Garantir que valores vazios sejam strings vazias
       }));
 
       for (const update of updates) {
@@ -54,7 +55,7 @@ const AdminSettings = () => {
           .from('system_config')
           .upsert({
             key: update.key,
-            value: update.value,
+            value: JSON.stringify(update.value),
             updated_at: new Date().toISOString()
           });
         
@@ -85,12 +86,12 @@ const AdminSettings = () => {
   const handleInputChange = (key: string, value: string) => {
     setSettings(prev => ({
       ...prev,
-      [key]: value
+      [key]: value || '' // Garantir que valores vazios sejam strings vazias
     }));
   };
 
   const handleLogoChange = (newUrl: string) => {
-    handleInputChange('app_logo', newUrl);
+    handleInputChange('app_logo', newUrl || ''); // Garantir que valores vazios sejam strings vazias
   };
 
   const handleSave = () => {

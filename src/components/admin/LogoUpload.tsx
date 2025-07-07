@@ -114,7 +114,7 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
 
   const handleRemoveLogo = () => {
     setPreviewUrl('');
-    onLogoChange('');
+    onLogoChange(''); // Passar string vazia em vez de null
     toast({
       title: 'Logo removido',
       description: 'Logo removido com sucesso. Clique em "Salvar Configurações" para confirmar.',
