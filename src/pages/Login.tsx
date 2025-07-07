@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,11 +26,11 @@ const Login = () => {
 
     try {
       if (isSignUp) {
-        // Verificar se o usuário já existe consultando a tabela profiles
+        // Verificar se o usuário já existe consultando a tabela profiles pelo email
         const { data: existingProfile } = await supabase
           .from('profiles')
           .select('id')
-          .eq('id', email)
+          .eq('email', email)
           .maybeSingle();
 
         if (existingProfile) {
