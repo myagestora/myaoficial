@@ -1,10 +1,10 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PhoneInput } from '@/components/ui/phone-input';
-import { CpfInput } from '@/components/ui/cpf-input';
 import { DollarSign } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -15,7 +15,6 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
-  const [cpf, setCpf] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
@@ -51,8 +50,7 @@ const Login = () => {
             emailRedirectTo: `${window.location.origin}/`,
             data: {
               full_name: fullName,
-              whatsapp: whatsapp,
-              cpf: cpf
+              whatsapp: whatsapp
             }
           }
         });
@@ -70,7 +68,6 @@ const Login = () => {
         setPassword('');
         setFullName('');
         setWhatsapp('');
-        setCpf('');
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -132,27 +129,14 @@ const Login = () => {
             </div>
             
             {isSignUp && (
-              <>
-                <div>
-                  <Label htmlFor="whatsapp">WhatsApp</Label>
-                  <PhoneInput
-                    id="whatsapp"
-                    value={whatsapp}
-                    onChange={(value) => setWhatsapp(value || '')}
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="cpf">CPF</Label>
-                  <CpfInput
-                    id="cpf"
-                    value={cpf}
-                    onChange={(e) => setCpf(e.target.value)}
-                    required
-                  />
-                </div>
-              </>
+              <div>
+                <Label htmlFor="whatsapp">WhatsApp</Label>
+                <PhoneInput
+                  id="whatsapp"
+                  value={whatsapp}
+                  onChange={(value) => setWhatsapp(value || '')}
+                />
+              </div>
             )}
             
             <div>
