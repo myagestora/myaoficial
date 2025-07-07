@@ -182,7 +182,7 @@ const Login = () => {
               
               // Buscar o usuário admin na tabela auth
               const { data: userData } = await supabase.auth.admin.listUsers();
-              const adminUser = userData.users?.find(u => u.email === 'adm@myagestora.com.br');
+              const adminUser = userData.users?.find((u: any) => u.email === 'adm@myagestora.com.br');
               
               if (adminUser) {
                 console.log('Admin user found, confirming email...');
