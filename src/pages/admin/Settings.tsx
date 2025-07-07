@@ -44,24 +44,47 @@ const AdminSettings = () => {
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (settingsData: Record<string, string>) => {
-      const updates = Object.entries(settingsData).map(([key, value]) => ({
-        key,
-        value: value || '' // Garantir que valores vazios sejam strings vazias
-      }));
-
-      for (const update of updates) {
-        console.log('Salvando configuração:', update);
-        const { error } = await supabase
-          .from('system_config')
-          .upsert({
-            key: update.key,
-            value: JSON.stringify(update.value),
-            updated_at: new Date().toISOString()
-          });
+      console.log('Salvando configurações:', settingsData);
+      
+      for (const [key, value] of Object.entries(settingsData)) {
+        const cleanValue = value || '';
+        console.log('Salvando configuração:', { key, value: cleanValue });
         
-        if (error) {
-          console.error('Erro ao salvar configuração:', update.key, error);
-          throw error;
+        // Primeiro verifica se o registro já existe
+        const { data: existing } = await supabase
+          .from('system_config')
+          .select('id')
+          .eq('key', key)
+          .maybeSingle();
+
+        if (existing) {
+          // Se existe, faz UPDATE
+          const { error } = await supabase
+            .from('system_config')
+            .update({
+              value: JSON.stringify(cleanValue),
+              updated_at: new Date().toISOString()
+            })
+            .eq('key', key);
+          
+          if (error) {
+            console.error('Erro ao atualizar configuração:', key, error);
+            throw error;
+          }
+        } else {
+          // Se não existe, faz INSERT
+          const { error } = await supabase
+            .from('system_config')
+            .insert({
+              key: key,
+              value: JSON.stringify(cleanValue),
+              updated_at: new Date().toISOString()
+            });
+          
+          if (error) {
+            console.error('Erro ao inserir configuração:', key, error);
+            throw error;
+          }
         }
       }
     },
@@ -86,12 +109,12 @@ const AdminSettings = () => {
   const handleInputChange = (key: string, value: string) => {
     setSettings(prev => ({
       ...prev,
-      [key]: value || '' // Garantir que valores vazios sejam strings vazias
+      [key]: value || ''
     }));
   };
 
   const handleLogoChange = (newUrl: string) => {
-    handleInputChange('app_logo', newUrl || ''); // Garantir que valores vazios sejam strings vazias
+    handleInputChange('app_logo', newUrl || '');
   };
 
   const handleSave = () => {
