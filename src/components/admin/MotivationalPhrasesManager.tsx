@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,14 +8,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Plus, Edit2, Trash2, Save, X } from 'lucide-react';
+import { Tables } from '@/integrations/supabase/types';
 
-interface MotivationalPhrase {
-  id: string;
-  phrase: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+type MotivationalPhrase = Tables<'motivational_phrases'>;
 
 export const MotivationalPhrasesManager = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -29,19 +23,19 @@ export const MotivationalPhrasesManager = () => {
     queryKey: ['motivational-phrases-admin'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('motivational_phrases' as any)
+        .from('motivational_phrases')
         .select('*')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return ((data || []) as unknown) as MotivationalPhrase[];
+      return data as MotivationalPhrase[];
     }
   });
 
   const createPhraseMutation = useMutation({
     mutationFn: async (phrase: string) => {
       const { data, error } = await supabase
-        .from('motivational_phrases' as any)
+        .from('motivational_phrases')
         .insert([{ phrase, is_active: true }])
         .select()
         .single();
@@ -72,7 +66,7 @@ export const MotivationalPhrasesManager = () => {
   const updatePhraseMutation = useMutation({
     mutationFn: async ({ id, phrase }: { id: string; phrase: string }) => {
       const { data, error } = await supabase
-        .from('motivational_phrases' as any)
+        .from('motivational_phrases')
         .update({ phrase, updated_at: new Date().toISOString() })
         .eq('id', id)
         .select()
@@ -104,7 +98,7 @@ export const MotivationalPhrasesManager = () => {
   const toggleActiveMutation = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
       const { data, error } = await supabase
-        .from('motivational_phrases' as any)
+        .from('motivational_phrases')
         .update({ is_active, updated_at: new Date().toISOString() })
         .eq('id', id)
         .select()
@@ -134,7 +128,7 @@ export const MotivationalPhrasesManager = () => {
   const deletePhraseMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('motivational_phrases' as any)
+        .from('motivational_phrases')
         .delete()
         .eq('id', id);
       
@@ -267,8 +261,8 @@ export const MotivationalPhrasesManager = () => {
               <div className="flex items-center gap-2">
                 <div className="flex items-center space-x-2">
                   <Switch
-                    checked={phrase.is_active}
-                    onCheckedChange={() => handleToggleActive(phrase.id, phrase.is_active)}
+                    checked={phrase.is_active || false}
+                    onCheckedChange={() => handleToggleActive(phrase.id, phrase.is_active || false)}
                     disabled={toggleActiveMutation.isPending}
                   />
                   <span className="text-xs text-gray-500">
@@ -327,4 +321,3 @@ export const MotivationalPhrasesManager = () => {
     </Card>
   );
 };
-

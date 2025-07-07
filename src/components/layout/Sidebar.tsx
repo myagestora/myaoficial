@@ -55,13 +55,13 @@ export const Sidebar = () => {
     queryKey: ['motivational-phrase'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('motivational_phrases' as any)
+        .from('motivational_phrases')
         .select('phrase')
         .eq('is_active', true);
       
       if (error) throw error;
       
-      const phrases = ((data || []) as unknown) as Array<{phrase: string}>;
+      const phrases = data as Array<{phrase: string}>;
       
       if (phrases.length > 0) {
         const randomIndex = Math.floor(Math.random() * phrases.length);
@@ -134,4 +134,3 @@ export const Sidebar = () => {
     </div>
   );
 };
-
