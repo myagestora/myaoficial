@@ -42,8 +42,8 @@ const AdminSubscriptions = () => {
         .from('user_subscriptions')
         .select(`
           *,
-          subscription_plans (name),
-          profiles (full_name)
+          subscription_plans!inner(name),
+          profiles!inner(full_name)
         `)
         .order('created_at', { ascending: false });
       
