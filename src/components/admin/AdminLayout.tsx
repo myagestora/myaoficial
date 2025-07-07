@@ -6,7 +6,10 @@ import {
   Users, 
   CreditCard, 
   Settings,
-  ArrowLeft
+  ArrowLeft,
+  PieChart,
+  BarChart3,
+  Database
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -14,7 +17,10 @@ import { cn } from '@/lib/utils';
 const adminNavigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Usuários', href: '/admin/users', icon: Users },
+  { name: 'Categorias', href: '/admin/categories', icon: PieChart },
+  { name: 'Relatórios', href: '/admin/reports', icon: BarChart3 },
   { name: 'Assinaturas', href: '/admin/subscriptions', icon: CreditCard },
+  { name: 'Sistema', href: '/admin/system', icon: Database },
   { name: 'Configurações', href: '/admin/settings', icon: Settings },
 ];
 

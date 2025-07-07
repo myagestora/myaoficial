@@ -16,7 +16,10 @@ import NotFound from "./pages/NotFound";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminUsers from "./pages/admin/Users";
+import AdminCategories from "./pages/admin/Categories";
+import AdminReports from "./pages/admin/Reports";
 import AdminSubscriptions from "./pages/admin/Subscriptions";
+import AdminSystem from "./pages/admin/System";
 import AdminSettings from "./pages/admin/Settings";
 
 const queryClient = new QueryClient();
@@ -39,7 +42,10 @@ const App = () => (
             }>
               <Route index element={<AdminDashboard />} />
               <Route path="users" element={<AdminUsers />} />
+              <Route path="categories" element={<AdminCategories />} />
+              <Route path="reports" element={<AdminReports />} />
               <Route path="subscriptions" element={<AdminSubscriptions />} />
+              <Route path="system" element={<AdminSystem />} />
               <Route path="settings" element={<AdminSettings />} />
             </Route>
 
