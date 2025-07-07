@@ -5,7 +5,6 @@ import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { AdminCredentialsCard } from '@/components/auth/AdminCredentialsCard';
 import { AuthForm } from '@/components/auth/AuthForm';
-import { useAdminSetup } from '@/hooks/useAdminSetup';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -15,9 +14,6 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
-
-  // Setup do usuário admin
-  useAdminSetup();
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,15 +35,14 @@ const Login = () => {
         });
         
         if (error) {
-          if (error.message === 'User already registered') {
-            toast({
-              title: 'Erro',
-              description: 'Já existe um usuário cadastrado com este email.',
-              variant: 'destructive',
-            });
-          } else {
-            throw error;
-          }
+          console.error('❌ Erro no cadastro:', error);
+          toast({
+            title: 'Erro no Cadastro',
+            description: error.message === 'User already registered' 
+              ? 'Já existe um usuário cadastrado com este email.'
+              : error.message,
+            variant: 'destructive',
+          });
           return;
         }
         
@@ -63,7 +58,7 @@ const Login = () => {
         setWhatsapp('');
       } else {
         // Login
-        console.log('🔐 Fazendo login...');
+        console.log('🔐 Tentando fazer login com:', email);
         
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
@@ -72,34 +67,28 @@ const Login = () => {
         
         if (error) {
           console.error('❌ Erro de login:', error);
-          
-          let errorMessage = 'Email ou senha incorretos.';
-          if (email === 'adm@myagestora.com.br') {
-            errorMessage = 'Credenciais do admin incorretas. Verifique email e senha.';
-          }
-          
           toast({
             title: 'Erro de Login',
-            description: errorMessage,
+            description: 'Email ou senha incorretos. Verifique suas credenciais.',
             variant: 'destructive',
           });
           return;
         }
         
-        console.log('✅ Login realizado com sucesso!');
-        
-        toast({
-          title: 'Sucesso',
-          description: 'Login realizado com sucesso!',
-        });
-        
-        navigate('/');
+        if (data.user) {
+          console.log('✅ Login realizado com sucesso!', data.user);
+          toast({
+            title: 'Sucesso',
+            description: 'Login realizado com sucesso!',
+          });
+          navigate('/');
+        }
       }
     } catch (error: any) {
       console.error('💥 Erro na autenticação:', error);
       toast({
         title: 'Erro',
-        description: error.message || 'Erro na autenticação',
+        description: 'Erro inesperado. Tente novamente.',
         variant: 'destructive',
       });
     } finally {
