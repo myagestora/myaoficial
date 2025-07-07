@@ -30,14 +30,33 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
+  // Se não há usuário logado, redirecionar para login
   if (!user) {
     console.log('No user found, redirecting to login');
     return <Navigate to="/login" replace />;
   }
 
+  // Se requer admin mas o usuário não é admin, mostrar erro ao invés de redirecionar
   if (requireAdmin && !isAdmin) {
-    console.log('Admin required but user is not admin, redirecting to home');
-    return <Navigate to="/" replace />;
+    console.log('Admin required but user is not admin, showing access denied');
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <Card className="p-6 max-w-md mx-auto">
+          <CardContent>
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-red-600 mb-4">Acesso Negado</h2>
+              <p className="text-gray-600 mb-4">
+                Você não tem permissão para acessar esta área. 
+                Apenas administradores podem acessar o painel administrativo.
+              </p>
+              <p className="text-sm text-gray-500">
+                Usuário atual: {user.email}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   console.log('Access granted');

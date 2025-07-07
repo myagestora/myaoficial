@@ -155,81 +155,94 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
-              <DollarSign className="w-8 h-8 text-white" />
+      <div className="w-full max-w-md space-y-4">
+        {/* Credenciais do Admin para teste */}
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="p-4">
+            <h3 className="font-semibold text-blue-800 mb-2">👤 Credenciais de Admin</h3>
+            <div className="text-sm text-blue-700">
+              <p><strong>Email:</strong> adm@myagestora.com.br</p>
+              <p><strong>Senha:</strong> mYa@adm2025</p>
             </div>
-          </div>
-          <CardTitle className="text-2xl">
-            {isSignUp ? 'Criar Conta' : 'Entrar no MYA'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleAuth} className="space-y-4">
-            {isSignUp && (
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
+                <DollarSign className="w-8 h-8 text-white" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl">
+              {isSignUp ? 'Criar Conta' : 'Entrar no MYA'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAuth} className="space-y-4">
+              {isSignUp && (
+                <div>
+                  <Label htmlFor="fullName">Nome Completo</Label>
+                  <Input
+                    id="fullName"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
+              
               <div>
-                <Label htmlFor="fullName">Nome Completo</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="fullName"
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </div>
-            )}
-            
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            
-            {isSignUp && (
+              
+              {isSignUp && (
+                <div>
+                  <Label htmlFor="whatsapp">WhatsApp</Label>
+                  <PhoneInput
+                    id="whatsapp"
+                    value={whatsapp}
+                    onChange={(value) => setWhatsapp(value || '')}
+                  />
+                </div>
+              )}
+              
               <div>
-                <Label htmlFor="whatsapp">WhatsApp</Label>
-                <PhoneInput
-                  id="whatsapp"
-                  value={whatsapp}
-                  onChange={(value) => setWhatsapp(value || '')}
+                <Label htmlFor="password">Senha</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
                 />
               </div>
-            )}
+              
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Processando...' : (isSignUp ? 'Criar Conta' : 'Entrar')}
+              </Button>
+            </form>
             
-            <div>
-              <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="text-sm text-primary hover:underline"
+              >
+                {isSignUp ? 'Já tem uma conta? Entre aqui' : 'Não tem conta? Crie uma'}
+              </button>
             </div>
-            
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Processando...' : (isSignUp ? 'Criar Conta' : 'Entrar')}
-            </Button>
-          </form>
-          
-          <div className="mt-4 text-center">
-            <button
-              type="button"
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-sm text-primary hover:underline"
-            >
-              {isSignUp ? 'Já tem uma conta? Entre aqui' : 'Não tem conta? Crie uma'}
-            </button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
