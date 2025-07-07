@@ -6,47 +6,46 @@ export const useAdminSetup = () => {
   useEffect(() => {
     const createAdminUser = async () => {
       try {
-        console.log('Checking for admin user...');
+        console.log('🔍 Verificando usuário admin...');
         
         // Verificar se o admin já existe na tabela profiles
         const { data: existingProfile, error: profileError } = await supabase
           .from('profiles')
-          .select('id, email')
+          .select('id, email, full_name')
           .eq('email', 'adm@myagestora.com.br')
           .maybeSingle();
 
-        console.log('Existing admin profile:', existingProfile, profileError);
+        console.log('📋 Perfil admin existente:', existingProfile, profileError);
 
-        if (!existingProfile) {
-          console.log('Admin profile not found in profiles table');
-          
-          // Verificar se existe na auth.users (usando uma query que não requer admin)
-          const { error: signInError } = await supabase.auth.signInWithPassword({
-            email: 'adm@myagestora.com.br',  
-            password: 'test-password' // senha fake só para testar se o usuário existe
-          });
-          
-          // Se o erro não for "invalid_credentials", significa que o usuário não existe
-          if (signInError && signInError.message !== 'Invalid login credentials') {
-            console.log('Admin user does not exist, needs to be created by migration');
-          } else {
-            console.log('Admin user exists in auth but not in profiles - this should be fixed by migration');
-          }
-        } else {
-          console.log('Admin profile already exists:', existingProfile);
-          
-          // Verificar se tem a role de admin
-          const { data: adminRole } = await supabase
+        // Verificar se tem role de admin
+        if (existingProfile) {
+          const { data: adminRole, error: roleError } = await supabase
             .from('user_roles')
             .select('id, role')
             .eq('user_id', existingProfile.id)
             .eq('role', 'admin')
             .maybeSingle();
             
-          console.log('Admin role check:', adminRole);
+          console.log('👤 Role de admin:', adminRole, roleError);
         }
+
+        // Tentar fazer um teste de login para ver o que acontece
+        console.log('🧪 Testando credenciais admin...');
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: 'adm@myagestora.com.br',
+          password: 'mYa@adm2025'
+        });
+        
+        if (error) {
+          console.error('❌ Erro no teste de login:', error.message, error);
+        } else {
+          console.log('✅ Teste de login bem-sucedido!', data);
+          // Fazer logout imediatamente após o teste
+          await supabase.auth.signOut();
+        }
+        
       } catch (error) {
-        console.error('Error in admin user setup:', error);
+        console.error('💥 Erro na verificação do admin:', error);
       }
     };
 

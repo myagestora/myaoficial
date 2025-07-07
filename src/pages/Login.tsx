@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -42,7 +41,6 @@ const Login = () => {
           return;
         }
 
-        // Criar o usuário
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -62,14 +60,27 @@ const Login = () => {
           description: 'Conta criada com sucesso! Você já pode fazer login.',
         });
         
-        // Resetar o formulário e voltar para login
         setIsSignUp(false);
         setEmail('');
         setPassword('');
         setFullName('');
         setWhatsapp('');
       } else {
-        console.log('Attempting login with email:', email);
+        console.log('🚀 Tentando fazer login com:', email);
+        console.log('🔑 Senha fornecida:', password ? 'Senha preenchida' : 'Senha vazia');
+        
+        // Verificar se é o admin e se existe no banco
+        if (email === 'adm@myagestora.com.br') {
+          console.log('👑 Tentativa de login de admin detectada');
+          
+          const { data: adminProfile } = await supabase
+            .from('profiles')
+            .select('id, email, full_name')
+            .eq('email', 'adm@myagestora.com.br')
+            .maybeSingle();
+            
+          console.log('📋 Perfil admin encontrado:', adminProfile);
+        }
         
         // Fazer login
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -77,15 +88,27 @@ const Login = () => {
           password,
         });
         
-        console.log('Login result:', { data, error });
+        console.log('📊 Resultado do login:', { 
+          user: data?.user?.email, 
+          session: !!data?.session,
+          error: error?.message 
+        });
         
         if (error) {
-          console.error('Login error details:', error);
+          console.error('❌ Detalhes do erro de login:', {
+            message: error.message,
+            status: error.status,
+            code: error.code,
+            details: error
+          });
           
-          // Mensagem de erro mais específica
           let errorMessage = 'Erro ao fazer login';
           if (error.message === 'Invalid login credentials') {
-            errorMessage = 'Email ou senha incorretos. Verifique suas credenciais.';
+            if (email === 'adm@myagestora.com.br') {
+              errorMessage = 'Credenciais de admin inválidas. Verifique se o usuário admin foi criado corretamente no banco de dados.';
+            } else {
+              errorMessage = 'Email ou senha incorretos. Verifique suas credenciais.';
+            }
           } else if (error.message.includes('Email not confirmed')) {
             errorMessage = 'Email ainda não foi confirmado. Verifique sua caixa de entrada.';
           }
@@ -99,7 +122,7 @@ const Login = () => {
           throw error;
         }
         
-        console.log('Login successful, navigating to home');
+        console.log('✅ Login realizado com sucesso!');
         
         toast({
           title: 'Sucesso',
@@ -109,8 +132,7 @@ const Login = () => {
         navigate('/');
       }
     } catch (error: any) {
-      console.error('Auth error:', error);
-      // O toast de erro já foi mostrado acima para o caso de login
+      console.error('💥 Erro na autenticação:', error);
       if (isSignUp) {
         toast({
           title: 'Erro',
