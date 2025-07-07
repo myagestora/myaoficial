@@ -53,7 +53,40 @@ const AdminSubscriptions = () => {
         `)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        // Se o join não funcionar, fazemos duas queries separadas
+        console.log('Join failed, trying separate queries:', error);
+        
+        const { data: subscriptionsData, error: subsError } = await supabase
+          .from('user_subscriptions')
+          .select(`
+            *,
+            subscription_plans (
+              name
+            )
+          `)
+          .order('created_at', { ascending: false });
+        
+        if (subsError) throw subsError;
+        
+        // Buscar perfis dos usuários
+        const userIds = subscriptionsData?.map(sub => sub.user_id) || [];
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', userIds);
+        
+        if (profilesError) throw profilesError;
+        
+        // Combinar os dados manualmente
+        const combinedData = subscriptionsData?.map(subscription => ({
+          ...subscription,
+          profiles: profilesData?.find(profile => profile.id === subscription.user_id)
+        }));
+        
+        return combinedData;
+      }
+      
       return data;
     }
   });
