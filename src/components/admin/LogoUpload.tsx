@@ -3,18 +3,20 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, X, Image } from 'lucide-react';
+import { Upload, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
 interface LogoUploadProps {
   currentLogoUrl: string;
   onLogoChange: (newUrl: string) => void;
+  onSave: () => void;
 }
 
 export const LogoUpload: React.FC<LogoUploadProps> = ({ 
   currentLogoUrl, 
-  onLogoChange 
+  onLogoChange,
+  onSave
 }) => {
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -66,13 +68,16 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
         .from('logos')
         .getPublicUrl(data.path);
 
-      // Atualizar a configuração
+      // Atualizar a configuração localmente
       onLogoChange(publicUrl);
       setPreviewUrl(publicUrl);
 
+      // Salvar automaticamente
+      onSave();
+
       toast({
         title: 'Sucesso',
-        description: 'Logo enviado com sucesso!',
+        description: 'Logo enviado e salvo com sucesso!',
       });
 
     } catch (error) {
@@ -96,7 +101,7 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
   return (
     <div className="space-y-4">
       <div>
-        <Label htmlFor="logo_upload">Upload do Logo</Label>
+        <Label htmlFor="logo_upload">Logo da Aplicação</Label>
         <div className="mt-2 space-y-4">
           {/* Preview do logo atual */}
           {displayUrl && (

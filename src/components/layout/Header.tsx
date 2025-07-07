@@ -14,17 +14,62 @@ import { Bell, Moon, Sun, User, LogOut, Settings, Shield } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export const Header = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, isAdmin, signOut } = useAuth();
 
+  // Buscar configurações do sistema para o logo e nome
+  const { data: systemConfig } = useQuery({
+    queryKey: ['system-config-header'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('system_config')
+        .select('*')
+        .in('key', ['app_name', 'app_logo']);
+      
+      if (error) throw error;
+      
+      const configObj: Record<string, string> = {};
+      data.forEach(item => {
+        configObj[item.key] = typeof item.value === 'string' ? 
+          item.value.replace(/^"|"$/g, '') : 
+          JSON.stringify(item.value);
+      });
+      
+      return configObj;
+    }
+  });
+
+  const appName = systemConfig?.app_name || 'Controle Financeiro';
+  const appLogo = systemConfig?.app_logo;
+
   return (
     <header className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6">
       <div className="flex items-center space-x-4">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-          Controle Financeiro
-        </h2>
+        {appLogo ? (
+          <div className="flex items-center space-x-3">
+            <img 
+              src={appLogo} 
+              alt={appName}
+              className="h-8 w-auto object-contain"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                target.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white hidden">
+              {appName}
+            </h2>
+          </div>
+        ) : (
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            {appName}
+          </h2>
+        )}
       </div>
 
       <div className="flex items-center space-x-4">

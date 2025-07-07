@@ -60,7 +60,8 @@ const AdminSettings = () => {
         description: 'Configurações atualizadas com sucesso',
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Erro ao salvar:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao atualizar configurações',
@@ -104,30 +105,20 @@ const AdminSettings = () => {
               <CardTitle>Configurações da Marca</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="app_name">Nome da Aplicação</Label>
-                  <Input
-                    id="app_name"
-                    value={settings.app_name || ''}
-                    onChange={(e) => handleInputChange('app_name', e.target.value)}
-                    placeholder="Ex: MYA Gestora"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="app_logo">URL do Logo</Label>
-                  <Input
-                    id="app_logo"
-                    value={settings.app_logo || ''}
-                    onChange={(e) => handleInputChange('app_logo', e.target.value)}
-                    placeholder="Ex: /logo.svg"
-                  />
-                </div>
+              <div>
+                <Label htmlFor="app_name">Nome da Aplicação</Label>
+                <Input
+                  id="app_name"
+                  value={settings.app_name || ''}
+                  onChange={(e) => handleInputChange('app_name', e.target.value)}
+                  placeholder="Ex: MYA Gestora"
+                />
               </div>
 
               <LogoUpload 
                 currentLogoUrl={settings.app_logo || ''}
                 onLogoChange={handleLogoChange}
+                onSave={handleSave}
               />
               
               <div className="grid grid-cols-2 gap-4">
