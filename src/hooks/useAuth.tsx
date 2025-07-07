@@ -22,7 +22,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Verificar sessão inicial
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Sessão inicial:', session);
+      console.log('🔐 Sessão inicial:', session);
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -35,7 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Escutar mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Mudança de auth:', event, session);
+        console.log('🔄 Mudança de auth:', event, session);
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -55,7 +55,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const checkAdminRole = async (userId: string) => {
     try {
-      console.log('Verificando role de admin para:', userId);
+      console.log('👑 Verificando role de admin para:', userId);
       
       const { data, error } = await supabase
         .from('user_roles')
@@ -64,18 +64,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('role', 'admin')
         .maybeSingle();
       
-      console.log('Resultado da verificação de admin:', { data, error });
+      console.log('📋 Resultado da verificação de admin:', { data, error });
       
       if (error) {
-        console.error('Erro ao verificar role de admin:', error);
+        console.error('❌ Erro ao verificar role de admin:', error);
         setIsAdmin(false);
       } else {
         const isUserAdmin = !!data;
         setIsAdmin(isUserAdmin);
-        console.log('Usuário é admin:', isUserAdmin);
+        console.log('✅ Usuário é admin:', isUserAdmin);
       }
     } catch (error) {
-      console.error('Erro na verificação de role:', error);
+      console.error('💥 Erro na verificação de role:', error);
       setIsAdmin(false);
     } finally {
       setLoading(false);
@@ -83,10 +83,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    console.log('🚪 Fazendo logout...');
     const { error } = await supabase.auth.signOut();
     if (error) {
-      console.error('Erro ao fazer logout:', error);
+      console.error('❌ Erro ao fazer logout:', error);
     } else {
+      console.log('✅ Logout realizado com sucesso');
       setUser(null);
       setSession(null);
       setIsAdmin(false);

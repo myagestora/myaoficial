@@ -22,6 +22,8 @@ const Login = () => {
     try {
       if (isSignUp) {
         // Cadastro de novo usuário
+        console.log('📝 Tentando cadastrar usuário:', email);
+        
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -46,6 +48,7 @@ const Login = () => {
           return;
         }
         
+        console.log('✅ Cadastro realizado com sucesso!');
         toast({
           title: 'Sucesso',
           description: 'Conta criada com sucesso! Você já pode fazer login.',
@@ -76,7 +79,7 @@ const Login = () => {
         }
         
         if (data.user) {
-          console.log('✅ Login realizado com sucesso!', data.user);
+          console.log('✅ Login realizado com sucesso!', data.user.email);
           toast({
             title: 'Sucesso',
             description: 'Login realizado com sucesso!',
