@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { LogoUpload } from '@/components/admin/LogoUpload';
+import { MotivationalPhrasesManager } from '@/components/admin/MotivationalPhrasesManager';
 
 const AdminSettings = () => {
   const [settings, setSettings] = useState<Record<string, string>>({});
@@ -33,13 +34,6 @@ const AdminSettings = () => {
       return configObj;
     }
   });
-
-  // Sincronizar settings quando systemConfig muda
-  useEffect(() => {
-    if (systemConfig) {
-      setSettings(systemConfig);
-    }
-  }, [systemConfig]);
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (settingsData: Record<string, string>) => {
@@ -104,6 +98,13 @@ const AdminSettings = () => {
       });
     }
   });
+
+  // Sincronizar settings quando systemConfig muda
+  useEffect(() => {
+    if (systemConfig) {
+      setSettings(systemConfig);
+    }
+  }, [systemConfig]);
 
   const handleInputChange = (key: string, value: string) => {
     setSettings(prev => ({

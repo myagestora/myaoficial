@@ -61,9 +61,11 @@ export const Sidebar = () => {
       
       if (error) throw error;
       
-      if (data && data.length > 0) {
-        const randomIndex = Math.floor(Math.random() * data.length);
-        return data[randomIndex].phrase;
+      const phrases = (data || []) as Array<{phrase: string}>;
+      
+      if (phrases.length > 0) {
+        const randomIndex = Math.floor(Math.random() * phrases.length);
+        return phrases[randomIndex].phrase;
       }
       
       return 'MYA registra. MYA lembra. MYA cuida! 💰';
