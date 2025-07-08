@@ -1,11 +1,13 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { DollarSign } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AuthFormProps {
   email: string;
@@ -36,16 +38,59 @@ export const AuthForm: React.FC<AuthFormProps> = ({
   setIsSignUp,
   onSubmit
 }) => {
+  // Buscar configurações do sistema para logo e nome
+  const { data: systemConfig } = useQuery({
+    queryKey: ['system-config-auth'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('system_config')
+        .select('*')
+        .in('key', ['app_name', 'app_logo']);
+      
+      if (error) throw error;
+      
+      const configObj: Record<string, string> = {};
+      data.forEach(item => {
+        configObj[item.key] = typeof item.value === 'string' ? 
+          item.value.replace(/^"|"$/g, '') : 
+          JSON.stringify(item.value).replace(/^"|"$/g, '');
+      });
+      
+      return configObj;
+    }
+  });
+
+  const appName = systemConfig?.app_name || 'MYA Gestora';
+  const appLogo = systemConfig?.app_logo;
+
   return (
     <Card>
       <CardHeader className="text-center">
         <div className="flex justify-center mb-4">
-          <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
-            <DollarSign className="w-8 h-8 text-white" />
+          {appLogo && appLogo.trim() !== '' ? (
+            <img 
+              src={appLogo} 
+              alt={appName}
+              className="h-16 w-auto object-contain"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const fallback = target.parentElement?.querySelector('.logo-fallback') as HTMLElement;
+                if (fallback) {
+                  fallback.style.display = 'flex';
+                }
+              }}
+            />
+          ) : null}
+          
+          <div className={`flex items-center justify-center logo-fallback ${appLogo && appLogo.trim() !== '' ? 'hidden' : ''}`}>
+            <div className="w-16 h-16 bg-primary rounded-lg flex items-center justify-center">
+              <DollarSign className="w-10 h-10 text-white" />
+            </div>
           </div>
         </div>
         <CardTitle className="text-2xl">
-          {isSignUp ? 'Criar Conta' : 'Entrar no MYA'}
+          {isSignUp ? 'Criar Conta' : `Entrar no ${appName}`}
         </CardTitle>
       </CardHeader>
       <CardContent>

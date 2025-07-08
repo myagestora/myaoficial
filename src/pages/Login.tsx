@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { AdminCredentialsCard } from '@/components/auth/AdminCredentialsCard';
 import { AuthForm } from '@/components/auth/AuthForm';
 
 const Login = () => {
@@ -28,7 +27,7 @@ const Login = () => {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`,
+            emailRedirectTo: `${window.location.origin}/dashboard`,
             data: {
               full_name: fullName,
               whatsapp: whatsapp
@@ -84,7 +83,7 @@ const Login = () => {
             title: 'Sucesso',
             description: 'Login realizado com sucesso!',
           });
-          navigate('/');
+          navigate('/dashboard');
         }
       }
     } catch (error: any) {
@@ -101,9 +100,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="w-full max-w-md space-y-4">
-        <AdminCredentialsCard />
-        
+      <div className="w-full max-w-md">
         <AuthForm
           email={email}
           setEmail={setEmail}

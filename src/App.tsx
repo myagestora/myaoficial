@@ -3,8 +3,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/hooks/useAuth";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminLayout } from "@/components/admin/AdminLayout";
@@ -52,6 +52,21 @@ const Layout = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
+// Componente para redirecionar usuários logados
+const RootRedirect = () => {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return <div>Carregando...</div>;
+  }
+  
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return <Index />;
+};
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -65,17 +80,10 @@ function App() {
                 {/* Public Routes */}
                 <Route path="/login" element={<Login />} />
                 
+                {/* Root route - redirect logged users to dashboard */}
+                <Route path="/" element={<RootRedirect />} />
+                
                 {/* Protected Routes */}
-                <Route
-                  path="/"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <Index />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
                 <Route
                   path="/dashboard"
                   element={
