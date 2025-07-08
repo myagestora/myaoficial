@@ -3,6 +3,7 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { SEOHead } from '@/components/SEOHead';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { AppLayout } from '@/components/layout/AppLayout';
 import IndexPage from '@/pages/Index';
 import LoginPage from '@/pages/Login';
 import DashboardPage from '@/pages/Dashboard';
@@ -19,15 +20,19 @@ function App() {
         <Routes>
           <Route path="/" element={<IndexPage />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-          <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-
-          {/* Subscription routes */}
-          <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
-          <Route path="/subscription/success" element={<ProtectedRoute><SubscriptionSuccess /></ProtectedRoute>} />
-          <Route path="/subscription/failure" element={<ProtectedRoute><SubscriptionFailure /></ProtectedRoute>} />
-
-          {/* Add other routes here as needed */}
+          
+          {/* Rotas protegidas com layout */}
+          <Route path="/" element={
+            <ProtectedRoute>
+              <AppLayout />
+            </ProtectedRoute>
+          }>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/subscription" element={<SubscriptionPage />} />
+            <Route path="/subscription/success" element={<SubscriptionSuccess />} />
+            <Route path="/subscription/failure" element={<SubscriptionFailure />} />
+          </Route>
         </Routes>
       </div>
     </>
