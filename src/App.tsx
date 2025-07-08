@@ -7,7 +7,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { useSEOConfig } from "./hooks/useSEOConfig";
-import Index from "./pages/Index";
+import { Sidebar } from '@/components/layout/Sidebar';
+import { Header } from '@/components/layout/Header';
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
@@ -21,6 +22,7 @@ import AdminCategories from "./pages/admin/Categories";
 import AdminReports from "./pages/admin/Reports";
 import AdminSystem from "./pages/admin/System";
 import AdminSubscriptions from "./pages/admin/Subscriptions";
+import { AdminLayout } from "./components/admin/AdminLayout";
 
 const queryClient = new QueryClient();
 
@@ -31,26 +33,94 @@ function AppContent() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Index />} />
         <Route path="/login" element={<Login />} />
         
-        {/* Rotas protegidas do usuário */}
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
-        <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-        <Route path="/goals" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
+        {/* Layout principal com sidebar para rotas do usuário */}
+        <Route path="/" element={
+          <ProtectedRoute>
+            <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+              <Sidebar />
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <Header />
+                <main className="flex-1 overflow-y-auto">
+                  <Dashboard />
+                </main>
+              </div>
+            </div>
+          </ProtectedRoute>
+        } />
         
-        {/* Rotas protegidas do admin */}
-        <Route path="/admin/dashboard" element={<ProtectedRoute requireAdmin><AdminDashboard /></ProtectedRoute>} />
-        <Route path="/admin/users" element={<ProtectedRoute requireAdmin><AdminUsers /></ProtectedRoute>} />
-        <Route path="/admin/settings" element={<ProtectedRoute requireAdmin><AdminSettings /></ProtectedRoute>} />
-        <Route path="/admin/categories" element={<ProtectedRoute requireAdmin><AdminCategories /></ProtectedRoute>} />
-        <Route path="/admin/reports" element={<ProtectedRoute requireAdmin><AdminReports /></ProtectedRoute>} />
-        <Route path="/admin/system" element={<ProtectedRoute requireAdmin><AdminSystem /></ProtectedRoute>} />
-        <Route path="/admin/subscriptions" element={<ProtectedRoute requireAdmin><AdminSubscriptions /></ProtectedRoute>} />
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+              <Sidebar />
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <Header />
+                <main className="flex-1 overflow-y-auto">
+                  <Dashboard />
+                </main>
+              </div>
+            </div>
+          </ProtectedRoute>
+        } />
         
-        {/* Redirecionamentos */}
-        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/transactions" element={
+          <ProtectedRoute>
+            <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+              <Sidebar />
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <Header />
+                <main className="flex-1 overflow-y-auto">
+                  <Transactions />
+                </main>
+              </div>
+            </div>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/reports" element={
+          <ProtectedRoute>
+            <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+              <Sidebar />
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <Header />
+                <main className="flex-1 overflow-y-auto">
+                  <Reports />
+                </main>
+              </div>
+            </div>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/goals" element={
+          <ProtectedRoute>
+            <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+              <Sidebar />
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <Header />
+                <main className="flex-1 overflow-y-auto">
+                  <Goals />
+                </main>
+              </div>
+            </div>
+          </ProtectedRoute>
+        } />
+        
+        {/* Rotas protegidas do admin com layout próprio */}
+        <Route path="/admin/*" element={
+          <ProtectedRoute requireAdmin>
+            <AdminLayout />
+          </ProtectedRoute>
+        }>
+          <Route index element={<AdminDashboard />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="settings" element={<AdminSettings />} />
+          <Route path="categories" element={<AdminCategories />} />
+          <Route path="reports" element={<AdminReports />} />
+          <Route path="system" element={<AdminSystem />} />
+          <Route path="subscriptions" element={<AdminSubscriptions />} />
+        </Route>
         
         {/* 404 */}
         <Route path="*" element={<NotFound />} />
