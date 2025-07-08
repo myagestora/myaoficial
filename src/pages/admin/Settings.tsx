@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { LogoUpload } from '@/components/admin/LogoUpload';
 import { MotivationalPhrasesManager } from '@/components/admin/MotivationalPhrasesManager';
+import { PhoneInput } from '@/components/ui/phone-input';
 
 const AdminSettings = () => {
   const [settings, setSettings] = useState<Record<string, string>>({});
@@ -253,11 +255,10 @@ const AdminSettings = () => {
               
               <div>
                 <Label htmlFor="support_phone">Telefone de Suporte</Label>
-                <Input
+                <PhoneInput
                   id="support_phone"
                   value={settings.support_phone || ''}
-                  onChange={(e) => handleInputChange('support_phone', e.target.value)}
-                  placeholder="+55 11 99999-9999"
+                  onChange={(value) => handleInputChange('support_phone', value || '')}
                 />
               </div>
             </CardContent>
