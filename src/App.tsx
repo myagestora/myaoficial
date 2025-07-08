@@ -7,6 +7,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { SubscriptionGuard } from "@/components/subscription/SubscriptionGuard";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import { SEOHead } from "@/components/SEOHead";
 
 // Regular pages
@@ -46,101 +48,41 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             
-            {/* Protected routes with subscription guard */}
-            <Route path="/dashboard" element={
+            {/* Protected routes with AppLayout and subscription guard */}
+            <Route path="/*" element={
               <ProtectedRoute>
                 <SubscriptionGuard>
-                  <Dashboard />
+                  <AppLayout />
                 </SubscriptionGuard>
               </ProtectedRoute>
-            } />
-            <Route path="/transactions" element={
-              <ProtectedRoute>
-                <SubscriptionGuard>
-                  <Transactions />
-                </SubscriptionGuard>
-              </ProtectedRoute>
-            } />
-            <Route path="/categories" element={
-              <ProtectedRoute>
-                <SubscriptionGuard>
-                  <Categories />
-                </SubscriptionGuard>
-              </ProtectedRoute>
-            } />
-            <Route path="/goals" element={
-              <ProtectedRoute>
-                <SubscriptionGuard>
-                  <Goals />
-                </SubscriptionGuard>
-              </ProtectedRoute>
-            } />
-            <Route path="/reports" element={
-              <ProtectedRoute>
-                <SubscriptionGuard>
-                  <Reports />
-                </SubscriptionGuard>
-              </ProtectedRoute>
-            } />
-            <Route path="/settings" element={
-              <ProtectedRoute>
-                <SubscriptionGuard>
-                  <Settings />
-                </SubscriptionGuard>
-              </ProtectedRoute>
-            } />
-            <Route path="/scheduled" element={
-              <ProtectedRoute>
-                <SubscriptionGuard>
-                  <Scheduled />
-                </SubscriptionGuard>
-              </ProtectedRoute>
-            } />
+            }>
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="transactions" element={<Transactions />} />
+              <Route path="categories" element={<Categories />} />
+              <Route path="goals" element={<Goals />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="scheduled" element={<Scheduled />} />
+            </Route>
 
-            {/* Admin routes without subscription guard */}
-            <Route path="/admin/dashboard" element={
+            {/* Admin routes with AdminLayout without subscription guard */}
+            <Route path="/admin/*" element={
               <ProtectedRoute requireAdmin>
-                <AdminDashboard />
+                <AdminLayout />
               </ProtectedRoute>
-            } />
-            <Route path="/admin/users" element={
-              <ProtectedRoute requireAdmin>
-                <AdminUsers />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/categories" element={
-              <ProtectedRoute requireAdmin>
-                <AdminCategories />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/settings" element={
-              <ProtectedRoute requireAdmin>
-                <AdminSettings />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/reports" element={
-              <ProtectedRoute requireAdmin>
-                <AdminReports />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/notifications" element={
-              <ProtectedRoute requireAdmin>
-                <AdminNotifications />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/system" element={
-              <ProtectedRoute requireAdmin>
-                <AdminSystem />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/subscriptions" element={
-              <ProtectedRoute requireAdmin>
-                <AdminSubscriptions />
-              </ProtectedRoute>
-            } />
+            }>
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="categories" element={<AdminCategories />} />
+              <Route path="settings" element={<AdminSettings />} />
+              <Route path="reports" element={<AdminReports />} />
+              <Route path="notifications" element={<AdminNotifications />} />
+              <Route path="system" element={<AdminSystem />} />
+              <Route path="subscriptions" element={<AdminSubscriptions />} />
+              <Route index element={<Navigate to="dashboard" replace />} />
+            </Route>
 
             {/* Fallback routes */}
-            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
