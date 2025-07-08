@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +10,8 @@ import { toast } from '@/hooks/use-toast';
 import { LogoUpload } from '@/components/admin/LogoUpload';
 import { MotivationalPhrasesManager } from '@/components/admin/MotivationalPhrasesManager';
 import { PhoneInput } from '@/components/ui/phone-input';
+import { FaviconUpload } from '@/components/admin/FaviconUpload';
+import { SEOSettings } from '@/components/admin/SEOSettings';
 
 const AdminSettings = () => {
   const [settings, setSettings] = useState<Record<string, string>>({});
@@ -121,6 +122,10 @@ const AdminSettings = () => {
     handleInputChange('app_logo', newUrl || '');
   };
 
+  const handleFaviconChange = (newUrl: string) => {
+    handleInputChange('app_favicon', newUrl || '');
+  };
+
   const handleSave = () => {
     console.log('Salvando configurações:', settings);
     updateSettingsMutation.mutate(settings);
@@ -138,6 +143,7 @@ const AdminSettings = () => {
           <TabsTrigger value="branding">Marca</TabsTrigger>
           <TabsTrigger value="appearance">Aparência</TabsTrigger>
           <TabsTrigger value="notifications">Notificações</TabsTrigger>
+          <TabsTrigger value="seo">SEO</TabsTrigger>
           <TabsTrigger value="phrases">Frases Motivacionais</TabsTrigger>
         </TabsList>
 
@@ -161,6 +167,11 @@ const AdminSettings = () => {
                 currentLogoUrl={settings.app_logo || ''}
                 onLogoChange={handleLogoChange}
                 onSave={handleSave}
+              />
+
+              <FaviconUpload 
+                currentFaviconUrl={settings.app_favicon || ''}
+                onFaviconChange={handleFaviconChange}
               />
               
               <div className="grid grid-cols-2 gap-4">
@@ -263,6 +274,13 @@ const AdminSettings = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="seo" className="space-y-6">
+          <SEOSettings 
+            settings={settings}
+            onInputChange={handleInputChange}
+          />
         </TabsContent>
 
         <TabsContent value="phrases" className="space-y-6">
