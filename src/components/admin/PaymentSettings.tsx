@@ -5,7 +5,8 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { CreditCard, DollarSign, Key, Globe } from 'lucide-react';
+import { CreditCard, DollarSign, Key, Globe, Copy } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface PaymentSettingsProps {
   settings: Record<string, string>;
@@ -17,6 +18,25 @@ interface PaymentSettingsProps {
 export const PaymentSettings = ({ settings, onInputChange, onSave, isLoading }: PaymentSettingsProps) => {
   const handleMercadoPagoEnabledChange = (checked: boolean) => {
     onInputChange('mercado_pago_enabled', checked.toString());
+  };
+
+  // Gerar a URL do webhook baseada na URL atual
+  const webhookUrl = `${window.location.origin}/api/webhooks/mercado-pago`;
+
+  const copyWebhookUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(webhookUrl);
+      toast({
+        title: 'URL copiada!',
+        description: 'A URL do webhook foi copiada para a área de transferência.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Erro ao copiar',
+        description: 'Não foi possível copiar a URL.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -78,19 +98,28 @@ export const PaymentSettings = ({ settings, onInputChange, onSave, isLoading }: 
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="mercado_pago_webhook_url" className="flex items-center gap-2">
+              <Label className="flex items-center gap-2">
                 <Globe className="h-4 w-4" />
-                URL do Webhook
+                URL do Webhook (Gerada automaticamente)
               </Label>
-              <Input
-                id="mercado_pago_webhook_url"
-                value={settings.mercado_pago_webhook_url || ''}
-                onChange={(e) => onInputChange('mercado_pago_webhook_url', e.target.value)}
-                placeholder="https://seudominio.com/api/webhooks/mercado-pago"
-                type="url"
-              />
+              <div className="flex gap-2">
+                <Input
+                  value={webhookUrl}
+                  readOnly
+                  className="bg-gray-50 dark:bg-gray-800"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={copyWebhookUrl}
+                  title="Copiar URL"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
               <p className="text-xs text-gray-500">
-                URL para receber notificações de pagamento do Mercado Pago
+                Use esta URL para configurar o webhook no painel do Mercado Pago
               </p>
             </div>
           </div>
@@ -103,9 +132,25 @@ export const PaymentSettings = ({ settings, onInputChange, onSave, isLoading }: 
               <li>1. Acesse o painel do Mercado Pago</li>
               <li>2. Vá em "Suas integrações" → "Credenciais"</li>
               <li>3. Copie a Public Key e o Access Token</li>
-              <li>4. Configure o webhook para receber notificações</li>
-              <li>5. Teste os pagamentos no ambiente de sandbox primeiro</li>
+              <li>4. Configure o webhook usando a URL gerada acima</li>
+              <li>5. Selecione os eventos: payment.created, payment.updated</li>
+              <li>6. Teste os pagamentos no ambiente de sandbox primeiro</li>
             </ol>
+          </div>
+
+          <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg">
+            <h4 className="font-medium text-amber-900 dark:text-amber-100 mb-2">
+              ⚠️ Configuração do Webhook:
+            </h4>
+            <div className="text-sm text-amber-800 dark:text-amber-200 space-y-2">
+              <p><strong>URL do Webhook:</strong> {webhookUrl}</p>
+              <p><strong>Eventos necessários:</strong></p>
+              <ul className="ml-4 list-disc">
+                <li>payment.created</li>
+                <li>payment.updated</li>
+                <li>merchant_order.updated</li>
+              </ul>
+            </div>
           </div>
 
           <div className="flex gap-2">
