@@ -5,19 +5,25 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recha
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { DateRange } from 'react-day-picker';
 
-export const ExpenseChart = () => {
+interface ExpenseChartProps {
+  dateRange: DateRange | undefined;
+}
+
+export const ExpenseChart = ({ dateRange }: ExpenseChartProps) => {
   const { user } = useAuth();
 
   const { data: expenseData, isLoading } = useQuery({
-    queryKey: ['expense-chart', user?.id],
+    queryKey: ['expense-chart', user?.id, dateRange],
     queryFn: async () => {
       if (!user?.id) return [];
 
-      const { data: transactions, error } = await supabase
+      let query = supabase
         .from('transactions')
         .select(`
           amount,
+          date,
           categories (
             name,
             color
@@ -26,30 +32,61 @@ export const ExpenseChart = () => {
         .eq('user_id', user.id)
         .eq('type', 'expense');
 
+      if (dateRange?.from && dateRange?.to) {
+        query = query
+          .gte('date', dateRange.from.toISOString().split('T')[0])
+          .lte('date', dateRange.to.toISOString().split('T')[0]);
+      }
+
+      const { data: transactions, error } = await query;
+
       if (error) {
         console.error('Error fetching expense data:', error);
         return [];
       }
 
-      // Agrupar por categoria
-      const categoryTotals: { [key: string]: { amount: number; color: string } } = {};
+      // Separar despesas pagas (passadas) e a pagar (futuras)
+      const today = new Date().toISOString().split('T')[0];
+      const categoryTotals: { [key: string]: { paid: number; pending: number; color: string } } = {};
       
       transactions?.forEach(transaction => {
         const categoryName = transaction.categories?.name || 'Sem categoria';
         const categoryColor = transaction.categories?.color || '#8884d8';
+        const isPaid = transaction.date <= today;
         
         if (!categoryTotals[categoryName]) {
-          categoryTotals[categoryName] = { amount: 0, color: categoryColor };
+          categoryTotals[categoryName] = { paid: 0, pending: 0, color: categoryColor };
         }
-        categoryTotals[categoryName].amount += Number(transaction.amount);
+        
+        if (isPaid) {
+          categoryTotals[categoryName].paid += Number(transaction.amount);
+        } else {
+          categoryTotals[categoryName].pending += Number(transaction.amount);
+        }
       });
 
-      // Converter para formato do gráfico
-      return Object.entries(categoryTotals).map(([name, data]) => ({
-        name,
-        value: data.amount,
-        color: data.color
-      }));
+      // Converter para formato do gráfico - separando pagas e a pagar
+      const result = [];
+      Object.entries(categoryTotals).forEach(([name, data]) => {
+        if (data.paid > 0) {
+          result.push({
+            name: `${name} (Pago)`,
+            value: data.paid,
+            color: data.color,
+            type: 'paid'
+          });
+        }
+        if (data.pending > 0) {
+          result.push({
+            name: `${name} (A Pagar)`,
+            value: data.pending,
+            color: `${data.color}80`, // Cor mais clara para despesas a pagar
+            type: 'pending'
+          });
+        }
+      });
+
+      return result;
     },
     enabled: !!user?.id
   });
@@ -77,7 +114,7 @@ export const ExpenseChart = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Despesas por Categoria</CardTitle>
+          <CardTitle>Despesas (Pagas e A Pagar)</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="animate-pulse">
@@ -92,7 +129,7 @@ export const ExpenseChart = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Despesas por Categoria</CardTitle>
+          <CardTitle>Despesas (Pagas e A Pagar)</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-[300px]">
@@ -106,7 +143,7 @@ export const ExpenseChart = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Despesas por Categoria</CardTitle>
+        <CardTitle>Despesas (Pagas e A Pagar)</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>

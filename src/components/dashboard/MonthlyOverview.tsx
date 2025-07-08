@@ -1,28 +1,41 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { DateRange } from 'react-day-picker';
 
-export const MonthlyOverview = () => {
+interface MonthlyOverviewProps {
+  dateRange: DateRange | undefined;
+}
+
+export const MonthlyOverview = ({ dateRange }: MonthlyOverviewProps) => {
   const { user } = useAuth();
 
   const { data: monthlyData, isLoading } = useQuery({
-    queryKey: ['monthly-overview', user?.id],
+    queryKey: ['monthly-overview', user?.id, dateRange],
     queryFn: async () => {
       if (!user?.id) return [];
 
-      // Buscar transações dos últimos 6 meses
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+      // Se não há filtro de período, usar os últimos 6 meses
+      let startDate, endDate;
+      if (dateRange?.from && dateRange?.to) {
+        startDate = dateRange.from;
+        endDate = dateRange.to;
+      } else {
+        startDate = new Date();
+        startDate.setMonth(startDate.getMonth() - 5);
+        endDate = new Date();
+      }
       
       const { data: transactions, error } = await supabase
         .from('transactions')
         .select('amount, type, date')
         .eq('user_id', user.id)
-        .gte('date', sixMonthsAgo.toISOString().split('T')[0])
+        .gte('date', startDate.toISOString().split('T')[0])
+        .lte('date', endDate.toISOString().split('T')[0])
         .order('date', { ascending: true });
 
       if (error) {
@@ -33,37 +46,33 @@ export const MonthlyOverview = () => {
       // Agrupar por mês
       const monthlyStats: { [key: string]: { income: number; expense: number } } = {};
       
-      // Inicializar os últimos 6 meses
-      for (let i = 5; i >= 0; i--) {
-        const date = new Date();
-        date.setMonth(date.getMonth() - i);
-        const monthKey = date.toISOString().substring(0, 7); // YYYY-MM
-        monthlyStats[monthKey] = { income: 0, expense: 0 };
-      }
-
-      // Agrupar transações por mês
       transactions?.forEach(transaction => {
-        const monthKey = transaction.date.substring(0, 7);
-        if (monthlyStats[monthKey]) {
-          if (transaction.type === 'income') {
-            monthlyStats[monthKey].income += Number(transaction.amount);
-          } else {
-            monthlyStats[monthKey].expense += Number(transaction.amount);
-          }
+        const monthKey = transaction.date.substring(0, 7); // YYYY-MM
+        if (!monthlyStats[monthKey]) {
+          monthlyStats[monthKey] = { income: 0, expense: 0 };
+        }
+        
+        if (transaction.type === 'income') {
+          monthlyStats[monthKey].income += Number(transaction.amount);
+        } else {
+          monthlyStats[monthKey].expense += Number(transaction.amount);
         }
       });
 
       // Converter para formato do gráfico
-      return Object.entries(monthlyStats).map(([monthKey, stats]) => {
-        const [year, month] = monthKey.split('-');
-        const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-        
-        return {
-          month: monthNames[parseInt(month) - 1],
-          income: stats.income,
-          expenses: stats.expense
-        };
-      });
+      return Object.entries(monthlyStats)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([monthKey, stats]) => {
+          const [year, month] = monthKey.split('-');
+          const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+          
+          return {
+            month: monthNames[parseInt(month) - 1],
+            saldo: stats.income - stats.expense,
+            income: stats.income,
+            expenses: stats.expense
+          };
+        });
     },
     enabled: !!user?.id
   });
@@ -73,14 +82,8 @@ export const MonthlyOverview = () => {
       return (
         <div className="bg-white dark:bg-gray-800 p-3 border rounded-lg shadow-lg">
           <p className="font-medium">{label}</p>
-          <p className="text-green-600">
-            Receitas: R$ {payload[0].value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </p>
-          <p className="text-red-600">
-            Despesas: R$ {payload[1].value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </p>
           <p className="text-blue-600 font-medium">
-            Saldo: R$ {(payload[0].value - payload[1].value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            Saldo: R$ {payload[0].value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
         </div>
       );
@@ -92,7 +95,7 @@ export const MonthlyOverview = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Visão Mensal</CardTitle>
+          <CardTitle>Evolução do Saldo no Período</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="animate-pulse">
@@ -106,18 +109,23 @@ export const MonthlyOverview = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Visão Mensal</CardTitle>
+        <CardTitle>Evolução do Saldo no Período</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={monthlyData}>
+          <LineChart data={monthlyData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
             <YAxis />
             <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="income" fill="#10b981" name="Receitas" />
-            <Bar dataKey="expenses" fill="#ef4444" name="Despesas" />
-          </BarChart>
+            <Line 
+              type="monotone" 
+              dataKey="saldo" 
+              stroke="#3b82f6" 
+              strokeWidth={3}
+              dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+            />
+          </LineChart>
         </ResponsiveContainer>
       </CardContent>
     </Card>

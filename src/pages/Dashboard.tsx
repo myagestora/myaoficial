@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,39 +6,62 @@ import { DollarSign, TrendingUp, TrendingDown, Target } from 'lucide-react';
 import { RecentTransactions } from '@/components/dashboard/RecentTransactions';
 import { ExpenseChart } from '@/components/dashboard/ExpenseChart';
 import { MonthlyOverview } from '@/components/dashboard/MonthlyOverview';
+import { DailyMovement } from '@/components/dashboard/DailyMovement';
+import { PeriodFilter } from '@/components/dashboard/PeriodFilter';
 import { TransactionForm } from '@/components/transactions/TransactionForm';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { DateRange } from 'react-day-picker';
 
 const Dashboard = () => {
   const { user } = useAuth();
   const [isTransactionFormOpen, setIsTransactionFormOpen] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Últimos 30 dias por padrão
+    to: new Date()
+  });
 
   // Buscar estatísticas do usuário
   const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ['dashboard-stats', user?.id],
+    queryKey: ['dashboard-stats', user?.id, dateRange],
     queryFn: async () => {
       if (!user?.id) return null;
 
-      // Buscar transações do usuário
-      const { data: transactions } = await supabase
+      let transactionsQuery = supabase
         .from('transactions')
-        .select('amount, type')
+        .select('amount, type, date')
         .eq('user_id', user.id);
 
+      // Aplicar filtro de período se especificado
+      if (dateRange?.from && dateRange?.to) {
+        transactionsQuery = transactionsQuery
+          .gte('date', dateRange.from.toISOString().split('T')[0])
+          .lte('date', dateRange.to.toISOString().split('T')[0]);
+      }
+
+      const { data: transactions } = await transactionsQuery;
+
+      // Separar despesas pagas e a pagar
+      const today = new Date().toISOString().split('T')[0];
+      
       // Calcular totais
       const totalIncome = transactions
         ?.filter(t => t.type === 'income')
         .reduce((sum, t) => sum + Number(t.amount), 0) || 0;
 
-      const totalExpenses = transactions
-        ?.filter(t => t.type === 'expense')
+      const paidExpenses = transactions
+        ?.filter(t => t.type === 'expense' && t.date <= today)
         .reduce((sum, t) => sum + Number(t.amount), 0) || 0;
 
-      const balance = totalIncome - totalExpenses;
+      const pendingExpenses = transactions
+        ?.filter(t => t.type === 'expense' && t.date > today)
+        .reduce((sum, t) => sum + Number(t.amount), 0) || 0;
 
-      // Buscar metas do usuário
+      const totalExpenses = paidExpenses + pendingExpenses;
+      const balance = totalIncome - paidExpenses; // Saldo considerando apenas despesas pagas
+
+      // Buscar metas do usuário (sem filtro de período)
       const { data: goals } = await supabase
         .from('goals')
         .select('current_amount, target_amount')
@@ -58,6 +82,8 @@ const Dashboard = () => {
       return {
         totalIncome,
         totalExpenses,
+        paidExpenses,
+        pendingExpenses,
         balance,
         goalsProgress
       };
@@ -84,6 +110,8 @@ const Dashboard = () => {
   const currentStats = stats || {
     totalIncome: 0,
     totalExpenses: 0,
+    paidExpenses: 0,
+    pendingExpenses: 0,
     balance: 0,
     goalsProgress: 0
   };
@@ -91,22 +119,25 @@ const Dashboard = () => {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
           <p className="text-gray-600 dark:text-gray-400">Bem-vindo ao seu controle financeiro</p>
         </div>
-        <Button 
-          className="bg-primary hover:bg-primary/90"
-          onClick={() => setIsTransactionFormOpen(true)}
-        >
-          <DollarSign className="mr-2 h-4 w-4" />
-          Nova Transação
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          <PeriodFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
+          <Button 
+            className="bg-primary hover:bg-primary/90"
+            onClick={() => setIsTransactionFormOpen(true)}
+          >
+            <DollarSign className="mr-2 h-4 w-4" />
+            Nova Transação
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Receitas</CardTitle>
@@ -122,14 +153,27 @@ const Dashboard = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Despesas</CardTitle>
+            <CardTitle className="text-sm font-medium">Despesas Pagas</CardTitle>
             <TrendingDown className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              R$ {currentStats.totalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {currentStats.paidExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
-            <p className="text-xs text-muted-foreground">Total de despesas</p>
+            <p className="text-xs text-muted-foreground">Despesas realizadas</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">A Pagar</CardTitle>
+            <TrendingDown className="h-4 w-4 text-orange-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">
+              R$ {currentStats.pendingExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </div>
+            <p className="text-xs text-muted-foreground">Despesas pendentes</p>
           </CardContent>
         </Card>
 
@@ -160,11 +204,14 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Charts and Recent Transactions */}
+      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <MonthlyOverview />
-        <ExpenseChart />
+        <MonthlyOverview dateRange={dateRange} />
+        <ExpenseChart dateRange={dateRange} />
       </div>
+
+      {/* Daily Movement */}
+      <DailyMovement dateRange={dateRange} />
 
       {/* Recent Transactions */}
       <RecentTransactions />
