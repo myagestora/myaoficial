@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -7,20 +7,21 @@ import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { DateRange } from 'react-day-picker';
 
-export const DatePickerWithRange = () => {
-  const [date, setDate] = useState<{ from: Date; to: Date }>({
-    from: new Date(),
-    to: new Date()
-  });
+interface DatePickerWithRangeProps {
+  date?: DateRange;
+  onDateChange?: (range: DateRange | undefined) => void;
+}
 
+export const DatePickerWithRange = ({ date, onDateChange }: DatePickerWithRangeProps) => {
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           className={cn(
-            "justify-start text-left font-normal",
+            "justify-start text-left font-normal w-full",
             !date && "text-muted-foreground"
           )}
         >
@@ -44,6 +45,8 @@ export const DatePickerWithRange = () => {
           initialFocus
           mode="range"
           defaultMonth={date?.from}
+          selected={date}
+          onSelect={onDateChange}
           numberOfMonths={2}
           className="pointer-events-auto"
         />
