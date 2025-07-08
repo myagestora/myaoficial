@@ -8,8 +8,8 @@ import { useAuth, AuthProvider } from "@/hooks/useAuth";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Login } from "@/components/auth/Login";
 import { Register } from "@/components/auth/Register";
-import { AdminLayout } from "@/components/layout/AdminLayout";
-import { Settings } from "@/components/admin/Settings";
+import { AdminLayout } from "@/components/admin/AdminLayout";
+import Settings from "@/pages/admin/Settings";
 import { SEOHead } from "@/components/SEOHead";
 
 const queryClient = new QueryClient();
