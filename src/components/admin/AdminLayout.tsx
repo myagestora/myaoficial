@@ -18,7 +18,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 const adminNavigation = [
-  { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+  { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { name: 'Usuários', href: '/admin/users', icon: Users },
   { name: 'Relatórios', href: '/admin/reports', icon: BarChart3 },
   { name: 'Categorias', href: '/admin/categories', icon: PieChart },
@@ -123,7 +123,7 @@ export const AdminLayout = () => {
 
         {/* Back to App */}
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <Link to="/">
+          <Link to="/dashboard">
             <Button variant="outline" className="w-full">
               Voltar ao App
             </Button>

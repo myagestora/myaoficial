@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, TrendingUp, TrendingDown, Target } from 'lucide-react';
@@ -11,12 +10,13 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { DateRange } from 'react-day-picker';
+import { Sidebar } from '@/components/layout/Sidebar';
 
 const Dashboard = () => {
   const { user } = useAuth();
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1), // Primeiro dia do mês atual
-    to: new Date() // Data atual
+    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    to: new Date()
   });
 
   // Buscar estatísticas do usuário
@@ -90,14 +90,17 @@ const Dashboard = () => {
 
   if (statsLoading) {
     return (
-      <div className="p-6 space-y-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded mb-6"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 bg-gray-200 rounded"></div>
-            ))}
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+        <Sidebar />
+        <div className="flex-1 p-6 space-y-6">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded mb-6"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-32 bg-gray-200 rounded"></div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -114,95 +117,98 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-          <p className="text-gray-600 dark:text-gray-400">Bem-vindo ao seu controle financeiro</p>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+      <Sidebar />
+      <div className="flex-1 p-6 space-y-6">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+            <p className="text-gray-600 dark:text-gray-400">Bem-vindo ao seu controle financeiro</p>
+          </div>
+          <PeriodFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
         </div>
-        <PeriodFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Receitas</CardTitle>
+              <TrendingUp className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                R$ {currentStats.totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </div>
+              <p className="text-xs text-muted-foreground">Total de receitas</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Despesas Pagas</CardTitle>
+              <TrendingDown className="h-4 w-4 text-red-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">
+                R$ {currentStats.paidExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </div>
+              <p className="text-xs text-muted-foreground">Despesas realizadas</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">A Pagar</CardTitle>
+              <TrendingDown className="h-4 w-4 text-orange-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">
+                R$ {currentStats.pendingExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </div>
+              <p className="text-xs text-muted-foreground">Despesas pendentes</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Saldo</CardTitle>
+              <DollarSign className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${
+                currentStats.balance >= 0 ? 'text-blue-600' : 'text-red-600'
+              }`}>
+                R$ {currentStats.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </div>
+              <p className="text-xs text-muted-foreground">Saldo atual</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Metas</CardTitle>
+              <Target className="h-4 w-4 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-600">{currentStats.goalsProgress}%</div>
+              <p className="text-xs text-muted-foreground">Progresso das metas</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <MonthlyOverview dateRange={dateRange} />
+          <ExpenseChart dateRange={dateRange} />
+        </div>
+
+        {/* Daily Movement */}
+        <DailyMovement dateRange={dateRange} />
+
+        {/* Recent Transactions */}
+        <RecentTransactions />
       </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Receitas</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              R$ {currentStats.totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-            <p className="text-xs text-muted-foreground">Total de receitas</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Despesas Pagas</CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              R$ {currentStats.paidExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-            <p className="text-xs text-muted-foreground">Despesas realizadas</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">A Pagar</CardTitle>
-            <TrendingDown className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              R$ {currentStats.pendingExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-            <p className="text-xs text-muted-foreground">Despesas pendentes</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Saldo</CardTitle>
-            <DollarSign className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${
-              currentStats.balance >= 0 ? 'text-blue-600' : 'text-red-600'
-            }`}>
-              R$ {currentStats.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-            <p className="text-xs text-muted-foreground">Saldo atual</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Metas</CardTitle>
-            <Target className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-600">{currentStats.goalsProgress}%</div>
-            <p className="text-xs text-muted-foreground">Progresso das metas</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <MonthlyOverview dateRange={dateRange} />
-        <ExpenseChart dateRange={dateRange} />
-      </div>
-
-      {/* Daily Movement */}
-      <DailyMovement dateRange={dateRange} />
-
-      {/* Recent Transactions */}
-      <RecentTransactions />
     </div>
   );
 };
