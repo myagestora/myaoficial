@@ -20,8 +20,8 @@ export const PaymentSettings = ({ settings, onInputChange, onSave, isLoading }: 
     onInputChange('mercado_pago_enabled', checked.toString());
   };
 
-  // URL correta da Edge Function do Supabase
-  const webhookUrl = 'https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1/mercado-pago-webhook';
+  // URL correta da Edge Function do Supabase para ASSINATURAS
+  const webhookUrl = 'https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1/mercado-pago-subscription-webhook';
 
   const copyWebhookUrl = async () => {
     try {
@@ -117,7 +117,7 @@ export const PaymentSettings = ({ settings, onInputChange, onSave, isLoading }: 
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Globe className="h-4 w-4" />
-                URL do Webhook (Supabase Edge Function)
+                URL do Webhook - ASSINATURAS (Supabase Edge Function)
               </Label>
               <div className="flex gap-2">
                 <Input
@@ -136,41 +136,40 @@ export const PaymentSettings = ({ settings, onInputChange, onSave, isLoading }: 
                 </Button>
               </div>
               <p className="text-xs text-gray-500">
-                Use esta URL para configurar o webhook no painel do Mercado Pago
+                Use esta URL para configurar o webhook de ASSINATURAS no painel do Mercado Pago
               </p>
             </div>
           </div>
 
           <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
             <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">
-              Como configurar o Mercado Pago:
+              Como configurar as Assinaturas no Mercado Pago:
             </h4>
             <ol className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
               <li>1. Acesse o painel do Mercado Pago</li>
               <li>2. Vá em "Suas integrações" → "Credenciais"</li>
               <li>3. Copie a Public Key e o Access Token</li>
-              <li>4. Configure o webhook usando a URL correta acima</li>
+              <li>4. Configure o webhook de ASSINATURAS usando a URL acima</li>
               <li>5. Copie a assinatura secreta do webhook</li>
-              <li>6. Selecione os eventos: payment.created, payment.updated</li>
-              <li>7. Teste os pagamentos no ambiente de sandbox primeiro</li>
+              <li>6. Selecione os eventos: subscription_preapproval, subscription_authorized_payment</li>
+              <li>7. Teste as assinaturas no ambiente de sandbox primeiro</li>
             </ol>
           </div>
 
           <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
             <h4 className="font-medium text-green-900 dark:text-green-100 mb-2">
-              ✅ URL Correta do Webhook:
+              ✅ URL Correta do Webhook para ASSINATURAS:
             </h4>
             <div className="text-sm text-green-800 dark:text-green-200 space-y-2">
               <p className="font-mono bg-green-100 dark:bg-green-800 p-2 rounded text-xs break-all">
                 {webhookUrl}
               </p>
-              <p><strong>Eventos necessários:</strong></p>
+              <p><strong>Eventos necessários para ASSINATURAS:</strong></p>
               <ul className="ml-4 list-disc">
-                <li>payment.created</li>
-                <li>payment.updated</li>
-                <li>merchant_order.updated</li>
+                <li>subscription_preapproval</li>
+                <li>subscription_authorized_payment</li>
               </ul>
-              <p><strong>Importante:</strong> Use exatamente esta URL no painel do Mercado Pago!</p>
+              <p><strong>Importante:</strong> Esta URL é específica para assinaturas recorrentes!</p>
             </div>
           </div>
 
