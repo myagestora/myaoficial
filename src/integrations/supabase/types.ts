@@ -211,6 +211,14 @@ export type Database = {
           date: string
           description: string | null
           id: string
+          is_recurring: boolean | null
+          next_recurrence_date: string | null
+          parent_transaction_id: string | null
+          recurrence_end_date: string | null
+          recurrence_frequency:
+            | Database["public"]["Enums"]["recurrence_frequency"]
+            | null
+          recurrence_interval: number | null
           title: string
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string | null
@@ -223,6 +231,14 @@ export type Database = {
           date: string
           description?: string | null
           id?: string
+          is_recurring?: boolean | null
+          next_recurrence_date?: string | null
+          parent_transaction_id?: string | null
+          recurrence_end_date?: string | null
+          recurrence_frequency?:
+            | Database["public"]["Enums"]["recurrence_frequency"]
+            | null
+          recurrence_interval?: number | null
           title: string
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string | null
@@ -235,6 +251,14 @@ export type Database = {
           date?: string
           description?: string | null
           id?: string
+          is_recurring?: boolean | null
+          next_recurrence_date?: string | null
+          parent_transaction_id?: string | null
+          recurrence_end_date?: string | null
+          recurrence_frequency?:
+            | Database["public"]["Enums"]["recurrence_frequency"]
+            | null
+          recurrence_interval?: number | null
           title?: string
           type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string | null
@@ -246,6 +270,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_parent_transaction_id_fkey"
+            columns: ["parent_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
         ]
@@ -323,6 +354,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_next_recurrence_date: {
+        Args: {
+          base_date: string
+          frequency: Database["public"]["Enums"]["recurrence_frequency"]
+          interval_count?: number
+        }
+        Returns: string
+      }
       has_role: {
         Args: {
           _user_id: string
@@ -334,9 +373,19 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      process_recurring_transactions: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
     }
     Enums: {
       app_role: "admin" | "user"
+      recurrence_frequency:
+        | "daily"
+        | "weekly"
+        | "monthly"
+        | "quarterly"
+        | "yearly"
       subscription_status: "active" | "inactive" | "canceled" | "past_due"
       transaction_type: "income" | "expense"
     }
@@ -467,6 +516,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      recurrence_frequency: [
+        "daily",
+        "weekly",
+        "monthly",
+        "quarterly",
+        "yearly",
+      ],
       subscription_status: ["active", "inactive", "canceled", "past_due"],
       transaction_type: ["income", "expense"],
     },

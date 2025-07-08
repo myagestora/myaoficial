@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +29,10 @@ const transactionSchema = z.object({
   category_id: z.string().min(1, 'Categoria é obrigatória'),
   date: z.string().min(1, 'Data é obrigatória'),
   description: z.string().optional(),
+  is_recurring: z.boolean().default(false),
+  recurrence_frequency: z.enum(['daily', 'weekly', 'monthly', 'quarterly', 'yearly']).optional(),
+  recurrence_interval: z.number().min(1).default(1),
+  recurrence_end_date: z.string().optional(),
 });
 
 type TransactionFormData = z.infer<typeof transactionSchema>;
@@ -54,10 +59,13 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
     defaultValues: {
       type: 'expense',
       date: new Date().toISOString().split('T')[0],
+      is_recurring: false,
+      recurrence_interval: 1,
     },
   });
 
   const transactionType = watch('type');
+  const isRecurring = watch('is_recurring');
 
   // Buscar categorias do banco de dados
   const { data: categories } = useQuery({
@@ -80,22 +88,43 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
     mutationFn: async (data: TransactionFormData) => {
       if (!user) throw new Error('Usuário não autenticado');
 
+      const transactionData: any = {
+        title: data.title,
+        amount: data.amount,
+        type: data.type,
+        category_id: data.category_id,
+        date: data.date,
+        description: data.description || null,
+        user_id: user.id,
+        is_recurring: data.is_recurring,
+      };
+
+      // Se for recorrente, adicionar campos específicos
+      if (data.is_recurring) {
+        transactionData.recurrence_frequency = data.recurrence_frequency;
+        transactionData.recurrence_interval = data.recurrence_interval;
+        transactionData.recurrence_end_date = data.recurrence_end_date || null;
+        
+        // Calcular próxima data de recorrência
+        const { data: nextDate } = await supabase
+          .rpc('calculate_next_recurrence_date', {
+            base_date: data.date,
+            frequency: data.recurrence_frequency,
+            interval_count: data.recurrence_interval
+          });
+        
+        transactionData.next_recurrence_date = nextDate;
+      }
+
       const { error } = await supabase
         .from('transactions')
-        .insert({
-          title: data.title,
-          amount: data.amount,
-          type: data.type,
-          category_id: data.category_id,
-          date: data.date,
-          description: data.description || null,
-          user_id: user.id,
-        });
+        .insert(transactionData);
       
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['recent-transactions'] });
       toast({
         title: 'Sucesso!',
         description: 'Transação salva com sucesso.',
@@ -125,7 +154,7 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {transaction ? 'Editar Transação' : 'Nova Transação'}
@@ -232,6 +261,71 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
               placeholder="Adicione observações..."
               {...register('description')}
             />
+          </div>
+
+          {/* Seção de Recorrência */}
+          <div className="border-t pt-4 space-y-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="is_recurring"
+                checked={isRecurring}
+                onCheckedChange={(checked) => setValue('is_recurring', !!checked)}
+              />
+              <Label htmlFor="is_recurring" className="text-sm font-medium">
+                Transação recorrente
+              </Label>
+            </div>
+
+            {isRecurring && (
+              <div className="space-y-4 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="recurrence_frequency">Frequência</Label>
+                    <Select onValueChange={(value) => setValue('recurrence_frequency', value as any)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a frequência" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="daily">Diário</SelectItem>
+                        <SelectItem value="weekly">Semanal</SelectItem>
+                        <SelectItem value="monthly">Mensal</SelectItem>
+                        <SelectItem value="quarterly">Trimestral</SelectItem>
+                        <SelectItem value="yearly">Anual</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.recurrence_frequency && (
+                      <p className="text-sm text-red-600">{errors.recurrence_frequency.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="recurrence_interval">Intervalo</Label>
+                    <Input
+                      id="recurrence_interval"
+                      type="number"
+                      min="1"
+                      placeholder="1"
+                      {...register('recurrence_interval', { valueAsNumber: true })}
+                    />
+                    {errors.recurrence_interval && (
+                      <p className="text-sm text-red-600">{errors.recurrence_interval.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="recurrence_end_date">Data final (opcional)</Label>
+                  <Input
+                    id="recurrence_end_date"
+                    type="date"
+                    {...register('recurrence_end_date')}
+                  />
+                  <p className="text-xs text-gray-500">
+                    Deixe em branco para recorrência indefinida
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
