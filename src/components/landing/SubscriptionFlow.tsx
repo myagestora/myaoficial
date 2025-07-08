@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
@@ -87,8 +86,10 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
     }
   });
 
-  const isMercadoPagoConfigured = mercadoPagoConfig?.mercado_pago_enabled === 'true' && 
-                                  mercadoPagoConfig?.mercado_pago_access_token;
+  const isMercadoPagoConfigured = Boolean(
+    mercadoPagoConfig?.mercado_pago_enabled === 'true' && 
+    mercadoPagoConfig?.mercado_pago_access_token
+  );
 
   // Flow steps para usuários não logados ou seleção de plano
   if (currentStep === 'planSelection') {
