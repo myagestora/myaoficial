@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -48,6 +47,21 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
     cpf: ''
   });
   const [pixData, setPixData] = useState<{ qr_code?: string; qr_code_base64?: string } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll when credit card is selected
+  useEffect(() => {
+    if (paymentMethod === 'credit_card' && containerRef.current) {
+      setTimeout(() => {
+        if (containerRef.current) {
+          containerRef.current.scrollTo({
+            top: containerRef.current.scrollHeight,
+            behavior: 'smooth'
+          });
+        }
+      }, 100);
+    }
+  }, [paymentMethod]);
 
   const createPaymentMutation = useMutation({
     mutationFn: async (paymentData: {
@@ -187,7 +201,7 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
   }
 
   return (
-    <div className="space-y-6">
+    <div ref={containerRef} className="space-y-6 max-h-full overflow-y-auto">
       {/* Plan Header */}
       <div className="text-center">
         <h3 className="text-xl font-semibold">{selectedPlan.name}</h3>
