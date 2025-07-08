@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,7 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { useToast } from '@/hooks/use-toast';
-import { User, Cog, Shield, Bell, Palette } from 'lucide-react';
+import { User, Shield, Palette, Info } from 'lucide-react';
 
 const SettingsPage = () => {
   const { user } = useAuth();
@@ -21,6 +20,11 @@ const SettingsPage = () => {
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [whatsappValue, setWhatsappValue] = useState('');
+
+  // Estados para as preferências
+  const [darkTheme, setDarkTheme] = useState(false);
+  const [animations, setAnimations] = useState(true);
+  const [notificationSound, setNotificationSound] = useState(true);
 
   // Buscar dados do perfil
   const { data: profile, isLoading } = useQuery({
@@ -39,6 +43,18 @@ const SettingsPage = () => {
     },
     enabled: !!user?.id,
   });
+
+  // Effect para carregar preferências do usuário
+  React.useEffect(() => {
+    // Carregar preferências salvas no localStorage
+    const savedDarkTheme = localStorage.getItem('darkTheme') === 'true';
+    const savedAnimations = localStorage.getItem('animations') !== 'false'; // padrão true
+    const savedNotificationSound = localStorage.getItem('notificationSound') !== 'false'; // padrão true
+    
+    setDarkTheme(savedDarkTheme);
+    setAnimations(savedAnimations);
+    setNotificationSound(savedNotificationSound);
+  }, []);
 
   // Atualizar o valor do WhatsApp quando o perfil carregar
   React.useEffect(() => {
@@ -128,6 +144,50 @@ const SettingsPage = () => {
     setLoading(false);
   };
 
+  const handleThemeToggle = (checked: boolean) => {
+    setDarkTheme(checked);
+    localStorage.setItem('darkTheme', checked.toString());
+    
+    // Aplicar tema escuro no documento
+    if (checked) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    
+    toast({
+      title: "Tema atualizado",
+      description: `Tema ${checked ? 'escuro' : 'claro'} ativado!`,
+    });
+  };
+
+  const handleAnimationsToggle = (checked: boolean) => {
+    setAnimations(checked);
+    localStorage.setItem('animations', checked.toString());
+    
+    // Aplicar ou remover classe de animações
+    if (checked) {
+      document.documentElement.style.setProperty('--transition-duration', '0.3s');
+    } else {
+      document.documentElement.style.setProperty('--transition-duration', '0s');
+    }
+    
+    toast({
+      title: "Animações atualizadas",
+      description: `Animações ${checked ? 'ativadas' : 'desativadas'}!`,
+    });
+  };
+
+  const handleNotificationSoundToggle = (checked: boolean) => {
+    setNotificationSound(checked);
+    localStorage.setItem('notificationSound', checked.toString());
+    
+    toast({
+      title: "Som das notificações",
+      description: `Som das notificações ${checked ? 'ativado' : 'desativado'}!`,
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -150,7 +210,7 @@ const SettingsPage = () => {
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               Perfil
@@ -158,10 +218,6 @@ const SettingsPage = () => {
             <TabsTrigger value="security" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
               Segurança
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex items-center gap-2">
-              <Bell className="h-4 w-4" />
-              Notificações
             </TabsTrigger>
             <TabsTrigger value="preferences" className="flex items-center gap-2">
               <Palette className="h-4 w-4" />
@@ -227,6 +283,13 @@ const SettingsPage = () => {
                       onChange={(value) => setWhatsappValue(value || '')}
                       className="w-full"
                     />
+                    <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                      <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        <strong>Importante:</strong> Este número será autorizado a enviar mensagens para a Mya, nossa assistente de IA. 
+                        Certifique-se de que é o número correto para receber notificações e interagir com o sistema.
+                      </p>
+                    </div>
                   </div>
 
                   <Button type="submit" disabled={loading}>
@@ -275,46 +338,6 @@ const SettingsPage = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="notifications">
-            <Card>
-              <CardHeader>
-                <CardTitle>Preferências de Notificação</CardTitle>
-                <CardDescription>
-                  Configure como você gostaria de receber notificações
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Notificações por Email</Label>
-                    <p className="text-sm text-gray-500">
-                      Receba notificações sobre transações por email
-                    </p>
-                  </div>
-                  <Switch />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Lembretes de Metas</Label>
-                    <p className="text-sm text-gray-500">
-                      Receba lembretes sobre suas metas financeiras
-                    </p>
-                  </div>
-                  <Switch />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Relatórios Mensais</Label>
-                    <p className="text-sm text-gray-500">
-                      Receba um resumo mensal das suas finanças
-                    </p>
-                  </div>
-                  <Switch />
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           <TabsContent value="preferences">
             <Card>
               <CardHeader>
@@ -331,7 +354,10 @@ const SettingsPage = () => {
                       Ativar tema escuro automaticamente
                     </p>
                   </div>
-                  <Switch />
+                  <Switch 
+                    checked={darkTheme}
+                    onCheckedChange={handleThemeToggle}
+                  />
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
@@ -340,7 +366,10 @@ const SettingsPage = () => {
                       Habilitar animações na interface
                     </p>
                   </div>
-                  <Switch />
+                  <Switch 
+                    checked={animations}
+                    onCheckedChange={handleAnimationsToggle}
+                  />
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
@@ -349,7 +378,10 @@ const SettingsPage = () => {
                       Reproduzir som ao receber notificações
                     </p>
                   </div>
-                  <Switch />
+                  <Switch 
+                    checked={notificationSound}
+                    onCheckedChange={handleNotificationSoundToggle}
+                  />
                 </div>
               </CardContent>
             </Card>
