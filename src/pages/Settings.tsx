@@ -26,7 +26,7 @@ const SettingsPage = () => {
   const [animations, setAnimations] = useState(true);
   const [notificationSound, setNotificationSound] = useState(true);
 
-  // Buscar dados do perfil de forma mais direta
+  // Buscar dados do perfil
   const { data: profile, isLoading, error } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
@@ -34,42 +34,40 @@ const SettingsPage = () => {
       
       console.log('Buscando perfil para usuário:', user.id);
       
-      // Buscar diretamente com os campos específicos
-      const { data: profileData, error: profileError } = await supabase
+      // Primeiro, tentar buscar o perfil existente
+      const { data: existingProfile, error: selectError } = await supabase
         .from('profiles')
         .select('id, full_name, email, avatar_url, whatsapp, subscription_status')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
       
-      if (profileError) {
-        console.error('Erro ao buscar perfil:', profileError);
-        // Se não encontrar o perfil, vamos criá-lo
-        if (profileError.code === 'PGRST116') {
-          console.log('Perfil não encontrado, criando um novo...');
-          const { data: newProfile, error: insertError } = await supabase
-            .from('profiles')
-            .insert({
-              id: user.id,
-              email: user.email,
-              full_name: user.user_metadata?.full_name || '',
-              whatsapp: user.user_metadata?.whatsapp || ''
-            })
-            .select()
-            .single();
-          
-          if (insertError) {
-            console.error('Erro ao criar perfil:', insertError);
-            return null;
-          }
-          
-          console.log('Perfil criado:', newProfile);
-          return newProfile;
-        }
-        return null;
+      // Se encontrou o perfil, retornar
+      if (existingProfile) {
+        console.log('Perfil encontrado:', existingProfile);
+        return existingProfile;
       }
       
-      console.log('Dados do perfil carregados:', profileData);
-      return profileData;
+      // Se não encontrou e não há erro, ou se o erro é "não encontrado"
+      if (!selectError || selectError.code === 'PGRST116') {
+        console.log('Perfil não encontrado, usando dados do usuário autenticado');
+        
+        // Retornar dados baseados no usuário autenticado
+        const profileFromAuth = {
+          id: user.id,
+          full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+          email: user.email || '',
+          avatar_url: user.user_metadata?.avatar_url || null,
+          whatsapp: user.user_metadata?.whatsapp || user.user_metadata?.phone || '',
+          subscription_status: 'inactive'
+        };
+        
+        console.log('Usando dados do auth:', profileFromAuth);
+        return profileFromAuth;
+      }
+      
+      // Se houve outro tipo de erro
+      console.error('Erro ao buscar perfil:', selectError);
+      throw selectError;
     },
     enabled: !!user?.id,
     retry: 1,
@@ -103,15 +101,42 @@ const SettingsPage = () => {
       
       console.log('Atualizando perfil com dados:', updates);
       
-      const { error } = await supabase
+      // Primeiro, tentar fazer UPDATE
+      const { data: updatedData, error: updateError } = await supabase
         .from('profiles')
         .update(updates)
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select()
+        .maybeSingle();
       
-      if (error) {
-        console.error('Erro ao atualizar perfil:', error);
-        throw error;
+      // Se UPDATE falhou porque não existe registro, fazer INSERT
+      if (updateError && updateError.code === 'PGRST116') {
+        console.log('Registro não existe, criando novo perfil...');
+        
+        const { data: insertedData, error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            email: user.email,
+            ...updates
+          })
+          .select()
+          .single();
+        
+        if (insertError) {
+          console.error('Erro ao criar perfil:', insertError);
+          throw insertError;
+        }
+        
+        return insertedData;
       }
+      
+      if (updateError) {
+        console.error('Erro ao atualizar perfil:', updateError);
+        throw updateError;
+      }
+      
+      return updatedData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
