@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -16,15 +16,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { Goal } from '@/hooks/useGoals';
 
 const goalSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
   description: z.string().optional(),
-  targetAmount: z.number().min(0.01, 'Valor meta deve ser maior que zero'),
-  currentAmount: z.number().min(0, 'Valor atual deve ser maior ou igual a zero').optional(),
-  deadline: z.string().min(1, 'Data limite é obrigatória'),
-  category: z.string().min(1, 'Categoria é obrigatória'),
+  target_amount: z.number().min(0.01, 'Valor meta deve ser maior que zero'),
+  current_amount: z.number().min(0, 'Valor atual deve ser maior ou igual a zero').optional(),
+  target_date: z.string().optional(),
+  goal_type: z.enum(['savings', 'monthly_budget']),
+  category_id: z.string().optional(),
+  month_year: z.string().optional(),
+  status: z.enum(['active', 'completed', 'paused', 'cancelled']).optional(),
 });
 
 type GoalFormData = z.infer<typeof goalSchema>;
@@ -32,75 +38,143 @@ type GoalFormData = z.infer<typeof goalSchema>;
 interface GoalFormProps {
   isOpen: boolean;
   onClose: () => void;
-  goal?: any;
+  goal?: Goal;
+  onSubmit: (data: GoalFormData) => void;
 }
 
-export const GoalForm = ({ isOpen, onClose, goal }: GoalFormProps) => {
+export const GoalForm = ({ isOpen, onClose, goal, onSubmit }: GoalFormProps) => {
+  const { user } = useAuth();
   const {
     register,
     handleSubmit,
     setValue,
+    watch,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<GoalFormData>({
     resolver: zodResolver(goalSchema),
     defaultValues: {
-      currentAmount: 0,
+      current_amount: 0,
+      goal_type: 'savings',
+      status: 'active',
     },
   });
 
-  const categories = [
-    'Emergência',
-    'Viagem',
-    'Educação',
-    'Tecnologia',
-    'Saúde',
-    'Lazer',
-    'Investimentos',
-    'Casa',
-    'Veículo',
-    'Outros'
-  ];
+  const goalType = watch('goal_type');
 
-  const onSubmit = async (data: GoalFormData) => {
-    try {
-      // Aqui você faria a chamada para a API
-      console.log('Goal data:', data);
-      
-      toast({
-        title: 'Sucesso!',
-        description: 'Meta salva com sucesso.',
+  const { data: categories } = useQuery({
+    queryKey: ['categories', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('type', 'expense')
+        .order('name');
+
+      if (error) {
+        console.error('Error fetching categories:', error);
+        return [];
+      }
+
+      return data || [];
+    },
+    enabled: !!user?.id && goalType === 'monthly_budget'
+  });
+
+  useEffect(() => {
+    if (goal) {
+      reset({
+        title: goal.title,
+        description: goal.description || '',
+        target_amount: goal.target_amount,
+        current_amount: goal.current_amount,
+        target_date: goal.target_date || '',
+        goal_type: goal.goal_type,
+        category_id: goal.category_id || '',
+        month_year: goal.month_year || '',
+        status: goal.status,
       });
-      
-      reset();
-      onClose();
-    } catch (error) {
-      toast({
-        title: 'Erro!',
-        description: 'Erro ao salvar meta.',
-        variant: 'destructive',
+    } else {
+      reset({
+        current_amount: 0,
+        goal_type: 'savings',
+        status: 'active',
       });
     }
+  }, [goal, reset]);
+
+  const handleFormSubmit = (data: GoalFormData) => {
+    // Limpar campos não relevantes baseado no tipo de meta
+    const cleanData = { ...data };
+    
+    if (data.goal_type === 'savings') {
+      cleanData.category_id = undefined;
+      cleanData.month_year = undefined;
+    } else if (data.goal_type === 'monthly_budget') {
+      cleanData.target_date = undefined;
+      cleanData.current_amount = 0; // Metas mensais sempre começam com 0
+    }
+
+    onSubmit(cleanData);
+  };
+
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
+
+  // Gerar opções de mês/ano para os próximos 12 meses
+  const getMonthYearOptions = () => {
+    const options = [];
+    const currentDate = new Date();
+    
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
+      const monthYear = date.toISOString().slice(0, 7); // YYYY-MM
+      const displayName = date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+      options.push({ value: monthYear, label: displayName });
+    }
+    
+    return options;
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>
             {goal ? 'Editar Meta' : 'Nova Meta Financeira'}
           </DialogTitle>
           <DialogDescription>
-            Defina uma meta financeira para acompanhar seu progresso.
+            {goalType === 'monthly_budget' 
+              ? 'Defina uma meta de gastos mensais para uma categoria específica.'
+              : 'Defina uma meta de economia para acompanhar seu progresso.'
+            }
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="goal_type">Tipo de Meta</Label>
+            <Select onValueChange={(value) => setValue('goal_type', value as 'savings' | 'monthly_budget')}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o tipo de meta" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="savings">Meta de Economia</SelectItem>
+                <SelectItem value="monthly_budget">Meta de Gastos Mensais</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="title">Título da Meta</Label>
             <Input
               id="title"
-              placeholder="Ex: Reserva de Emergência, Viagem..."
+              placeholder="Ex: Reserva de Emergência, Limite Alimentação..."
               {...register('title')}
             />
             {errors.title && (
@@ -119,69 +193,111 @@ export const GoalForm = ({ isOpen, onClose, goal }: GoalFormProps) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="targetAmount">Valor Meta</Label>
+              <Label htmlFor="target_amount">
+                {goalType === 'monthly_budget' ? 'Limite de Gastos' : 'Valor Meta'}
+              </Label>
               <Input
-                id="targetAmount"
+                id="target_amount"
                 type="number"
                 step="0.01"
                 placeholder="0,00"
-                {...register('targetAmount', { valueAsNumber: true })}
+                {...register('target_amount', { valueAsNumber: true })}
               />
-              {errors.targetAmount && (
-                <p className="text-sm text-red-600">{errors.targetAmount.message}</p>
+              {errors.target_amount && (
+                <p className="text-sm text-red-600">{errors.target_amount.message}</p>
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="currentAmount">Valor Atual</Label>
-              <Input
-                id="currentAmount"
-                type="number"
-                step="0.01"
-                placeholder="0,00"
-                {...register('currentAmount', { valueAsNumber: true })}
-              />
-              {errors.currentAmount && (
-                <p className="text-sm text-red-600">{errors.currentAmount.message}</p>
-              )}
-            </div>
+            {goalType === 'savings' && (
+              <div className="space-y-2">
+                <Label htmlFor="current_amount">Valor Atual</Label>
+                <Input
+                  id="current_amount"
+                  type="number"
+                  step="0.01"
+                  placeholder="0,00"
+                  {...register('current_amount', { valueAsNumber: true })}
+                />
+                {errors.current_amount && (
+                  <p className="text-sm text-red-600">{errors.current_amount.message}</p>
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {goalType === 'monthly_budget' ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="category_id">Categoria</Label>
+                <Select onValueChange={(value) => setValue('category_id', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories?.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.category_id && (
+                  <p className="text-sm text-red-600">{errors.category_id.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="month_year">Mês/Ano</Label>
+                <Select onValueChange={(value) => setValue('month_year', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o mês" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getMonthYearOptions().map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.month_year && (
+                  <p className="text-sm text-red-600">{errors.month_year.message}</p>
+                )}
+              </div>
+            </div>
+          ) : (
             <div className="space-y-2">
-              <Label htmlFor="category">Categoria</Label>
-              <Select onValueChange={(value) => setValue('category', value)}>
+              <Label htmlFor="target_date">Data Limite (opcional)</Label>
+              <Input
+                id="target_date"
+                type="date"
+                {...register('target_date')}
+              />
+              {errors.target_date && (
+                <p className="text-sm text-red-600">{errors.target_date.message}</p>
+              )}
+            </div>
+          )}
+
+          {goal && (
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select onValueChange={(value) => setValue('status', value as 'active' | 'completed' | 'paused' | 'cancelled')}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione a categoria" />
+                  <SelectValue placeholder="Selecione o status" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="active">Ativa</SelectItem>
+                  <SelectItem value="completed">Concluída</SelectItem>
+                  <SelectItem value="paused">Pausada</SelectItem>
+                  <SelectItem value="cancelled">Cancelada</SelectItem>
                 </SelectContent>
               </Select>
-              {errors.category && (
-                <p className="text-sm text-red-600">{errors.category.message}</p>
-              )}
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="deadline">Data Limite</Label>
-              <Input
-                id="deadline"
-                type="date"
-                {...register('deadline')}
-              />
-              {errors.deadline && (
-                <p className="text-sm text-red-600">{errors.deadline.message}</p>
-              )}
-            </div>
-          </div>
+          )}
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={handleClose}>
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting}>

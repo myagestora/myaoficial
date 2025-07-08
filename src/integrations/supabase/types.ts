@@ -49,10 +49,14 @@ export type Database = {
       }
       goals: {
         Row: {
+          category_id: string | null
           created_at: string | null
           current_amount: number | null
           description: string | null
+          goal_type: string | null
           id: string
+          month_year: string | null
+          status: string | null
           target_amount: number
           target_date: string | null
           title: string
@@ -60,10 +64,14 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          category_id?: string | null
           created_at?: string | null
           current_amount?: number | null
           description?: string | null
+          goal_type?: string | null
           id?: string
+          month_year?: string | null
+          status?: string | null
           target_amount: number
           target_date?: string | null
           title: string
@@ -71,17 +79,29 @@ export type Database = {
           user_id: string
         }
         Update: {
+          category_id?: string | null
           created_at?: string | null
           current_amount?: number | null
           description?: string | null
+          goal_type?: string | null
           id?: string
+          month_year?: string | null
+          status?: string | null
           target_amount?: number
           target_date?: string | null
           title?: string
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "goals_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       motivational_phrases: {
         Row: {
@@ -354,6 +374,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_monthly_goal_progress: {
+        Args: { p_user_id: string; p_category_id: string; p_month_year: string }
+        Returns: number
+      }
       calculate_next_recurrence_date: {
         Args: {
           base_date: string
@@ -361,6 +385,19 @@ export type Database = {
           interval_count?: number
         }
         Returns: string
+      }
+      get_monthly_goals_status: {
+        Args: { p_user_id: string }
+        Returns: {
+          goal_id: string
+          category_name: string
+          category_color: string
+          target_amount: number
+          spent_amount: number
+          percentage: number
+          status: string
+          month_year: string
+        }[]
       }
       has_role: {
         Args: {
