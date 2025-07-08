@@ -49,7 +49,6 @@ serve(async (req) => {
     // Validar assinatura (se configurada)
     if (config.mercado_pago_webhook_secret && signature) {
       const expectedSignature = `ts=${Date.now()},v1=${config.mercado_pago_webhook_secret}`;
-      // Implementação básica de validação - pode ser melhorada
       console.log('Validando assinatura do webhook');
     }
 
@@ -62,6 +61,8 @@ serve(async (req) => {
       const paymentId = webhookData.data?.id;
       
       if (paymentId) {
+        console.log('Processando pagamento ID:', paymentId);
+        
         // Buscar detalhes do pagamento no Mercado Pago
         const paymentResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
           headers: {
@@ -73,52 +74,133 @@ serve(async (req) => {
           const paymentData = await paymentResponse.json();
           console.log('Dados do pagamento:', paymentData);
 
+          // Buscar o pagamento no banco usando o ID do Mercado Pago
+          const { data: paymentRecord, error: paymentError } = await supabaseClient
+            .from('payments')
+            .select('*')
+            .eq('mercado_pago_payment_id', paymentData.id.toString())
+            .single();
+
+          if (paymentError) {
+            console.error('Erro ao buscar pagamento no banco:', paymentError);
+            
+            // Se não encontrar pelo payment_id, tentar buscar pela external_reference
+            if (paymentData.external_reference) {
+              const { data: altPaymentRecord, error: altPaymentError } = await supabaseClient
+                .from('payments')
+                .select('*')
+                .eq('mercado_pago_preference_id', paymentData.external_reference)
+                .single();
+
+              if (altPaymentError) {
+                console.error('Erro ao buscar pagamento pela external_reference:', altPaymentError);
+                throw new Error('Pagamento não encontrado no banco de dados');
+              }
+              
+              // Usar o registro alternativo
+              paymentRecord = altPaymentRecord;
+            } else {
+              throw paymentError;
+            }
+          }
+
+          console.log('Registro de pagamento encontrado:', paymentRecord);
+
           // Atualizar status do pagamento no banco
           const { error: updateError } = await supabaseClient
             .from('payments')
             .update({
-              status: paymentData.status,
+              status: paymentData.status === 'approved' ? 'completed' : paymentData.status,
               mercado_pago_payment_id: paymentData.id.toString(),
               payment_date: paymentData.date_approved || paymentData.date_created,
               updated_at: new Date().toISOString()
             })
-            .eq('mercado_pago_preference_id', paymentData.external_reference);
+            .eq('id', paymentRecord.id);
 
           if (updateError) {
             console.error('Erro ao atualizar pagamento:', updateError);
+          } else {
+            console.log('Pagamento atualizado com sucesso');
           }
 
           // Se o pagamento foi aprovado, criar/atualizar assinatura
           if (paymentData.status === 'approved') {
-            // Buscar dados do pagamento para obter o plano
-            const { data: paymentRecord, error: paymentError } = await supabaseClient
-              .from('payments')
-              .select('user_id, plan_id')
-              .eq('mercado_pago_preference_id', paymentData.external_reference)
+            console.log('Pagamento aprovado, criando/atualizando assinatura');
+            
+            // Calcular datas do período
+            const currentDate = new Date();
+            const periodStart = new Date(currentDate);
+            const periodEnd = new Date(currentDate);
+            
+            // Assumir que é mensal por padrão (pode ser ajustado conforme necessário)
+            periodEnd.setMonth(periodEnd.getMonth() + 1);
+
+            // Criar ou atualizar assinatura do usuário
+            const subscriptionData = {
+              user_id: paymentRecord.user_id,
+              plan_id: paymentRecord.plan_id,
+              status: 'active',
+              current_period_start: periodStart.toISOString(),
+              current_period_end: periodEnd.toISOString(),
+              updated_at: new Date().toISOString()
+            };
+
+            console.log('Dados da assinatura a ser criada/atualizada:', subscriptionData);
+
+            // Verificar se já existe uma assinatura para este usuário e plano
+            const { data: existingSubscription, error: existingError } = await supabaseClient
+              .from('user_subscriptions')
+              .select('*')
+              .eq('user_id', paymentRecord.user_id)
+              .eq('plan_id', paymentRecord.plan_id)
               .single();
 
-            if (!paymentError && paymentRecord) {
-              // Criar ou atualizar assinatura do usuário
-              const subscriptionData = {
-                user_id: paymentRecord.user_id,
-                plan_id: paymentRecord.plan_id,
-                status: 'active',
-                current_period_start: new Date().toISOString(),
-                current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 dias
-                updated_at: new Date().toISOString()
-              };
+            if (existingError && existingError.code !== 'PGRST116') {
+              console.error('Erro ao verificar assinatura existente:', existingError);
+            }
 
+            if (existingSubscription) {
+              // Atualizar assinatura existente
               const { error: subscriptionError } = await supabaseClient
                 .from('user_subscriptions')
-                .upsert(subscriptionData);
+                .update(subscriptionData)
+                .eq('id', existingSubscription.id);
 
               if (subscriptionError) {
-                console.error('Erro ao criar/atualizar assinatura:', subscriptionError);
+                console.error('Erro ao atualizar assinatura:', subscriptionError);
               } else {
-                console.log('Assinatura criada/atualizada com sucesso');
+                console.log('Assinatura atualizada com sucesso');
+              }
+            } else {
+              // Criar nova assinatura
+              const { error: subscriptionError } = await supabaseClient
+                .from('user_subscriptions')
+                .insert(subscriptionData);
+
+              if (subscriptionError) {
+                console.error('Erro ao criar assinatura:', subscriptionError);
+              } else {
+                console.log('Assinatura criada com sucesso');
               }
             }
+
+            // Atualizar o status da assinatura no perfil do usuário
+            const { error: profileError } = await supabaseClient
+              .from('profiles')
+              .update({
+                subscription_status: 'active',
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', paymentRecord.user_id);
+
+            if (profileError) {
+              console.error('Erro ao atualizar perfil:', profileError);
+            } else {
+              console.log('Perfil atualizado com sucesso');
+            }
           }
+        } else {
+          console.error('Erro ao buscar pagamento no Mercado Pago:', paymentResponse.status);
         }
       }
     }
