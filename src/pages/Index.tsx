@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { SEOHead } from '@/components/SEOHead';
+import { SubscriptionFlow } from '@/components/landing/SubscriptionFlow';
 import { 
   CheckCircle, 
   DollarSign, 
@@ -27,7 +28,19 @@ import {
   ChevronDown
 } from 'lucide-react';
 
+interface SubscriptionPlan {
+  id: string;
+  name: string;
+  description?: string;
+  price_monthly?: number;
+  price_yearly?: number;
+  features: string[] | any;
+}
+
 const Index = () => {
+  const [showSubscriptionFlow, setShowSubscriptionFlow] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
+
   // Buscar configurações do sistema
   const { data: systemConfig } = useQuery({
     queryKey: ['system-config-landing'],
@@ -61,7 +74,11 @@ const Index = () => {
         .order('price_monthly', { ascending: true });
       
       if (error) throw error;
-      return data;
+      return data?.map(plan => ({
+        ...plan,
+        features: Array.isArray(plan.features) ? plan.features : 
+                  (plan.features ? JSON.parse(String(plan.features)) : [])
+      }));
     }
   });
 
@@ -69,6 +86,16 @@ const Index = () => {
   const appLogo = systemConfig?.app_logo;
   const primaryColor = systemConfig?.primary_color || '#3B82F6';
   const secondaryColor = systemConfig?.secondary_color || '#10B981';
+
+  const handlePlanSelect = (plan: SubscriptionPlan) => {
+    setSelectedPlan(plan);
+    setShowSubscriptionFlow(true);
+  };
+
+  const handleStartFree = () => {
+    setSelectedPlan(null);
+    setShowSubscriptionFlow(true);
+  };
 
   const features = [
     {
@@ -191,18 +218,17 @@ const Index = () => {
                   Entrar
                 </Button>
               </Link>
-              <Link to="/login">
-                <Button 
-                  className="font-semibold shadow-lg hover:shadow-xl transition-all"
-                  style={{ 
-                    background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
-                    border: 'none'
-                  }}
-                >
-                  Começar Grátis
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-              </Link>
+              <Button 
+                onClick={handleStartFree}
+                className="font-semibold shadow-lg hover:shadow-xl transition-all"
+                style={{ 
+                  background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
+                  border: 'none'
+                }}
+              >
+                Começar Grátis
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
             </div>
           </div>
         </div>
@@ -282,18 +308,17 @@ const Index = () => {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-              <Link to="/login">
-                <Button 
-                  size="lg" 
-                  className="text-lg px-10 py-6 font-bold shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105"
-                  style={{ 
-                    background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
-                    border: 'none'
-                  }}
-                >
-                  🚀 Começar Gratuitamente
-                </Button>
-              </Link>
+              <Button 
+                onClick={handleStartFree}
+                size="lg" 
+                className="text-lg px-10 py-6 font-bold shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105"
+                style={{ 
+                  background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
+                  border: 'none'
+                }}
+              >
+                🚀 Começar Gratuitamente
+              </Button>
               <Button 
                 size="lg" 
                 variant="outline" 
@@ -679,7 +704,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Pricing Section - Enhanced */}
+      {/* Pricing Section - Enhanced with integrated plan selection */}
       {subscriptionPlans && subscriptionPlans.length > 0 && (
         <section className="py-20 bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900/20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -709,7 +734,7 @@ const Index = () => {
               {subscriptionPlans.map((plan, index) => {
                 const features = Array.isArray(plan.features) 
                   ? plan.features 
-                  : JSON.parse(String(plan.features) || '[]');
+                  : (typeof plan.features === 'string' ? JSON.parse(plan.features) : []);
                 
                 const isPopular = index === 1;
                 
@@ -782,18 +807,17 @@ const Index = () => {
                           </li>
                         ))}
                       </ul>
-                      <Link to="/login">
-                        <Button 
-                          className="w-full py-4 text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300"
-                          style={isPopular ? { 
-                            background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
-                            border: 'none'
-                          } : {}}
-                          variant={isPopular ? "default" : "outline"}
-                        >
-                          {plan.price_monthly ? '🚀 Assinar Agora' : '✨ Começar Grátis'}
-                        </Button>
-                      </Link>
+                      <Button 
+                        onClick={() => handlePlanSelect(plan)}
+                        className="w-full py-4 text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300"
+                        style={isPopular ? { 
+                          background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
+                          border: 'none'
+                        } : {}}
+                        variant={isPopular ? "default" : "outline"}
+                      >
+                        {plan.price_monthly ? '🚀 Assinar Agora' : '✨ Começar Grátis'}
+                      </Button>
                     </CardContent>
                   </Card>
                 );
@@ -873,15 +897,14 @@ const Index = () => {
             
             {/* Enhanced CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-6 justify-center mb-8">
-              <Link to="/login">
-                <Button 
-                  size="lg" 
-                  className="bg-white hover:bg-gray-100 text-gray-900 text-xl px-12 py-6 font-bold shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105"
-                >
-                  🚀 Começar Agora
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              </Link>
+              <Button 
+                onClick={handleStartFree}
+                size="lg" 
+                className="bg-white hover:bg-gray-100 text-gray-900 text-xl px-12 py-6 font-bold shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105"
+              >
+                🚀 Começar Agora
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
             </div>
             
             {/* Trust Indicators */}
@@ -952,6 +975,17 @@ const Index = () => {
           </div>
         </div>
       </footer>
+
+      {/* Subscription Flow Modal */}
+      {showSubscriptionFlow && (
+        <SubscriptionFlow 
+          onClose={() => {
+            setShowSubscriptionFlow(false);
+            setSelectedPlan(null);
+          }}
+          selectedPlan={selectedPlan}
+        />
+      )}
     </div>
   );
 };
