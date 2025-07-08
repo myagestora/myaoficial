@@ -225,6 +225,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_status: string | null
           admin_override_status: boolean | null
           avatar_url: string | null
           created_at: string | null
@@ -236,6 +237,7 @@ export type Database = {
           whatsapp: string | null
         }
         Insert: {
+          account_status?: string | null
           admin_override_status?: boolean | null
           avatar_url?: string | null
           created_at?: string | null
@@ -247,6 +249,7 @@ export type Database = {
           whatsapp?: string | null
         }
         Update: {
+          account_status?: string | null
           admin_override_status?: boolean | null
           avatar_url?: string | null
           created_at?: string | null
