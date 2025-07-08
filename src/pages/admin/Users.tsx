@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Search, UserPlus, MoreHorizontal, Shield, ShieldOff } from 'lucide-react';
+import { Search, Shield, ShieldOff, UserCheck, UserX } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { AddUserDialog } from '@/components/admin/AddUserDialog';
 
 const AdminUsers = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -67,6 +68,34 @@ const AdminUsers = () => {
     }
   });
 
+  const toggleUserStatusMutation = useMutation({
+    mutationFn: async ({ userId, currentStatus }: { userId: string; currentStatus: string }) => {
+      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({ subscription_status: newStatus })
+        .eq('id', userId);
+      
+      if (error) throw error;
+      return { userId, newStatus };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      toast({
+        title: 'Sucesso',
+        description: `Usuário ${data.newStatus === 'active' ? 'ativado' : 'desativado'} com sucesso`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Erro',
+        description: 'Erro ao alterar status do usuário',
+        variant: 'destructive',
+      });
+    }
+  });
+
   const getUserRole = (user: any) => {
     return user.user_roles?.some((role: any) => role.role === 'admin') ? 'admin' : 'user';
   };
@@ -108,14 +137,12 @@ const AdminUsers = () => {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Gerenciar Usuários</h1>
           <p className="text-gray-600 dark:text-gray-400">Administre todos os usuários do sistema</p>
         </div>
-        <Button>
-          <UserPlus className="mr-2 h-4 w-4" />
-          Convidar Usuário
-        </Button>
+        <AddUserDialog />
       </div>
 
       <Card>
         <CardHeader>
+          <CardTitle>Lista de Usuários</CardTitle>
           <div className="flex items-center space-x-4">
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -129,61 +156,89 @@ const AdminUsers = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Assinatura</TableHead>
-                <TableHead>Data de Cadastro</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users?.map((user) => {
-                const isAdmin = getUserRole(user) === 'admin';
-                
-                return (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">
-                      {user.full_name || 'Nome não informado'}
-                    </TableCell>
-                    <TableCell>{user.email || 'Email não informado'}</TableCell>
-                    <TableCell>
-                      <Badge variant={isAdmin ? 'destructive' : 'secondary'}>
-                        {isAdmin ? 'Admin' : 'Usuário'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusVariant(user.subscription_status || 'inactive')}>
-                        {getStatusLabel(user.subscription_status || 'inactive')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(user.created_at).toLocaleDateString('pt-BR')}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleAdminMutation.mutate({
-                          userId: user.id,
-                          isCurrentlyAdmin: isAdmin
-                        })}
-                      >
-                        {isAdmin ? (
-                          <ShieldOff className="h-4 w-4" />
-                        ) : (
-                          <Shield className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+          {isLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-2 text-gray-600">Carregando usuários...</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Data de Cadastro</TableHead>
+                  <TableHead>Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users?.map((user) => {
+                  const isAdmin = getUserRole(user) === 'admin';
+                  const status = user.subscription_status || 'inactive';
+                  const isActive = status === 'active';
+                  
+                  return (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">
+                        {user.full_name || 'Nome não informado'}
+                      </TableCell>
+                      <TableCell>{user.email || 'Email não informado'}</TableCell>
+                      <TableCell>
+                        <Badge variant={isAdmin ? 'destructive' : 'secondary'}>
+                          {isAdmin ? 'Admin' : 'Usuário'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusVariant(status)}>
+                          {getStatusLabel(status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(user.created_at).toLocaleDateString('pt-BR')}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleAdminMutation.mutate({
+                              userId: user.id,
+                              isCurrentlyAdmin: isAdmin
+                            })}
+                            title={isAdmin ? 'Remover Admin' : 'Tornar Admin'}
+                          >
+                            {isAdmin ? (
+                              <ShieldOff className="h-4 w-4" />
+                            ) : (
+                              <Shield className="h-4 w-4" />
+                            )}
+                          </Button>
+                          
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleUserStatusMutation.mutate({
+                              userId: user.id,
+                              currentStatus: status
+                            })}
+                            title={isActive ? 'Desativar Usuário' : 'Ativar Usuário'}
+                          >
+                            {isActive ? (
+                              <UserX className="h-4 w-4 text-red-600" />
+                            ) : (
+                              <UserCheck className="h-4 w-4 text-green-600" />
+                            )}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
