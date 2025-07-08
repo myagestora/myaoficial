@@ -24,6 +24,9 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
   const [whatsapp, setWhatsapp] = useState(user.whatsapp || '');
   const [subscriptionStatus, setSubscriptionStatus] = useState(user.subscription_status || 'inactive');
   const [adminOverride, setAdminOverride] = useState(user.admin_override_status || false);
+  const [isAdmin, setIsAdmin] = useState(
+    user.user_roles?.some((role: any) => role.role === 'admin') || false
+  );
   const queryClient = useQueryClient();
 
   const updateUserMutation = useMutation({
@@ -33,8 +36,10 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
       whatsapp: string; 
       subscriptionStatus: string;
       adminOverride: boolean;
+      isAdmin: boolean;
     }) => {
-      const { error } = await supabase
+      // Atualizar perfil
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({
           email: userData.email,
@@ -45,7 +50,28 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
         })
         .eq('id', user.id);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
+
+      // Gerenciar role de admin
+      const currentlyAdmin = user.user_roles?.some((role: any) => role.role === 'admin') || false;
+      
+      if (userData.isAdmin && !currentlyAdmin) {
+        // Adicionar role de admin
+        const { error: addRoleError } = await supabase
+          .from('user_roles')
+          .insert({ user_id: user.id, role: 'admin' });
+        
+        if (addRoleError) throw addRoleError;
+      } else if (!userData.isAdmin && currentlyAdmin) {
+        // Remover role de admin
+        const { error: removeRoleError } = await supabase
+          .from('user_roles')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('role', 'admin');
+        
+        if (removeRoleError) throw removeRoleError;
+      }
     },
     onSuccess: () => {
       toast({
@@ -81,7 +107,8 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
       fullName,
       whatsapp,
       subscriptionStatus,
-      adminOverride
+      adminOverride,
+      isAdmin
     });
   };
 
@@ -151,7 +178,18 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
               onCheckedChange={(checked) => setAdminOverride(checked as boolean)}
             />
             <Label htmlFor="adminOverride" className="text-sm">
-              Forçar status manualmente (ignorar status da assinatura)
+              Forçar status manualmente (ignorar sincronização com assinatura)
+            </Label>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="isAdmin"
+              checked={isAdmin}
+              onCheckedChange={(checked) => setIsAdmin(checked as boolean)}
+            />
+            <Label htmlFor="isAdmin" className="text-sm font-medium">
+              Permissões de Administrador
             </Label>
           </div>
 

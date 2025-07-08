@@ -1,20 +1,17 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Search, Shield, ShieldOff, UserCheck, UserX } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Search } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
 import { AddUserDialog } from '@/components/admin/AddUserDialog';
 import { EditUserDialog } from '@/components/admin/EditUserDialog';
 
 const AdminUsers = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const queryClient = useQueryClient();
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['admin-users', searchTerm],
@@ -46,69 +43,6 @@ const AdminUsers = () => {
       })) || [];
 
       return usersWithRoles;
-    }
-  });
-
-  const toggleAdminMutation = useMutation({
-    mutationFn: async ({ userId, isCurrentlyAdmin }: { userId: string; isCurrentlyAdmin: boolean }) => {
-      if (isCurrentlyAdmin) {
-        const { error } = await supabase
-          .from('user_roles')
-          .delete()
-          .eq('user_id', userId)
-          .eq('role', 'admin');
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('user_roles')
-          .insert({ user_id: userId, role: 'admin' });
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-      toast({
-        title: 'Sucesso',
-        description: 'Permissões de usuário atualizadas',
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Erro',
-        description: 'Erro ao atualizar permissões',
-        variant: 'destructive',
-      });
-    }
-  });
-
-  const toggleUserStatusMutation = useMutation({
-    mutationFn: async ({ userId, currentStatus }: { userId: string; currentStatus: string }) => {
-      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-      
-      const { error } = await supabase
-        .from('profiles')
-        .update({ 
-          subscription_status: newStatus,
-          admin_override_status: true // Marcar como override do admin
-        })
-        .eq('id', userId);
-      
-      if (error) throw error;
-      return { userId, newStatus };
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-      toast({
-        title: 'Sucesso',
-        description: `Usuário ${data.newStatus === 'active' ? 'ativado' : 'desativado'} com sucesso`,
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Erro',
-        description: 'Erro ao alterar status do usuário',
-        variant: 'destructive',
-      });
     }
   });
 
@@ -193,7 +127,6 @@ const AdminUsers = () => {
                 {users?.map((user) => {
                   const isAdmin = getUserRole(user) === 'admin';
                   const status = user.subscription_status || 'inactive';
-                  const isActive = status === 'active';
                   
                   return (
                     <TableRow key={user.id}>
@@ -207,49 +140,22 @@ const AdminUsers = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getStatusVariant(status)}>
-                          {getStatusLabel(status)}
-                        </Badge>
+                        <div className="flex items-center space-x-2">
+                          <Badge variant={getStatusVariant(status)}>
+                            {getStatusLabel(status)}
+                          </Badge>
+                          {user.admin_override_status && (
+                            <Badge variant="outline" className="text-xs">
+                              Override Admin
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {new Date(user.created_at).toLocaleDateString('pt-BR')}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <EditUserDialog user={user} />
-                          
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleAdminMutation.mutate({
-                              userId: user.id,
-                              isCurrentlyAdmin: isAdmin
-                            })}
-                            title={isAdmin ? 'Remover Admin' : 'Tornar Admin'}
-                          >
-                            {isAdmin ? (
-                              <ShieldOff className="h-4 w-4" />
-                            ) : (
-                              <Shield className="h-4 w-4" />
-                            )}
-                          </Button>
-                          
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleUserStatusMutation.mutate({
-                              userId: user.id,
-                              currentStatus: status
-                            })}
-                            title={isActive ? 'Desativar Usuário' : 'Ativar Usuário'}
-                          >
-                            {isActive ? (
-                              <UserX className="h-4 w-4 text-red-600" />
-                            ) : (
-                              <UserCheck className="h-4 w-4 text-green-600" />
-                            )}
-                          </Button>
-                        </div>
+                        <EditUserDialog user={user} />
                       </TableCell>
                     </TableRow>
                   );
