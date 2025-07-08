@@ -16,6 +16,7 @@ import { Trash } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 interface DeleteUserDialogProps {
   user: any;
@@ -25,6 +26,10 @@ interface DeleteUserDialogProps {
 export const DeleteUserDialog = ({ user, onUserDeleted }: DeleteUserDialogProps) => {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
+
+  // Verificar se o usuário atual está tentando apagar a si mesmo
+  const isSelfDeletion = currentUser?.id === user.id;
 
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
@@ -97,14 +102,27 @@ export const DeleteUserDialog = ({ user, onUserDeleted }: DeleteUserDialogProps)
   });
 
   const handleDelete = () => {
+    if (isSelfDeletion) {
+      toast({
+        title: 'Erro',
+        description: 'Você não pode remover seu próprio usuário',
+        variant: 'destructive',
+      });
+      return;
+    }
     deleteUserMutation.mutate(user.id);
   };
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
-        <Button variant="ghost" size="sm" title="Remover Usuário">
-          <Trash className="h-4 w-4 text-red-500" />
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          title="Remover Usuário"
+          disabled={isSelfDeletion}
+        >
+          <Trash className={`h-4 w-4 ${isSelfDeletion ? 'text-gray-400' : 'text-red-500'}`} />
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
