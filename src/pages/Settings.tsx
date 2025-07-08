@@ -13,13 +13,14 @@ import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { useToast } from '@/hooks/use-toast';
-import { User, Settings, Shield, Bell, Palette } from 'lucide-react';
+import { User, Cog, Shield, Bell, Palette } from 'lucide-react';
 
-const Settings = () => {
+const SettingsPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
+  const [whatsappValue, setWhatsappValue] = useState('');
 
   // Buscar dados do perfil
   const { data: profile, isLoading } = useQuery({
@@ -38,6 +39,13 @@ const Settings = () => {
     },
     enabled: !!user?.id,
   });
+
+  // Atualizar o valor do WhatsApp quando o perfil carregar
+  React.useEffect(() => {
+    if (profile?.whatsapp) {
+      setWhatsappValue(profile.whatsapp);
+    }
+  }, [profile]);
 
   // Mutação para atualizar perfil
   const updateProfileMutation = useMutation({
@@ -74,7 +82,7 @@ const Settings = () => {
     const formData = new FormData(e.currentTarget);
     const updates = {
       full_name: formData.get('full_name') as string,
-      whatsapp: formData.get('whatsapp') as string,
+      whatsapp: whatsappValue,
     };
     
     await updateProfileMutation.mutateAsync(updates);
@@ -215,9 +223,8 @@ const Settings = () => {
                     <Label htmlFor="whatsapp">WhatsApp</Label>
                     <PhoneInput
                       id="whatsapp"
-                      name="whatsapp"
-                      value={profile?.whatsapp || ''}
-                      onChange={() => {}}
+                      value={whatsappValue}
+                      onChange={(value) => setWhatsappValue(value || '')}
                       className="w-full"
                     />
                   </div>
@@ -353,4 +360,4 @@ const Settings = () => {
   );
 };
 
-export default Settings;
+export default SettingsPage;
