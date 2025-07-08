@@ -1,102 +1,95 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Session } from '@supabase/supabase-js';
+import { useQuery } from '@tanstack/react-query';
 
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
-  isAdmin: boolean;
   loading: boolean;
+  isAdmin: boolean;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Check if user is admin
+  const { data: isAdmin = false } = useQuery({
+    queryKey: ['is-admin', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return false;
+      
+      try {
+        const { data, error } = await supabase
+          .rpc('is_admin', { _user_id: user.id });
+        
+        if (error) {
+          console.error('Error checking admin status:', error);
+          return false;
+        }
+        
+        return data === true;
+      } catch (error) {
+        console.error('Error in admin check:', error);
+        return false;
+      }
+    },
+    enabled: !!user?.id,
+  });
+
   useEffect(() => {
-    // Verificar sessão inicial
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('🔐 Sessão inicial:', session);
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        checkAdminRole(session.user.id);
-      } else {
+    // Get initial session
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Error getting session:', error);
+        } else {
+          setUser(session?.user ?? null);
+        }
+      } catch (error) {
+        console.error('Error in getSession:', error);
+      } finally {
         setLoading(false);
       }
-    });
+    };
 
-    // Escutar mudanças de autenticação
+    getInitialSession();
+
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('🔄 Mudança de auth:', event, session);
-        setSession(session);
+        console.log('Auth state changed:', event);
         setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          setTimeout(() => {
-            checkAdminRole(session.user.id);
-          }, 0);
-        } else {
-          setIsAdmin(false);
-          setLoading(false);
-        }
+        setLoading(false);
       }
     );
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const checkAdminRole = async (userId: string) => {
+  const signOut = async () => {
     try {
-      console.log('👑 Verificando role de admin para:', userId);
-      
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .eq('role', 'admin')
-        .maybeSingle();
-      
-      console.log('📋 Resultado da verificação de admin:', { data, error });
-      
+      const { error } = await supabase.auth.signOut();
       if (error) {
-        console.error('❌ Erro ao verificar role de admin:', error);
-        setIsAdmin(false);
-      } else {
-        const isUserAdmin = !!data;
-        setIsAdmin(isUserAdmin);
-        console.log('✅ Usuário é admin:', isUserAdmin);
+        console.error('Error signing out:', error);
       }
     } catch (error) {
-      console.error('💥 Erro na verificação de role:', error);
-      setIsAdmin(false);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const signOut = async () => {
-    console.log('🚪 Fazendo logout...');
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('❌ Erro ao fazer logout:', error);
-    } else {
-      console.log('✅ Logout realizado com sucesso');
-      setUser(null);
-      setSession(null);
-      setIsAdmin(false);
+      console.error('Error in signOut:', error);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, loading, signOut }}>
+    <AuthContext.Provider value={{
+      user,
+      loading,
+      isAdmin,
+      signOut
+    }}>
       {children}
     </AuthContext.Provider>
   );
