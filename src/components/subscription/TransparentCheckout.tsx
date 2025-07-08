@@ -52,14 +52,22 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
   // Auto-scroll when credit card is selected
   useEffect(() => {
     if (paymentMethod === 'credit_card' && containerRef.current) {
-      setTimeout(() => {
-        if (containerRef.current) {
-          containerRef.current.scrollTo({
-            top: containerRef.current.scrollHeight,
-            behavior: 'smooth'
-          });
+      const timer = setTimeout(() => {
+        const container = containerRef.current;
+        if (container) {
+          const scrollHeight = container.scrollHeight;
+          const clientHeight = container.clientHeight;
+          
+          if (scrollHeight > clientHeight) {
+            container.scrollTo({
+              top: scrollHeight - clientHeight,
+              behavior: 'smooth'
+            });
+          }
         }
-      }, 100);
+      }, 150);
+      
+      return () => clearTimeout(timer);
     }
   }, [paymentMethod]);
 
@@ -149,9 +157,6 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
   };
 
   const currentPrice = frequency === 'monthly' ? selectedPlan.price_monthly : selectedPlan.price_yearly;
-  const savings = selectedPlan.price_monthly && selectedPlan.price_yearly 
-    ? Math.round(((selectedPlan.price_monthly * 12 - selectedPlan.price_yearly) / (selectedPlan.price_monthly * 12)) * 100)
-    : 0;
 
   // If PIX QR code is available, show it
   if (pixData && pixData.qr_code) {
@@ -326,24 +331,9 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
         </div>
       )}
 
-      {/* Payment Summary */}
-      <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg space-y-2">
-        <div className="flex justify-between items-center text-sm">
-          <span>Plano selecionado:</span>
-          <span className="font-medium">{selectedPlan.name}</span>
-        </div>
-        <div className="flex justify-between items-center text-sm">
-          <span>Frequência:</span>
-          <span className="font-medium capitalize">
-            {frequency === 'monthly' ? 'Mensal' : 'Anual'}
-            {savings > 0 && frequency === 'yearly' && (
-              <Badge variant="secondary" className="ml-2 bg-green-100 text-green-800 text-xs">
-                {savings}% OFF
-              </Badge>
-            )}
-          </span>
-        </div>
-        <div className="flex justify-between items-center font-bold border-t pt-2">
+      {/* Payment Summary - Simplificado */}
+      <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+        <div className="flex justify-between items-center font-bold text-lg">
           <span>Total:</span>
           <span>R$ {currentPrice}</span>
         </div>
@@ -378,8 +368,7 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
       </div>
 
       {/* Additional Info */}
-      <div className="text-center text-xs text-gray-600 dark:text-gray-400 space-y-1 border-t pt-3">
-        <p>Renovação automática • Cancele a qualquer momento</p>
+      <div className="text-center text-xs text-gray-600 dark:text-gray-400 border-t pt-3">
         <p>Pagamento processado pelo Mercado Pago</p>
       </div>
     </div>
