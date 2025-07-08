@@ -73,9 +73,9 @@ export const useSubscriptions = () => {
         let validProfile: ProfileData | null = null;
         
         // Check if profilesData exists and is a valid object with required properties
-        if (profilesData !== null && 
-            profilesData !== undefined && 
+        if (profilesData && 
             typeof profilesData === 'object' &&
+            !Array.isArray(profilesData) &&
             'id' in profilesData && 
             'full_name' in profilesData && 
             'email' in profilesData &&
