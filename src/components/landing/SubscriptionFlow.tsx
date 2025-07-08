@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { SubscriptionPlans } from '@/components/subscription/SubscriptionPlans';
@@ -6,9 +7,10 @@ import { toast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
 import { PlanSelectionStep } from './subscription/PlanSelectionStep';
 import { AuthStep } from './subscription/AuthStep';
+import { TransparentCheckout } from '@/components/subscription/TransparentCheckout';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { CreditCard, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 interface SubscriptionPlan {
   id: string;
@@ -166,65 +168,6 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
     }
   };
 
-  const handleSubscribe = async (plan: SubscriptionPlan) => {
-    if (!user) {
-      toast({
-        title: 'Erro',
-        description: 'Você precisa estar logado para assinar um plano.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (!isMercadoPagoConfigured) {
-      toast({
-        title: 'Serviço Temporariamente Indisponível',
-        description: 'O sistema de pagamentos está sendo configurado. Tente novamente em alguns minutos.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setLoading(true);
-    
-    try {
-      console.log('Tentando criar assinatura...', { planId: plan.id, frequency });
-      
-      const { data, error } = await supabase.functions.invoke('create-mercado-pago-subscription', {
-        body: { 
-          planId: plan.id, 
-          subscriptionFrequency: frequency 
-        }
-      });
-
-      if (error) {
-        console.error('Erro da edge function:', error);
-        throw error;
-      }
-
-      console.log('Resposta da edge function:', data);
-
-      if (data.init_point) {
-        window.open(data.init_point, '_blank');
-        toast({
-          title: 'Redirecionamento',
-          description: 'Você será redirecionado para completar sua assinatura.',
-        });
-      } else {
-        throw new Error('URL de pagamento não fornecida');
-      }
-    } catch (error) {
-      console.error('Erro ao criar assinatura:', error);
-      toast({
-        title: 'Erro',
-        description: 'Erro ao processar assinatura. Tente novamente.',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Flow steps para usuários não logados ou seleção de plano
   if (currentStep === 'planSelection') {
     return (
@@ -271,13 +214,8 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
     );
   }
 
-  // Se usuário está logado e tem plano selecionado, mostrar checkout
+  // Se usuário está logado e tem plano selecionado, mostrar checkout transparente
   if ((user || currentStep === 'checkout') && selectedPlan) {
-    const currentPrice = frequency === 'monthly' ? selectedPlan.price_monthly : selectedPlan.price_yearly;
-    const savings = selectedPlan.price_monthly && selectedPlan.price_yearly 
-      ? Math.round(((selectedPlan.price_monthly * 12 - selectedPlan.price_yearly) / (selectedPlan.price_monthly * 12)) * 100)
-      : 0;
-
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col">
@@ -294,20 +232,10 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
           </div>
 
           <ScrollArea className="flex-1">
-            <div className="p-6 space-y-6">
-              {/* Informações do Plano */}
-              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 text-center">
-                <h3 className="font-semibold text-blue-900 dark:text-blue-100 text-lg">
-                  {selectedPlan.name}
-                </h3>
-                <p className="text-sm text-blue-700 dark:text-blue-300">
-                  {selectedPlan.description}
-                </p>
-              </div>
-
+            <div className="p-6">
               {/* Verificação de configuração do Mercado Pago */}
               {!isMercadoPagoConfigured && (
-                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4">
+                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 mb-6">
                   <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
                     <AlertTriangle className="h-5 w-5" />
                     <h4 className="font-medium">Sistema de Pagamentos em Configuração</h4>
@@ -319,42 +247,25 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
                 </div>
               )}
 
-              {/* Resumo */}
-              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-                <div className="flex justify-between items-center text-lg font-bold">
-                  <span>Total a pagar:</span>
-                  <span className="text-blue-600">R$ {currentPrice}</span>
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  {frequency === 'monthly' ? 'Pagamento mensal' : 'Pagamento anual'}
-                  {frequency === 'yearly' && savings > 0 && (
-                    <span className="text-green-600 ml-2">(Economize {savings}%)</span>
-                  )}
-                </div>
-              </div>
+              {isMercadoPagoConfigured && (
+                <TransparentCheckout
+                  selectedPlan={selectedPlan}
+                  frequency={frequency}
+                  onClose={onClose}
+                />
+              )}
             </div>
           </ScrollArea>
 
-          {/* Botões de Ação */}
+          {/* Botão de Cancelar */}
           <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={onClose}
-                className="flex-1"
-                disabled={loading}
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={() => handleSubscribe(selectedPlan)}
-                disabled={loading || !isMercadoPagoConfigured}
-                className="flex-1 flex items-center gap-2"
-              >
-                <CreditCard className="h-4 w-4" />
-                {loading ? 'Processando...' : 'Assinar Agora'}
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="w-full"
+            >
+              Cancelar
+            </Button>
           </div>
         </div>
       </div>
