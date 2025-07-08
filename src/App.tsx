@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./hooks/useAuth";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { useSEOConfig } from "./hooks/useSEOConfig";
 import Index from "./pages/Index";
@@ -62,9 +63,11 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AppContent />
-        <Toaster />
-        <Sonner />
+        <AuthProvider>
+          <AppContent />
+          <Toaster />
+          <Sonner />
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
