@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -207,11 +208,21 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
 
   return (
     <div ref={containerRef} className="space-y-6 max-h-full overflow-y-auto">
-      {/* Plan Header */}
+      {/* Plan Header - Novo layout com nome, frequência e preço */}
       <div className="text-center">
-        <h3 className="text-xl font-semibold">{selectedPlan.name}</h3>
+        <div className="flex items-center justify-between">
+          <div className="text-left">
+            <h3 className="text-xl font-semibold">{selectedPlan.name}</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 capitalize">
+              {frequency === 'monthly' ? 'Mensal' : 'Anual'}
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-xl font-bold">R$ {currentPrice}</div>
+          </div>
+        </div>
         {selectedPlan.description && (
-          <p className="text-gray-600 dark:text-gray-400">{selectedPlan.description}</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-2 text-center">{selectedPlan.description}</p>
         )}
       </div>
 
@@ -330,14 +341,6 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
           </div>
         </div>
       )}
-
-      {/* Payment Summary - Simplificado */}
-      <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-        <div className="flex justify-between items-center font-bold text-lg">
-          <span>Total:</span>
-          <span>R$ {currentPrice}</span>
-        </div>
-      </div>
 
       {/* Action Buttons */}
       <div className="flex gap-2">
