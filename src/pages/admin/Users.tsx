@@ -18,21 +18,33 @@ const AdminUsers = () => {
   const { data: users, isLoading } = useQuery({
     queryKey: ['admin-users', searchTerm],
     queryFn: async () => {
-      let query = supabase
+      // Buscar perfis
+      let profileQuery = supabase
         .from('profiles')
-        .select(`
-          *,
-          user_roles (role)
-        `);
+        .select('*');
 
       if (searchTerm) {
-        query = query.or(`full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
+        profileQuery = profileQuery.or(`full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
       }
 
-      const { data, error } = await query.order('created_at', { ascending: false });
+      const { data: profiles, error: profileError } = await profileQuery.order('created_at', { ascending: false });
       
-      if (error) throw error;
-      return data;
+      if (profileError) throw profileError;
+
+      // Buscar roles para cada usuário
+      const { data: userRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+      
+      if (rolesError) throw rolesError;
+
+      // Combinar os dados
+      const usersWithRoles = profiles?.map(profile => ({
+        ...profile,
+        user_roles: userRoles?.filter(role => role.user_id === profile.id) || []
+      })) || [];
+
+      return usersWithRoles;
     }
   });
 
