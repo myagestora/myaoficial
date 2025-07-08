@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { SubscriptionPlans } from '@/components/subscription/SubscriptionPlans';
@@ -167,8 +166,8 @@ export const SubscriptionFlow = ({ onClose, selectedPlan }: SubscriptionFlowProp
 
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-2xl w-full h-[90vh] flex flex-col">
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-lg w-full max-h-[90vh]">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">Finalizar Assinatura</h2>
               <button
@@ -180,10 +179,10 @@ export const SubscriptionFlow = ({ onClose, selectedPlan }: SubscriptionFlowProp
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="p-6 space-y-6">
             {/* Informações do Plano */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-              <h3 className="font-semibold text-blue-900 dark:text-blue-100">
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 text-center">
+              <h3 className="font-semibold text-blue-900 dark:text-blue-100 text-lg">
                 {selectedPlan.name}
               </h3>
               <p className="text-sm text-blue-700 dark:text-blue-300">
@@ -193,91 +192,71 @@ export const SubscriptionFlow = ({ onClose, selectedPlan }: SubscriptionFlowProp
 
             {/* Seleção de Frequência */}
             <div className="space-y-4">
-              <Label className="text-lg font-semibold">Escolha a frequência de pagamento:</Label>
-              <RadioGroup value={frequency} onValueChange={(value: 'monthly' | 'yearly') => setFrequency(value)}>
+              <Label className="text-lg font-semibold">Escolha seu plano:</Label>
+              <RadioGroup value={frequency} onValueChange={(value: 'monthly' | 'yearly') => setFrequency(value)} className="space-y-3">
+                {/* Opção Mensal */}
                 {selectedPlan.price_monthly && (
-                  <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <Label htmlFor="monthly" className="flex items-center space-x-3 p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                     <RadioGroupItem value="monthly" id="monthly" />
-                    <Label htmlFor="monthly" className="flex-1 cursor-pointer">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <div className="font-medium">Mensal</div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">
-                            Cobrança todo mês
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-xl font-bold">R$ {selectedPlan.price_monthly}</div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">por mês</div>
+                    <div className="flex-1 flex justify-between items-center">
+                      <div>
+                        <div className="font-semibold text-lg">Plano Mensal</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          Cobrança mensal
                         </div>
                       </div>
-                    </Label>
-                  </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-blue-600">
+                          R$ {selectedPlan.price_monthly}
+                        </div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">por mês</div>
+                      </div>
+                    </div>
+                  </Label>
                 )}
 
+                {/* Opção Anual */}
                 {selectedPlan.price_yearly && (
-                  <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <Label htmlFor="yearly" className="flex items-center space-x-3 p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                     <RadioGroupItem value="yearly" id="yearly" />
-                    <Label htmlFor="yearly" className="flex-1 cursor-pointer">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <div className="font-medium flex items-center gap-2">
-                            Anual
-                            {savings > 0 && (
-                              <Badge variant="secondary" className="bg-green-100 text-green-800">
-                                {savings}% OFF
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">
-                            Cobrança anual (economize {savings}%)
-                          </div>
+                    <div className="flex-1 flex justify-between items-center">
+                      <div>
+                        <div className="font-semibold text-lg flex items-center gap-2">
+                          Plano Anual
+                          {savings > 0 && (
+                            <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
+                              {savings}% OFF
+                            </Badge>
+                          )}
                         </div>
-                        <div className="text-right">
-                          <div className="text-xl font-bold">R$ {selectedPlan.price_yearly}</div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">por ano</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          Cobrança anual (economize {savings}%)
                         </div>
                       </div>
-                    </Label>
-                  </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-green-600">
+                          R$ {selectedPlan.price_yearly}
+                        </div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">por ano</div>
+                      </div>
+                    </div>
+                  </Label>
                 )}
               </RadioGroup>
             </div>
 
-            {/* Features do Plano */}
-            {selectedPlan.features && selectedPlan.features.length > 0 && (
-              <div className="space-y-3">
-                <Label className="text-lg font-semibold">O que está incluído:</Label>
-                <div className="space-y-2">
-                  {selectedPlan.features.map((feature, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">{feature}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Resumo do Pagamento */}
-            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg space-y-2">
-              <div className="flex justify-between items-center">
-                <span>Plano selecionado:</span>
-                <span className="font-medium">{selectedPlan.name}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Frequência:</span>
-                <span className="font-medium capitalize">{frequency === 'monthly' ? 'Mensal' : 'Anual'}</span>
-              </div>
+            {/* Resumo */}
+            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
               <div className="flex justify-between items-center text-lg font-bold">
-                <span>Total:</span>
-                <span>R$ {currentPrice}</span>
+                <span>Total a pagar:</span>
+                <span className="text-blue-600">R$ {currentPrice}</span>
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                {frequency === 'monthly' ? 'Pagamento mensal' : 'Pagamento anual'}
               </div>
             </div>
-          </div>
 
-          {/* Botões de Ação */}
-          <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+            {/* Botões de Ação */}
             <div className="flex gap-3">
               <Button
                 variant="outline"
