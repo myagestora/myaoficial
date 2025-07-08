@@ -1,315 +1,247 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[CREATE-MP-PAYMENT] ${step}${detailsStr}`);
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+  console.log('=== CREATE MERCADO PAGO PAYMENT INICIADO ===');
+  
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    logStep('Function started');
-
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    )
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
 
-    // Get the authorization header
-    const authHeader = req.headers.get('Authorization')
+    // Obter usuário autenticado
+    const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      logStep('No authorization header provided');
-      return new Response(
-        JSON.stringify({ error: 'Authorization header required' }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
+      throw new Error('Token de autorização necessário');
     }
 
-    const token = authHeader.replace('Bearer ', '')
-    
-    // Get user from token
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token)
-    
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(authHeader.replace('Bearer ', ''));
     if (authError || !user) {
-      logStep('Auth error', authError);
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
+      throw new Error('Usuário não autenticado');
     }
 
-    logStep('User authenticated', { userId: user.id });
+    console.log('Usuário autenticado:', user.id);
 
-    const requestBody = await req.json()
-    const { planId, frequency, paymentMethod, cardData } = requestBody
+    const { planId, frequency, paymentMethod, cardData } = await req.json();
+    console.log('Dados recebidos:', { planId, frequency, paymentMethod });
 
-    logStep('Processing payment', { planId, frequency, paymentMethod, userId: user.id });
-
-    // Get plan details
-    const { data: plan, error: planError } = await supabaseClient
+    // Buscar detalhes do plano
+    const { data: planData, error: planError } = await supabaseClient
       .from('subscription_plans')
       .select('*')
       .eq('id', planId)
-      .single()
+      .single();
 
-    if (planError || !plan) {
-      logStep('Error fetching plan', planError);
-      return new Response(
-        JSON.stringify({ error: 'Plano não encontrado' }),
-        { 
-          status: 404, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
+    if (planError || !planData) {
+      throw new Error('Plano não encontrado');
     }
 
-    logStep('Plan found', { planName: plan.name });
+    console.log('Plano encontrado:', planData.name);
 
-    // Get Mercado Pago configuration
+    // Buscar token do Mercado Pago
     const { data: configData, error: configError } = await supabaseClient
       .from('system_config')
-      .select('key, value')
-      .in('key', ['mercado_pago_access_token', 'mercado_pago_enabled'])
+      .select('value')
+      .eq('key', 'mercado_pago_access_token')
+      .single();
 
-    if (configError) {
-      logStep('Error fetching config', configError);
-      return new Response(
-        JSON.stringify({ error: 'Erro de configuração' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
+    if (configError || !configData) {
+      throw new Error('Token do Mercado Pago não configurado');
     }
 
-    const config: Record<string, string> = {}
-    configData.forEach(item => {
-      config[item.key] = typeof item.value === 'string' ? 
-        item.value.replace(/^"|"$/g, '') : 
-        JSON.stringify(item.value).replace(/^"|"$/g, '')
-    })
+    const accessToken = typeof configData.value === 'string' ? 
+      configData.value.replace(/^"|"$/g, '') : 
+      String(configData.value).replace(/^"|"$/g, '');
 
-    const accessToken = config.mercado_pago_access_token
-    const isEnabled = config.mercado_pago_enabled
+    console.log('Token obtido');
 
-    if (!accessToken || isEnabled !== 'true') {
-      logStep('Mercado Pago not configured properly', { hasToken: !!accessToken, isEnabled });
-      return new Response(
-        JSON.stringify({ error: 'Mercado Pago não está habilitado' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
-    }
-
-    logStep('Mercado Pago config validated');
-
-    const amount = frequency === 'monthly' ? plan.price_monthly : plan.price_yearly
-
+    // Determinar valor baseado na frequência
+    const amount = frequency === 'monthly' ? planData.price_monthly : planData.price_yearly;
     if (!amount) {
-      logStep('Invalid amount for plan', { planId, frequency });
-      return new Response(
-        JSON.stringify({ error: 'Preço do plano não encontrado' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
+      throw new Error(`Preço não disponível para frequência ${frequency}`);
     }
 
-    // Try to get user profile, but fallback to user data if not found
-    const { data: profile, error: profileError } = await supabaseClient
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .maybeSingle()
+    console.log('Valor do pagamento:', amount);
 
-    // Use profile data if available, otherwise fallback to user data
-    const userEmail = profile?.email || user.email
-    const userName = profile?.full_name || user.user_metadata?.full_name || 'Cliente'
-    const userCpf = cardData?.cpf || profile?.whatsapp || '00000000000'
-
-    logStep('User data prepared', { 
-      userId: user.id, 
-      hasProfile: !!profile, 
-      email: userEmail,
-      name: userName 
-    });
-
-    let paymentData: any = {
+    // Criar pagamento no Mercado Pago
+    const paymentData: any = {
       transaction_amount: amount,
-      description: `Assinatura ${plan.name} - ${frequency === 'monthly' ? 'Mensal' : 'Anual'}`,
+      description: `${planData.name} - ${frequency === 'monthly' ? 'Mensal' : 'Anual'}`,
+      payment_method_id: paymentMethod === 'pix' ? 'pix' : undefined,
+      external_reference: `${user.id}_${planId}_${Date.now()}`,
       payer: {
-        email: userEmail,
-        first_name: userName,
+        email: user.email,
+        first_name: user.user_metadata?.full_name || 'Usuario',
+      },
+      notification_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/mercado-pago-webhook`,
+    };
+
+    // Se for cartão de crédito, adicionar dados do cartão
+    if (paymentMethod === 'credit_card' && cardData) {
+      paymentData.payment_method_id = 'visa'; // ou detectar automaticamente
+      paymentData.token = 'card_token'; // Em produção, deve ser tokenizado no frontend
+      paymentData.installments = 1;
+      paymentData.payer = {
+        ...paymentData.payer,
         identification: {
           type: 'CPF',
-          number: userCpf
+          number: cardData.cpf.replace(/\D/g, '')
         }
-      },
-      external_reference: `subscription_${user.id}_${planId}_${Date.now()}`,
-      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercado-pago-webhook`
+      };
     }
 
-    if (paymentMethod === 'pix') {
-      paymentData.payment_method_id = 'pix'
-      logStep('Setting up PIX payment');
-    } else if (paymentMethod === 'credit_card' && cardData) {
-      // Validate card data
-      if (!cardData.cardNumber || !cardData.cardholderName || !cardData.expirationMonth || 
-          !cardData.expirationYear || !cardData.securityCode || !cardData.cpf) {
-        return new Response(
-          JSON.stringify({ error: 'Dados do cartão incompletos' }),
-          { 
-            status: 400, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        )
-      }
+    console.log('Criando pagamento no Mercado Pago...');
 
-      logStep('Setting up credit card payment');
-      paymentData.payment_method_id = 'master'
-      paymentData.token = null
-      paymentData.card = {
-        number: cardData.cardNumber,
-        holder_name: cardData.cardholderName,
-        expiration_month: cardData.expirationMonth,
-        expiration_year: cardData.expirationYear,
-        security_code: cardData.securityCode
-      }
-      paymentData.payer.identification.number = cardData.cpf
-    }
-
-    logStep('Sending payment data to Mercado Pago', { amount, paymentMethod });
-
-    // Create payment with Mercado Pago
     const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
-        'X-Idempotency-Key': `${user.id}_${planId}_${Date.now()}`
       },
-      body: JSON.stringify(paymentData)
-    })
-
-    const mpResult = await mpResponse.json()
-    logStep('Mercado Pago response', { status: mpResponse.status, result: mpResult });
+      body: JSON.stringify(paymentData),
+    });
 
     if (!mpResponse.ok) {
-      logStep('Mercado Pago API error', mpResult);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Erro ao processar pagamento',
-          details: mpResult.message || mpResult.error || 'Erro desconhecido'
-        }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
+      const errorText = await mpResponse.text();
+      console.error('Erro do Mercado Pago:', errorText);
+      throw new Error(`Erro do Mercado Pago: ${mpResponse.status}`);
     }
 
-    logStep('Payment created successfully', { paymentId: mpResult.id });
+    const mpPayment = await mpResponse.json();
+    console.log('Pagamento criado no MP:', {
+      id: mpPayment.id,
+      status: mpPayment.status,
+      payment_method_id: mpPayment.payment_method_id
+    });
 
-    // Store payment in database
-    const { error: paymentError } = await supabaseClient
+    // CRUCIAL: Salvar o pagamento no banco de dados COM o ID do Mercado Pago
+    console.log('Salvando pagamento no banco de dados...');
+    
+    const { data: paymentRecord, error: paymentError } = await supabaseClient
       .from('payments')
       .insert({
         user_id: user.id,
         plan_id: planId,
         amount: amount,
+        currency: 'BRL',
         payment_method: paymentMethod,
-        status: mpResult.status,
-        mercado_pago_payment_id: mpResult.id?.toString(),
-        currency: 'BRL'
+        mercado_pago_payment_id: mpPayment.id.toString(), // SALVAR O ID AQUI!
+        mercado_pago_preference_id: paymentData.external_reference,
+        status: mpPayment.status === 'approved' ? 'completed' : 'pending',
+        payment_date: mpPayment.date_approved || mpPayment.date_created,
       })
+      .select()
+      .single();
 
     if (paymentError) {
-      logStep('Error saving payment to database', paymentError);
+      console.error('Erro ao salvar pagamento:', paymentError);
+      throw new Error('Erro ao salvar pagamento no banco');
     }
 
-    // Return payment result
-    let response: any = {
-      status: mpResult.status,
-      status_detail: mpResult.status_detail,
-      id: mpResult.id
-    }
+    console.log('Pagamento salvo no banco:', paymentRecord.id);
 
-    // For PIX payments, include QR code data
-    if (paymentMethod === 'pix' && mpResult.point_of_interaction?.transaction_data) {
-      response.pix_data = {
-        qr_code: mpResult.point_of_interaction.transaction_data.qr_code,
-        qr_code_base64: mpResult.point_of_interaction.transaction_data.qr_code_base64
-      }
-      logStep('PIX QR code generated successfully');
-    }
-
-    // If payment is approved, activate subscription
-    if (mpResult.status === 'approved') {
-      logStep('Payment approved, activating subscription...');
+    // Se foi aprovado imediatamente, ativar assinatura
+    if (mpPayment.status === 'approved') {
+      console.log('Pagamento aprovado imediatamente - ativando assinatura...');
       
-      const subscriptionEndDate = new Date()
-      if (frequency === 'monthly') {
-        subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + 1)
-      } else {
-        subscriptionEndDate.setFullYear(subscriptionEndDate.getFullYear() + 1)
-      }
+      const currentDate = new Date();
+      const periodEnd = new Date(currentDate);
+      periodEnd.setMonth(periodEnd.getMonth() + (frequency === 'yearly' ? 12 : 1));
 
-      const { error: subscriptionError } = await supabaseClient
+      // Verificar se já existe assinatura
+      const { data: existingSubscription } = await supabaseClient
         .from('user_subscriptions')
-        .insert({
-          user_id: user.id,
-          plan_id: planId,
-          status: 'active',
-          current_period_start: new Date().toISOString(),
-          current_period_end: subscriptionEndDate.toISOString()
-        })
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('plan_id', planId)
+        .maybeSingle();
 
-      if (subscriptionError) {
-        logStep('Error creating subscription', subscriptionError);
+      if (existingSubscription) {
+        await supabaseClient
+          .from('user_subscriptions')
+          .update({
+            status: 'active',
+            current_period_start: currentDate.toISOString(),
+            current_period_end: periodEnd.toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingSubscription.id);
       } else {
-        logStep('Subscription created successfully');
+        await supabaseClient
+          .from('user_subscriptions')
+          .insert({
+            user_id: user.id,
+            plan_id: planId,
+            status: 'active',
+            current_period_start: currentDate.toISOString(),
+            current_period_end: periodEnd.toISOString(),
+          });
       }
+
+      // Atualizar perfil
+      await supabaseClient
+        .from('profiles')
+        .update({
+          subscription_status: 'active',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      console.log('Assinatura ativada');
     }
 
-    return new Response(
-      JSON.stringify(response),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    )
+    // Preparar resposta
+    const response = {
+      id: mpPayment.id,
+      status: mpPayment.status,
+      status_detail: mpPayment.status_detail,
+      payment_method_id: mpPayment.payment_method?.id,
+      date_created: mpPayment.date_created,
+      date_approved: mpPayment.date_approved,
+      external_reference: mpPayment.external_reference,
+      transaction_amount: mpPayment.transaction_amount,
+      payment_record_id: paymentRecord.id
+    };
+
+    // Se for PIX, incluir dados do QR Code
+    if (paymentMethod === 'pix' && mpPayment.point_of_interaction?.transaction_data) {
+      response.pix_data = {
+        qr_code: mpPayment.point_of_interaction.transaction_data.qr_code,
+        qr_code_base64: mpPayment.point_of_interaction.transaction_data.qr_code_base64,
+      };
+    }
+
+    console.log('=== PAGAMENTO CRIADO COM SUCESSO ===');
+    console.log('Payment ID:', mpPayment.id);
+    console.log('Status:', mpPayment.status);
+
+    return new Response(JSON.stringify(response), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    });
 
   } catch (error) {
-    logStep('General error', { message: error.message, stack: error.stack });
-    return new Response(
-      JSON.stringify({ 
-        error: 'Erro interno do servidor',
-        details: error.message || 'Unknown error'
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    )
+    console.error('=== ERRO NA CRIAÇÃO DO PAGAMENTO ===');
+    console.error('Erro:', error);
+    console.error('Stack:', error.stack);
+    
+    return new Response(JSON.stringify({ 
+      error: error.message || 'Erro interno do servidor'
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+    });
   }
-})
+});

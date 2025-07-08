@@ -49,7 +49,7 @@ serve(async (req) => {
       });
     }
 
-    // Verificar se é evento de pagamento (criação ou atualização)
+    // Verificar se é evento de pagamento
     const isPaymentEvent = webhookData.type === 'payment' || 
                           (webhookData.action && (
                             webhookData.action === 'payment.created' || 
@@ -118,13 +118,84 @@ serve(async (req) => {
 
     console.log('Payment ID:', paymentId);
 
-    // Aguardar um pouco se for evento de criação para dar tempo do pagamento ser processado
-    if (webhookData.action === 'payment.created') {
-      console.log('Evento de criação - aguardando 5 segundos...');
-      await new Promise(resolve => setTimeout(resolve, 5000));
+    // PRIMEIRO: Buscar pagamento no banco usando o payment_id
+    console.log('Buscando pagamento no banco por mercado_pago_payment_id...');
+    const { data: paymentRecord, error: findError } = await supabaseClient
+      .from('payments')
+      .select('*')
+      .eq('mercado_pago_payment_id', paymentId.toString())
+      .maybeSingle();
+
+    if (findError) {
+      console.error('Erro ao buscar pagamento no banco:', findError);
+      return new Response(JSON.stringify({ 
+        received: true,
+        error: 'Erro ao buscar pagamento no banco'
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
     }
 
-    // Buscar pagamento no Mercado Pago
+    if (!paymentRecord) {
+      console.log('Pagamento não encontrado no banco - payment_id:', paymentId);
+      
+      // Tentar buscar detalhes do pagamento no MP para obter external_reference
+      console.log('Tentando buscar no MP para obter external_reference...');
+      const paymentResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+
+      if (paymentResponse.ok) {
+        const mpPaymentData = await paymentResponse.json();
+        console.log('Dados do MP:', {
+          id: mpPaymentData.id,
+          external_reference: mpPaymentData.external_reference,
+          status: mpPaymentData.status
+        });
+        
+        // Tentar buscar por external_reference
+        if (mpPaymentData.external_reference) {
+          const { data: altPaymentRecord } = await supabaseClient
+            .from('payments')
+            .select('*')
+            .eq('mercado_pago_preference_id', mpPaymentData.external_reference)
+            .maybeSingle();
+          
+          if (altPaymentRecord) {
+            console.log('Pagamento encontrado por external_reference');
+            // Atualizar o registro com o payment_id correto
+            await supabaseClient
+              .from('payments')
+              .update({
+                mercado_pago_payment_id: paymentId.toString()
+              })
+              .eq('id', altPaymentRecord.id);
+            
+            // Usar este registro
+            paymentRecord = altPaymentRecord;
+          }
+        }
+      }
+      
+      if (!paymentRecord) {
+        return new Response(JSON.stringify({ 
+          received: true,
+          error: 'Pagamento não encontrado no banco'
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+    }
+
+    console.log('Pagamento encontrado no banco:', paymentRecord.id);
+
+    // Buscar status atual no Mercado Pago
+    console.log('Consultando status atual no Mercado Pago...');
+    
     const paymentResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`
@@ -143,65 +214,15 @@ serve(async (req) => {
     }
 
     const paymentData = await paymentResponse.json();
-    console.log('Payment data do MP:', {
+    console.log('Status do pagamento no MP:', {
       id: paymentData.id,
       status: paymentData.status,
       status_detail: paymentData.status_detail,
-      external_reference: paymentData.external_reference,
       date_approved: paymentData.date_approved,
       date_created: paymentData.date_created
     });
 
-    // Buscar pagamento no banco - tentar por payment_id primeiro, depois por preference_id
-    let paymentRecord;
-    
-    // Primeiro: buscar por mercado_pago_payment_id
-    const { data: recordById, error: findByIdError } = await supabaseClient
-      .from('payments')
-      .select('*')
-      .eq('mercado_pago_payment_id', paymentData.id.toString())
-      .maybeSingle();
-
-    if (findByIdError) {
-      console.error('Erro ao buscar por payment_id:', findByIdError);
-    } else if (recordById) {
-      paymentRecord = recordById;
-      console.log('Pagamento encontrado por payment_id:', paymentRecord.id);
-    }
-
-    // Segundo: se não encontrou, buscar por preference_id
-    if (!paymentRecord && paymentData.external_reference) {
-      const { data: recordByRef, error: findByRefError } = await supabaseClient
-        .from('payments')
-        .select('*')
-        .eq('mercado_pago_preference_id', paymentData.external_reference)
-        .maybeSingle();
-
-      if (findByRefError) {
-        console.error('Erro ao buscar por preference_id:', findByRefError);
-      } else if (recordByRef) {
-        paymentRecord = recordByRef;
-        console.log('Pagamento encontrado por preference_id:', paymentRecord.id);
-      }
-    }
-
-    if (!paymentRecord) {
-      console.log('Pagamento não encontrado no banco - IDs buscados:', {
-        payment_id: paymentData.id,
-        external_reference: paymentData.external_reference
-      });
-      return new Response(JSON.stringify({ 
-        received: true,
-        error: 'Pagamento não encontrado no banco'
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
-
-    console.log('Pagamento encontrado no banco:', paymentRecord.id);
-
-    // Determinar status
+    // Determinar novo status
     let newStatus = 'pending';
     if (paymentData.status === 'approved') {
       newStatus = 'completed';
@@ -211,9 +232,8 @@ serve(async (req) => {
       newStatus = 'cancelled';
     }
 
-    console.log('Status atual no MP:', paymentData.status);
-    console.log('Novo status a ser definido:', newStatus);
     console.log('Status atual no banco:', paymentRecord.status);
+    console.log('Novo status a ser definido:', newStatus);
 
     // Só atualizar se o status mudou
     if (paymentRecord.status !== newStatus) {
@@ -223,7 +243,6 @@ serve(async (req) => {
         .from('payments')
         .update({
           status: newStatus,
-          mercado_pago_payment_id: paymentData.id.toString(),
           payment_date: paymentData.date_approved || paymentData.date_created,
           updated_at: new Date().toISOString()
         })
@@ -282,8 +301,6 @@ serve(async (req) => {
                 status: 'active',
                 current_period_start: currentDate.toISOString(),
                 current_period_end: periodEnd.toISOString(),
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
               });
             
             console.log('Nova assinatura criada');
@@ -301,7 +318,6 @@ serve(async (req) => {
           console.log('Perfil atualizado - assinatura ativada');
         } catch (subscriptionError) {
           console.error('Erro na ativação da assinatura:', subscriptionError);
-          // Não falhar o webhook por erro na assinatura
         }
       }
     } else {
