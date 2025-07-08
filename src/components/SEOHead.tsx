@@ -2,7 +2,6 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { PWAManifest } from './PWAManifest';
 
 export const SEOHead = () => {
   const { data: seoConfig } = useQuery({
@@ -196,9 +195,5 @@ export const SEOHead = () => {
 
   }, [seoConfig]);
 
-  return (
-    <>
-      <PWAManifest />
-    </>
-  );
+  return null;
 };
