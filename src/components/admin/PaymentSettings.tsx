@@ -21,7 +21,7 @@ export const PaymentSettings = ({ settings, onInputChange, onSave, isLoading }: 
   };
 
   // URL correta da Edge Function do Supabase
-  const webhookUrl = 'https://c46de564-3ee4-45c1-9f4a-43d78557c5ef.supabase.co/functions/v1/mercado-pago-webhook';
+  const webhookUrl = 'https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1/mercado-pago-webhook';
 
   const copyWebhookUrl = async () => {
     try {
