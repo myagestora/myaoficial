@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const adminNavigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
@@ -25,17 +27,74 @@ const adminNavigation = [
 ];
 
 export const AdminLayout = () => {
+  // Buscar configurações do sistema para logo e nome
+  const { data: systemConfig } = useQuery({
+    queryKey: ['system-config-admin'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('system_config')
+        .select('*')
+        .in('key', ['app_name', 'app_logo']);
+      
+      if (error) {
+        console.error('Erro ao buscar configurações:', error);
+        throw error;
+      }
+      
+      const configObj: Record<string, string> = {};
+      data.forEach(item => {
+        configObj[item.key] = typeof item.value === 'string' ? 
+          item.value.replace(/^"|"$/g, '') : 
+          JSON.stringify(item.value).replace(/^"|"$/g, '');
+      });
+      
+      return configObj;
+    },
+    staleTime: 30000,
+    gcTime: 60000,
+  });
+
+  const appName = systemConfig?.app_name || 'MYA Gestora';
+  const appLogo = systemConfig?.app_logo;
+
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       {/* Admin Sidebar */}
       <div className="flex flex-col w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
         {/* Logo */}
         <div className="flex items-center justify-center h-16 px-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
-              <Settings className="w-5 h-5 text-white" />
+          <div className="flex items-center justify-center">
+            {appLogo && appLogo.trim() !== '' ? (
+              // Quando tem logo, mostra apenas o logo
+              <img 
+                src={appLogo} 
+                alt={appName}
+                className="h-10 w-auto object-contain"
+                onError={(e) => {
+                  console.error('Erro ao carregar logo:', appLogo);
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  // Mostrar fallback com nome
+                  const fallback = target.parentElement?.querySelector('.logo-fallback') as HTMLElement;
+                  if (fallback) {
+                    fallback.style.display = 'flex';
+                  }
+                }}
+                onLoad={() => {
+                  console.log('Logo carregada com sucesso:', appLogo);
+                }}
+              />
+            ) : null}
+            
+            {/* Fallback: quando não tem logo ou erro no carregamento */}
+            <div 
+              className={`flex items-center space-x-2 logo-fallback ${appLogo && appLogo.trim() !== '' ? 'hidden' : ''}`}
+            >
+              <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
+                <Settings className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-bold text-gray-900 dark:text-white">Admin</span>
             </div>
-            <span className="text-xl font-bold text-gray-900 dark:text-white">Admin</span>
           </div>
         </div>
 
@@ -75,7 +134,7 @@ export const AdminLayout = () => {
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
           <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
             <p>Painel Administrativo</p>
-            <p className="mt-1">MYA Gestora</p>
+            <p className="mt-1">{appName}</p>
           </div>
         </div>
       </div>
