@@ -39,9 +39,10 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
       isAdmin: boolean;
     }) => {
       console.log('Updating user with data:', userData);
+      console.log('User ID:', user.id);
       
       // Atualizar perfil
-      const { error: profileError } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .update({
           email: userData.email,
@@ -50,12 +51,24 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
           subscription_status: userData.subscriptionStatus,
           admin_override_status: userData.adminOverride,
         })
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select();
+
+      console.log('Profile update result:', { profileData, profileError });
 
       if (profileError) {
         console.error('Profile update error:', profileError);
         throw profileError;
       }
+
+      // Verificar se a atualização realmente aconteceu
+      const { data: verifyData, error: verifyError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      console.log('Verification after update:', { verifyData, verifyError });
 
       // Gerenciar role de admin
       const currentlyAdmin = user.user_roles?.some((role: any) => role.role === 'admin') || false;
@@ -104,9 +117,11 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
   });
 
   const handleSubscriptionStatusChange = (value: string) => {
+    console.log('Changing subscription status to:', value);
     setSubscriptionStatus(value);
     // Automaticamente marcar o admin override quando o status for alterado
     setAdminOverride(true);
+    console.log('Admin override set to true');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
