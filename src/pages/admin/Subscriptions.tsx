@@ -110,22 +110,33 @@ const AdminSubscriptions = () => {
         return combinedData;
       }
       
-      const transformedData: SubscriptionWithProfile[] = data?.map(subscription => ({
-        id: subscription.id,
-        user_id: subscription.user_id,
-        plan_id: subscription.plan_id,
-        status: subscription.status || 'inactive',
-        current_period_start: subscription.current_period_start,
-        current_period_end: subscription.current_period_end,
-        created_at: subscription.created_at || '',
-        updated_at: subscription.updated_at || '',
-        stripe_customer_id: subscription.stripe_customer_id,
-        stripe_subscription_id: subscription.stripe_subscription_id,
-        subscription_plans: subscription.subscription_plans,
-        profiles: subscription.profiles && typeof subscription.profiles === 'object' && 'id' in subscription.profiles 
-          ? subscription.profiles as ProfileData 
-          : null
-      })) || [];
+      const transformedData: SubscriptionWithProfile[] = data?.map(subscription => {
+        // First check if profiles exists and is a valid object
+        const profilesData = subscription.profiles;
+        let validProfile: ProfileData | null = null;
+        
+        if (profilesData && typeof profilesData === 'object' && !('error' in profilesData)) {
+          // Check if it has the required properties for ProfileData
+          if ('id' in profilesData && 'full_name' in profilesData && 'email' in profilesData) {
+            validProfile = profilesData as ProfileData;
+          }
+        }
+        
+        return {
+          id: subscription.id,
+          user_id: subscription.user_id,
+          plan_id: subscription.plan_id,
+          status: subscription.status || 'inactive',
+          current_period_start: subscription.current_period_start,
+          current_period_end: subscription.current_period_end,
+          created_at: subscription.created_at || '',
+          updated_at: subscription.updated_at || '',
+          stripe_customer_id: subscription.stripe_customer_id,
+          stripe_subscription_id: subscription.stripe_subscription_id,
+          subscription_plans: subscription.subscription_plans,
+          profiles: validProfile
+        };
+      }) || [];
       
       return transformedData;
     }
