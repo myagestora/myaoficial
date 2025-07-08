@@ -38,26 +38,31 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
       adminOverride: boolean;
       isAdmin: boolean;
     }) => {
-      console.log('Updating user with data:', userData);
-      console.log('User ID:', user.id);
+      console.log('🔄 Updating user with data:', userData);
+      console.log('👤 User ID:', user.id);
+      console.log('📊 Current user data before update:', user);
       
       // Atualizar perfil
+      const updateData = {
+        email: userData.email,
+        full_name: userData.fullName,
+        whatsapp: userData.whatsapp,
+        subscription_status: userData.subscriptionStatus,
+        admin_override_status: userData.adminOverride,
+      };
+      
+      console.log('📝 Data to update in profiles table:', updateData);
+      
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .update({
-          email: userData.email,
-          full_name: userData.fullName,
-          whatsapp: userData.whatsapp,
-          subscription_status: userData.subscriptionStatus,
-          admin_override_status: userData.adminOverride,
-        })
+        .update(updateData)
         .eq('id', user.id)
         .select();
 
-      console.log('Profile update result:', { profileData, profileError });
+      console.log('✅ Profile update result:', { profileData, profileError });
 
       if (profileError) {
-        console.error('Profile update error:', profileError);
+        console.error('❌ Profile update error:', profileError);
         throw profileError;
       }
 
@@ -68,22 +73,41 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
         .eq('id', user.id)
         .single();
 
-      console.log('Verification after update:', { verifyData, verifyError });
+      console.log('🔍 Verification after update:', { verifyData, verifyError });
+
+      if (verifyError) {
+        console.error('❌ Verification error:', verifyError);
+      }
+
+      // Comparar dados antes e depois
+      console.log('📊 Status comparison:');
+      console.log('   Before:', user.subscription_status);
+      console.log('   Wanted:', userData.subscriptionStatus);
+      console.log('   After: ', verifyData?.subscription_status);
+      console.log('   Admin override before:', user.admin_override_status);
+      console.log('   Admin override wanted:', userData.adminOverride);
+      console.log('   Admin override after: ', verifyData?.admin_override_status);
 
       // Gerenciar role de admin
       const currentlyAdmin = user.user_roles?.some((role: any) => role.role === 'admin') || false;
       
+      console.log('🔐 Admin role management:');
+      console.log('   Currently admin:', currentlyAdmin);
+      console.log('   Should be admin:', userData.isAdmin);
+      
       if (userData.isAdmin && !currentlyAdmin) {
+        console.log('➕ Adding admin role');
         // Adicionar role de admin
         const { error: addRoleError } = await supabase
           .from('user_roles')
           .insert({ user_id: user.id, role: 'admin' });
         
         if (addRoleError) {
-          console.error('Add role error:', addRoleError);
+          console.error('❌ Add role error:', addRoleError);
           throw addRoleError;
         }
       } else if (!userData.isAdmin && currentlyAdmin) {
+        console.log('➖ Removing admin role');
         // Remover role de admin
         const { error: removeRoleError } = await supabase
           .from('user_roles')
@@ -92,12 +116,15 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
           .eq('role', 'admin');
         
         if (removeRoleError) {
-          console.error('Remove role error:', removeRoleError);
+          console.error('❌ Remove role error:', removeRoleError);
           throw removeRoleError;
         }
       }
+
+      return verifyData;
     },
-    onSuccess: () => {
+    onSuccess: (verifyData) => {
+      console.log('🎉 Update successful, final data:', verifyData);
       toast({
         title: 'Sucesso',
         description: 'Usuário atualizado com sucesso',
@@ -107,7 +134,7 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
       onUserUpdated?.();
     },
     onError: (error: any) => {
-      console.error('Update user error:', error);
+      console.error('❌ Update user error:', error);
       toast({
         title: 'Erro',
         description: error.message || 'Erro ao atualizar usuário',
@@ -117,11 +144,11 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
   });
 
   const handleSubscriptionStatusChange = (value: string) => {
-    console.log('Changing subscription status to:', value);
+    console.log('🔄 Changing subscription status to:', value);
     setSubscriptionStatus(value);
     // Automaticamente marcar o admin override quando o status for alterado
     setAdminOverride(true);
-    console.log('Admin override set to true');
+    console.log('✅ Admin override set to true');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -135,7 +162,7 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
       return;
     }
 
-    console.log('Submitting form with:', {
+    console.log('📤 Submitting form with:', {
       email,
       fullName,
       whatsapp,

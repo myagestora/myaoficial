@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { AddUserDialog } from '@/components/admin/AddUserDialog';
 import { EditUserDialog } from '@/components/admin/EditUserDialog';
+import { DeleteUserDialog } from '@/components/admin/DeleteUserDialog';
 
 const AdminUsers = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,6 +17,8 @@ const AdminUsers = () => {
   const { data: users, isLoading } = useQuery({
     queryKey: ['admin-users', searchTerm],
     queryFn: async () => {
+      console.log('🔍 Fetching users with search term:', searchTerm);
+      
       // Buscar perfis
       let profileQuery = supabase
         .from('profiles')
@@ -27,20 +30,32 @@ const AdminUsers = () => {
 
       const { data: profiles, error: profileError } = await profileQuery.order('created_at', { ascending: false });
       
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('❌ Error fetching profiles:', profileError);
+        throw profileError;
+      }
+
+      console.log('📋 Profiles fetched:', profiles);
 
       // Buscar roles para cada usuário
       const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id, role');
       
-      if (rolesError) throw rolesError;
+      if (rolesError) {
+        console.error('❌ Error fetching roles:', rolesError);
+        throw rolesError;
+      }
+
+      console.log('🔐 User roles fetched:', userRoles);
 
       // Combinar os dados
       const usersWithRoles = profiles?.map(profile => ({
         ...profile,
         user_roles: userRoles?.filter(role => role.user_id === profile.id) || []
       })) || [];
+
+      console.log('👥 Final users with roles:', usersWithRoles);
 
       return usersWithRoles;
     }
@@ -155,7 +170,10 @@ const AdminUsers = () => {
                         {new Date(user.created_at).toLocaleDateString('pt-BR')}
                       </TableCell>
                       <TableCell>
-                        <EditUserDialog user={user} />
+                        <div className="flex items-center space-x-2">
+                          <EditUserDialog user={user} />
+                          <DeleteUserDialog user={user} />
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
