@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -101,7 +100,7 @@ export const NotificationBell = () => {
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-9 w-9 p-0 relative">
+        <Button variant="ghost" size="sm" className="h-9 w-9 p-0 relative text-white hover:bg-white/20">
           <Bell className="h-4 w-4" />
           {unreadNotifications.length > 0 && (
             <Badge 
