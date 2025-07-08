@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Edit } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,10 +23,17 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
   const [fullName, setFullName] = useState(user.full_name || '');
   const [whatsapp, setWhatsapp] = useState(user.whatsapp || '');
   const [subscriptionStatus, setSubscriptionStatus] = useState(user.subscription_status || 'inactive');
+  const [adminOverride, setAdminOverride] = useState(user.admin_override_status || false);
   const queryClient = useQueryClient();
 
   const updateUserMutation = useMutation({
-    mutationFn: async (userData: { email: string; fullName: string; whatsapp: string; subscriptionStatus: string }) => {
+    mutationFn: async (userData: { 
+      email: string; 
+      fullName: string; 
+      whatsapp: string; 
+      subscriptionStatus: string;
+      adminOverride: boolean;
+    }) => {
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -33,6 +41,7 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
           full_name: userData.fullName,
           whatsapp: userData.whatsapp,
           subscription_status: userData.subscriptionStatus,
+          admin_override_status: userData.adminOverride,
         })
         .eq('id', user.id);
 
@@ -71,7 +80,8 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
       email,
       fullName,
       whatsapp,
-      subscriptionStatus
+      subscriptionStatus,
+      adminOverride
     });
   };
 
@@ -132,6 +142,17 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
                 <SelectItem value="past_due">Em Atraso</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="adminOverride"
+              checked={adminOverride}
+              onCheckedChange={(checked) => setAdminOverride(checked as boolean)}
+            />
+            <Label htmlFor="adminOverride" className="text-sm">
+              Forçar status manualmente (ignorar status da assinatura)
+            </Label>
           </div>
 
           <div className="flex justify-end space-x-2">

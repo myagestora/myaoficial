@@ -87,7 +87,10 @@ const AdminUsers = () => {
       
       const { error } = await supabase
         .from('profiles')
-        .update({ subscription_status: newStatus })
+        .update({ 
+          subscription_status: newStatus,
+          admin_override_status: true // Marcar como override do admin
+        })
         .eq('id', userId);
       
       if (error) throw error;
