@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import { MotivationalPhrasesManager } from '@/components/admin/MotivationalPhras
 import { PhoneInput } from '@/components/ui/phone-input';
 import { FaviconUpload } from '@/components/admin/FaviconUpload';
 import { SEOSettings } from '@/components/admin/SEOSettings';
+import { PaymentSettings } from '@/components/admin/PaymentSettings';
 
 const AdminSettings = () => {
   const [settings, setSettings] = useState<Record<string, string>>({});
@@ -143,6 +145,7 @@ const AdminSettings = () => {
         <TabsList>
           <TabsTrigger value="branding">Marca</TabsTrigger>
           <TabsTrigger value="appearance">Aparência</TabsTrigger>
+          <TabsTrigger value="payments">Pagamentos</TabsTrigger>
           <TabsTrigger value="notifications">Notificações</TabsTrigger>
           <TabsTrigger value="seo">SEO</TabsTrigger>
           <TabsTrigger value="phrases">Frases Motivacionais</TabsTrigger>
@@ -246,6 +249,15 @@ const AdminSettings = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="payments" className="space-y-6">
+          <PaymentSettings 
+            settings={settings}
+            onInputChange={handleInputChange}
+            onSave={handleSave}
+            isLoading={updateSettingsMutation.isPending}
+          />
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-6">
