@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DateRange } from 'react-day-picker';
 import { addDays, startOfMonth, endOfMonth, format } from 'date-fns';
+import { exportToCSV, exportToPDF, ReportData, TransactionData } from '@/utils/exportUtils';
+import { toast } from 'sonner';
 
 const Reports = () => {
   const [reportType, setReportType] = useState('monthly');
@@ -79,6 +80,16 @@ const Reports = () => {
         value: item.balance
       }));
 
+      // Prepare transactions for export
+      const transactions: TransactionData[] = data.map(t => ({
+        date: t.date,
+        title: t.title,
+        amount: Number(t.amount),
+        type: t.type as 'income' | 'expense',
+        category: t.categories?.name || 'Sem categoria',
+        description: t.description || ''
+      }));
+
       return {
         totalIncome,
         totalExpenses,
@@ -86,13 +97,58 @@ const Reports = () => {
         savingsRate,
         monthlyData: Object.values(monthlyData),
         categoryData: Object.values(categoryData),
-        trendData
+        trendData,
+        transactions
       };
     }
   });
 
   const handleDateRangeChange = (range: DateRange | undefined) => {
     setDateRange(range);
+  };
+
+  const handleExportCSV = () => {
+    if (!transactionData || !dateRange?.from || !dateRange?.to) {
+      toast.error('Dados não disponíveis para exportação');
+      return;
+    }
+
+    const reportData: ReportData = {
+      totalIncome: transactionData.totalIncome,
+      totalExpenses: transactionData.totalExpenses,
+      balance: transactionData.balance,
+      savingsRate: transactionData.savingsRate,
+      transactions: transactionData.transactions,
+      dateRange: {
+        from: format(dateRange.from, 'dd/MM/yyyy'),
+        to: format(dateRange.to, 'dd/MM/yyyy')
+      }
+    };
+
+    exportToCSV(reportData);
+    toast.success('Relatório CSV exportado com sucesso!');
+  };
+
+  const handleExportPDF = () => {
+    if (!transactionData || !dateRange?.from || !dateRange?.to) {
+      toast.error('Dados não disponíveis para exportação');
+      return;
+    }
+
+    const reportData: ReportData = {
+      totalIncome: transactionData.totalIncome,
+      totalExpenses: transactionData.totalExpenses,
+      balance: transactionData.balance,
+      savingsRate: transactionData.savingsRate,
+      transactions: transactionData.transactions,
+      dateRange: {
+        from: format(dateRange.from, 'dd/MM/yyyy'),
+        to: format(dateRange.to, 'dd/MM/yyyy')
+      }
+    };
+
+    exportToPDF(reportData);
+    toast.success('Relatório PDF gerado com sucesso!');
   };
 
   if (isLoading) {
@@ -116,11 +172,11 @@ const Reports = () => {
           <p className="text-gray-600 dark:text-gray-400">Análise detalhada das suas finanças</p>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExportCSV}>
             <Download className="mr-2 h-4 w-4" />
             Exportar CSV
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExportPDF}>
             <FileText className="mr-2 h-4 w-4" />
             Exportar PDF
           </Button>
