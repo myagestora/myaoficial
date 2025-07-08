@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PhoneInput } from '@/components/ui/phone-input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserPlus } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -20,11 +21,34 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
   const [fullName, setFullName] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [password, setPassword] = useState('');
+  const [subscriptionStatus, setSubscriptionStatus] = useState('inactive');
   const queryClient = useQueryClient();
 
+  const { data: subscriptionPlans } = useQuery({
+    queryKey: ['subscription-plans'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
   const addUserMutation = useMutation({
-    mutationFn: async (userData: { email: string; password: string; fullName: string; whatsapp: string }) => {
-      // Create user via Supabase Admin API (this would typically be done on the backend)
+    mutationFn: async (userData: { 
+      email: string; 
+      password: string; 
+      fullName: string; 
+      whatsapp: string;
+      subscriptionStatus: string;
+    }) => {
+      console.log('🆕 Creating new user:', userData.email);
+      
+      // Criar usuário via Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
@@ -39,8 +63,10 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
 
       if (error) throw error;
 
-      // Since we can't directly insert into auth.users, we'll create a profile record
       if (data.user) {
+        console.log('✅ User created in auth, now creating profile');
+        
+        // Criar/atualizar perfil
         const { error: profileError } = await supabase
           .from('profiles')
           .upsert({
@@ -48,9 +74,38 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
             email: userData.email,
             full_name: userData.fullName,
             whatsapp: userData.whatsapp,
+            subscription_status: userData.subscriptionStatus,
+            admin_override_status: true, // Marcar como override do admin
           });
 
-        if (profileError) throw profileError;
+        if (profileError) {
+          console.error('❌ Profile creation error:', profileError);
+          throw profileError;
+        }
+
+        // Se o status não for inactive, criar uma assinatura
+        if (userData.subscriptionStatus !== 'inactive' && subscriptionPlans && subscriptionPlans.length > 0) {
+          console.log('🔗 Creating subscription for user');
+          
+          const defaultPlan = subscriptionPlans[0]; // Usar o primeiro plano ativo
+          
+          const { error: subscriptionError } = await supabase
+            .from('user_subscriptions')
+            .insert({
+              user_id: data.user.id,
+              plan_id: defaultPlan.id,
+              status: userData.subscriptionStatus as any,
+              current_period_start: new Date().toISOString(),
+              current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 dias
+            });
+
+          if (subscriptionError) {
+            console.error('❌ Subscription creation error:', subscriptionError);
+            throw subscriptionError;
+          }
+          
+          console.log('✅ Subscription created successfully');
+        }
       }
 
       return data;
@@ -66,9 +121,11 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
       setFullName('');
       setWhatsapp('');
       setPassword('');
+      setSubscriptionStatus('inactive');
       onUserAdded?.();
     },
     onError: (error: any) => {
+      console.error('❌ Add user error:', error);
       toast({
         title: 'Erro',
         description: error.message || 'Erro ao adicionar usuário',
@@ -92,7 +149,8 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
       email,
       password,
       fullName,
-      whatsapp
+      whatsapp,
+      subscriptionStatus
     });
   };
 
@@ -152,6 +210,21 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
               value={whatsapp}
               onChange={(value) => setWhatsapp(value || '')}
             />
+          </div>
+
+          <div>
+            <Label htmlFor="subscriptionStatus">Status da Assinatura</Label>
+            <Select value={subscriptionStatus} onValueChange={setSubscriptionStatus}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Ativo</SelectItem>
+                <SelectItem value="inactive">Inativo</SelectItem>
+                <SelectItem value="canceled">Cancelado</SelectItem>
+                <SelectItem value="past_due">Em Atraso</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex justify-end space-x-2">

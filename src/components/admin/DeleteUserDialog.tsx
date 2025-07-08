@@ -28,31 +28,45 @@ export const DeleteUserDialog = ({ user, onUserDeleted }: DeleteUserDialogProps)
 
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      console.log('Starting user deletion for ID:', userId);
+      console.log('🗑️ Starting user deletion for ID:', userId);
 
-      // Primeiro remover roles do usuário
+      // Primeiro remover assinaturas do usuário
+      console.log('🗑️ Removing user subscriptions');
+      const { error: subscriptionsError } = await supabase
+        .from('user_subscriptions')
+        .delete()
+        .eq('user_id', userId);
+
+      if (subscriptionsError) {
+        console.error('❌ Error deleting user subscriptions:', subscriptionsError);
+        throw subscriptionsError;
+      }
+
+      // Depois remover roles do usuário
+      console.log('🗑️ Removing user roles');
       const { error: rolesError } = await supabase
         .from('user_roles')
         .delete()
         .eq('user_id', userId);
 
       if (rolesError) {
-        console.error('Error deleting user roles:', rolesError);
+        console.error('❌ Error deleting user roles:', rolesError);
         throw rolesError;
       }
 
-      // Depois remover o perfil
+      // Por fim remover o perfil
+      console.log('🗑️ Removing user profile');
       const { error: profileError } = await supabase
         .from('profiles')
         .delete()
         .eq('id', userId);
 
       if (profileError) {
-        console.error('Error deleting profile:', profileError);
+        console.error('❌ Error deleting profile:', profileError);
         throw profileError;
       }
 
-      console.log('User deleted successfully');
+      console.log('✅ User deleted successfully');
     },
     onSuccess: () => {
       toast({
@@ -64,7 +78,7 @@ export const DeleteUserDialog = ({ user, onUserDeleted }: DeleteUserDialogProps)
       onUserDeleted?.();
     },
     onError: (error: any) => {
-      console.error('Delete user error:', error);
+      console.error('❌ Delete user error:', error);
       toast({
         title: 'Erro',
         description: error.message || 'Erro ao remover usuário',
@@ -89,7 +103,7 @@ export const DeleteUserDialog = ({ user, onUserDeleted }: DeleteUserDialogProps)
           <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
           <AlertDialogDescription>
             Tem certeza que deseja remover o usuário <strong>{user.full_name || user.email}</strong>?
-            Esta ação não pode ser desfeita.
+            Esta ação não pode ser desfeita e removerá todas as assinaturas e dados relacionados.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

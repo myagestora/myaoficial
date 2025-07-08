@@ -8,7 +8,7 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Edit } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -29,6 +29,20 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
   );
   const queryClient = useQueryClient();
 
+  const { data: subscriptionPlans } = useQuery({
+    queryKey: ['subscription-plans'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
   const updateUserMutation = useMutation({
     mutationFn: async (userData: { 
       email: string; 
@@ -40,7 +54,6 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
     }) => {
       console.log('🔄 Updating user with data:', userData);
       console.log('👤 User ID:', user.id);
-      console.log('📊 Current user data before update:', user);
       
       // Atualizar perfil
       const updateData = {
@@ -51,53 +64,93 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
         admin_override_status: userData.adminOverride,
       };
       
-      console.log('📝 Data to update in profiles table:', updateData);
+      console.log('📝 Updating profile with:', updateData);
       
-      const { data: profileData, error: profileError } = await supabase
+      const { error: profileError } = await supabase
         .from('profiles')
         .update(updateData)
-        .eq('id', user.id)
-        .select();
-
-      console.log('✅ Profile update result:', { profileData, profileError });
+        .eq('id', user.id);
 
       if (profileError) {
         console.error('❌ Profile update error:', profileError);
         throw profileError;
       }
 
-      // Verificar se a atualização realmente aconteceu
-      const { data: verifyData, error: verifyError } = await supabase
-        .from('profiles')
+      // Verificar se existe assinatura do usuário
+      console.log('🔍 Checking existing subscription');
+      const { data: existingSubscription, error: subCheckError } = await supabase
+        .from('user_subscriptions')
         .select('*')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .single();
 
-      console.log('🔍 Verification after update:', { verifyData, verifyError });
-
-      if (verifyError) {
-        console.error('❌ Verification error:', verifyError);
+      if (subCheckError && subCheckError.code !== 'PGRST116') {
+        console.error('❌ Subscription check error:', subCheckError);
+        throw subCheckError;
       }
 
-      // Comparar dados antes e depois
-      console.log('📊 Status comparison:');
-      console.log('   Before:', user.subscription_status);
-      console.log('   Wanted:', userData.subscriptionStatus);
-      console.log('   After: ', verifyData?.subscription_status);
-      console.log('   Admin override before:', user.admin_override_status);
-      console.log('   Admin override wanted:', userData.adminOverride);
-      console.log('   Admin override after: ', verifyData?.admin_override_status);
+      // Gerenciar assinatura baseado no status
+      if (userData.subscriptionStatus !== 'inactive') {
+        if (!subscriptionPlans || subscriptionPlans.length === 0) {
+          throw new Error('Nenhum plano de assinatura disponível');
+        }
+
+        const defaultPlan = subscriptionPlans[0];
+        
+        if (existingSubscription) {
+          console.log('📝 Updating existing subscription');
+          // Atualizar assinatura existente
+          const { error: updateSubError } = await supabase
+            .from('user_subscriptions')
+            .update({
+              status: userData.subscriptionStatus as any,
+              plan_id: defaultPlan.id,
+              current_period_start: existingSubscription.current_period_start || new Date().toISOString(),
+              current_period_end: existingSubscription.current_period_end || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            })
+            .eq('user_id', user.id);
+
+          if (updateSubError) {
+            console.error('❌ Subscription update error:', updateSubError);
+            throw updateSubError;
+          }
+        } else {
+          console.log('🆕 Creating new subscription');
+          // Criar nova assinatura
+          const { error: createSubError } = await supabase
+            .from('user_subscriptions')
+            .insert({
+              user_id: user.id,
+              plan_id: defaultPlan.id,
+              status: userData.subscriptionStatus as any,
+              current_period_start: new Date().toISOString(),
+              current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            });
+
+          if (createSubError) {
+            console.error('❌ Subscription creation error:', createSubError);
+            throw createSubError;
+          }
+        }
+      } else if (existingSubscription) {
+        console.log('🗑️ Removing subscription (status inactive)');
+        // Se status for inactive e existir assinatura, remover
+        const { error: deleteSubError } = await supabase
+          .from('user_subscriptions')
+          .delete()
+          .eq('user_id', user.id);
+
+        if (deleteSubError) {
+          console.error('❌ Subscription deletion error:', deleteSubError);
+          throw deleteSubError;
+        }
+      }
 
       // Gerenciar role de admin
       const currentlyAdmin = user.user_roles?.some((role: any) => role.role === 'admin') || false;
       
-      console.log('🔐 Admin role management:');
-      console.log('   Currently admin:', currentlyAdmin);
-      console.log('   Should be admin:', userData.isAdmin);
-      
       if (userData.isAdmin && !currentlyAdmin) {
         console.log('➕ Adding admin role');
-        // Adicionar role de admin
         const { error: addRoleError } = await supabase
           .from('user_roles')
           .insert({ user_id: user.id, role: 'admin' });
@@ -108,7 +161,6 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
         }
       } else if (!userData.isAdmin && currentlyAdmin) {
         console.log('➖ Removing admin role');
-        // Remover role de admin
         const { error: removeRoleError } = await supabase
           .from('user_roles')
           .delete()
@@ -121,10 +173,9 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
         }
       }
 
-      return verifyData;
+      console.log('✅ User update completed successfully');
     },
-    onSuccess: (verifyData) => {
-      console.log('🎉 Update successful, final data:', verifyData);
+    onSuccess: () => {
       toast({
         title: 'Sucesso',
         description: 'Usuário atualizado com sucesso',
@@ -148,7 +199,6 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
     setSubscriptionStatus(value);
     // Automaticamente marcar o admin override quando o status for alterado
     setAdminOverride(true);
-    console.log('✅ Admin override set to true');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -161,15 +211,6 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
       });
       return;
     }
-
-    console.log('📤 Submitting form with:', {
-      email,
-      fullName,
-      whatsapp,
-      subscriptionStatus,
-      adminOverride,
-      isAdmin
-    });
 
     updateUserMutation.mutate({
       email,
