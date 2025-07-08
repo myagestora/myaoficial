@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +11,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import IconSelector from '@/components/admin/IconSelector';
 
 const AdminCategories = () => {
   const [isCreating, setIsCreating] = useState(false);
@@ -172,15 +172,10 @@ const AdminCategories = () => {
                   />
                 </div>
               </div>
-              <div>
-                <Label htmlFor="icon">Ícone</Label>
-                <Input
-                  id="icon"
-                  value={newCategory.icon}
-                  onChange={(e) => setNewCategory(prev => ({ ...prev, icon: e.target.value }))}
-                  placeholder="folder"
-                />
-              </div>
+              <IconSelector
+                value={newCategory.icon}
+                onValueChange={(icon) => setNewCategory(prev => ({ ...prev, icon }))}
+              />
             </div>
 
             <div className="flex gap-2">
