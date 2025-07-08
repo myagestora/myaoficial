@@ -288,83 +288,85 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
 
       {/* Formulário Cartão de Crédito */}
       {paymentMethod === 'credit_card' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <Label htmlFor="cardNumber">Número do cartão</Label>
-              <Input
-                id="cardNumber"
-                placeholder="0000 0000 0000 0000"
-                value={cardNumber}
-                onChange={handleCardNumberChange}
-                maxLength={19}
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="cardholderName">Nome do titular</Label>
-              <Input
-                id="cardholderName"
-                placeholder="Nome como está no cartão"
-                value={cardholderName}
-                onChange={(e) => setCardholderName(e.target.value.toUpperCase())}
-              />
-            </div>
-            
-            <div className="grid grid-cols-3 gap-2">
+        <Card>
+          <CardContent className="p-6">
+            <div className="space-y-4">
               <div>
-                <Label htmlFor="expirationMonth">Mês</Label>
+                <Label htmlFor="cardNumber">Número do cartão</Label>
                 <Input
-                  id="expirationMonth"
-                  placeholder="MM"
-                  value={expirationMonth}
-                  onChange={(e) => setExpirationMonth(e.target.value)}
-                  maxLength={2}
+                  id="cardNumber"
+                  placeholder="0000 0000 0000 0000"
+                  value={cardNumber}
+                  onChange={handleCardNumberChange}
+                  maxLength={19}
                 />
               </div>
+              
               <div>
-                <Label htmlFor="expirationYear">Ano</Label>
+                <Label htmlFor="cardholderName">Nome do titular</Label>
                 <Input
-                  id="expirationYear"
-                  placeholder="AAAA"
-                  value={expirationYear}
-                  onChange={(e) => setExpirationYear(e.target.value)}
-                  maxLength={4}
+                  id="cardholderName"
+                  placeholder="Nome como está no cartão"
+                  value={cardholderName}
+                  onChange={(e) => setCardholderName(e.target.value.toUpperCase())}
                 />
               </div>
+              
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <Label htmlFor="expirationMonth">Mês</Label>
+                  <Input
+                    id="expirationMonth"
+                    placeholder="MM"
+                    value={expirationMonth}
+                    onChange={(e) => setExpirationMonth(e.target.value)}
+                    maxLength={2}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="expirationYear">Ano</Label>
+                  <Input
+                    id="expirationYear"
+                    placeholder="AAAA"
+                    value={expirationYear}
+                    onChange={(e) => setExpirationYear(e.target.value)}
+                    maxLength={4}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="securityCode">CVV</Label>
+                  <Input
+                    id="securityCode"
+                    placeholder="000"
+                    value={securityCode}
+                    onChange={(e) => setSecurityCode(e.target.value)}
+                    maxLength={4}
+                  />
+                </div>
+              </div>
+              
               <div>
-                <Label htmlFor="securityCode">CVV</Label>
+                <Label htmlFor="cpf">CPF do titular</Label>
                 <Input
-                  id="securityCode"
-                  placeholder="000"
-                  value={securityCode}
-                  onChange={(e) => setSecurityCode(e.target.value)}
-                  maxLength={4}
+                  id="cpf"
+                  placeholder="000.000.000-00"
+                  value={cpf}
+                  onChange={handleCPFChange}
+                  maxLength={14}
                 />
               </div>
+              
+              <Button 
+                onClick={handleCreditCardPayment}
+                disabled={loading}
+                className="w-full flex items-center gap-2"
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+                {loading ? 'Processando...' : `Pagar R$ ${currentPrice}`}
+              </Button>
             </div>
-            
-            <div>
-              <Label htmlFor="cpf">CPF do titular</Label>
-              <Input
-                id="cpf"
-                placeholder="000.000.000-00"
-                value={cpf}
-                onChange={handleCPFChange}
-                maxLength={14}
-              />
-            </div>
-          </div>
-          
-          <Button 
-            onClick={handleCreditCardPayment}
-            disabled={loading}
-            className="w-full flex items-center gap-2"
-          >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
-            {loading ? 'Processando...' : `Pagar R$ ${currentPrice}`}
-          </Button>
-        </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

@@ -92,7 +92,7 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
     mercadoPagoConfig?.mercado_pago_access_token
   );
 
-  // Flow steps
+  // Fluxo: planSelection -> auth (se não logado) -> checkout
   if (currentStep === 'planSelection') {
     return (
       <PlanSelectionStep
@@ -102,9 +102,11 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
         onPlanSelect={setSelectedPlan}
         onFrequencyChange={setFrequency}
         onNext={() => {
+          // Se usuário está logado, ir direto para checkout
           if (user) {
             setCurrentStep('checkout');
           } else {
+            // Se não está logado, ir para autenticação
             setCurrentStep('auth');
           }
         }}
@@ -113,7 +115,8 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
     );
   }
 
-  if (currentStep === 'auth' && selectedPlan) {
+  // Etapa de autenticação (apenas para usuários não logados)
+  if (currentStep === 'auth' && selectedPlan && !user) {
     return (
       <AuthStep
         selectedPlan={selectedPlan}
@@ -136,6 +139,7 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
     );
   }
 
+  // Etapa de checkout (usuário logado e plano selecionado)
   if (currentStep === 'checkout' && selectedPlan) {
     return (
       <CheckoutStep

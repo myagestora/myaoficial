@@ -19,12 +19,17 @@ export const useSubscriptionFlow = (
   initialSelectedPlan?: SubscriptionPlan
 ) => {
   const getInitialStep = (): FlowStep => {
-    if (initialSelectedPlan && !user) {
-      return 'auth';
+    // Se não tem usuário logado, sempre começar com seleção de plano
+    if (!user) {
+      return 'planSelection';
     }
-    if (initialSelectedPlan && user) {
+    
+    // Se tem usuário logado e plano inicial, ir direto para checkout
+    if (user && initialSelectedPlan) {
       return 'checkout';
     }
+    
+    // Se tem usuário logado mas sem plano, mostrar seleção
     return 'planSelection';
   };
 
@@ -74,6 +79,7 @@ export const useSubscriptionFlow = (
           description: 'Verifique seu email para confirmar a conta.',
         });
         
+        // Após criar conta, ir para checkout
         setCurrentStep('checkout');
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -95,6 +101,7 @@ export const useSubscriptionFlow = (
           description: 'Redirecionando para o checkout...',
         });
         
+        // Após login, ir para checkout
         setCurrentStep('checkout');
       }
     } catch (error) {
