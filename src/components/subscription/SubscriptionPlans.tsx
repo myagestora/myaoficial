@@ -3,16 +3,24 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
 import { Check, Star } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { SubscriptionCheckout } from './SubscriptionCheckout';
+
+interface SubscriptionPlan {
+  id: string;
+  name: string;
+  description?: string;
+  price_monthly?: number;
+  price_yearly?: number;
+  features: string[];
+}
 
 export const SubscriptionPlans = () => {
   const { user } = useAuth();
-  const [isProcessing, setIsProcessing] = useState(false);
-  const queryClient = useQueryClient();
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
 
   const { data: plans, isLoading } = useQuery({
     queryKey: ['subscription-plans'],
@@ -24,7 +32,11 @@ export const SubscriptionPlans = () => {
         .order('price_monthly', { ascending: true });
       
       if (error) throw error;
-      return data;
+      return data?.map(plan => ({
+        ...plan,
+        features: Array.isArray(plan.features) ? plan.features : 
+                  (plan.features ? JSON.parse(plan.features as string) : [])
+      }));
     }
   });
 
@@ -46,56 +58,21 @@ export const SubscriptionPlans = () => {
     enabled: !!user?.id
   });
 
-  const createPaymentMutation = useMutation({
-    mutationFn: async ({ planId, billingType }: { planId: string; billingType: 'monthly' | 'yearly' }) => {
-      const { data, error } = await supabase.functions.invoke('create-mercado-pago-payment', {
-        body: { planId, billingType }
-      });
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      if (data.preference_url) {
-        window.open(data.preference_url, '_blank');
-        toast({
-          title: 'Redirecionamento',
-          description: 'Você será redirecionado para completar o pagamento.',
-        });
-      }
-    },
-    onError: (error) => {
-      console.error('Erro ao criar pagamento:', error);
-      toast({
-        title: 'Erro',
-        description: 'Erro ao processar pagamento. Tente novamente.',
-        variant: 'destructive',
-      });
-    },
-    onSettled: () => {
-      setIsProcessing(false);
-    }
-  });
-
-  const handleSubscribe = async (planId: string, billingType: 'monthly' | 'yearly') => {
-    if (!user) {
-      toast({
-        title: 'Erro',
-        description: 'Você precisa estar logado para assinar um plano.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsProcessing(true);
-    createPaymentMutation.mutate({ planId, billingType });
-  };
-
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
+    );
+  }
+
+  // Se um plano foi selecionado, mostrar o checkout
+  if (selectedPlan) {
+    return (
+      <SubscriptionCheckout 
+        plan={selectedPlan} 
+        onCancel={() => setSelectedPlan(null)} 
+      />
     );
   }
 
@@ -113,8 +90,7 @@ export const SubscriptionPlans = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {plans?.map((plan) => {
           const isCurrentPlan = userSubscription?.plan_id === plan.id;
-          const features = Array.isArray(plan.features) ? plan.features : 
-                          (plan.features ? JSON.parse(plan.features as string) : []);
+          const features = plan.features || [];
 
           return (
             <Card key={plan.id} className={`relative ${isCurrentPlan ? 'ring-2 ring-primary' : ''}`}>
@@ -167,31 +143,14 @@ export const SubscriptionPlans = () => {
                   </div>
                 )}
 
-                {!isCurrentPlan && (
-                  <div className="space-y-2">
-                    {plan.price_monthly && (
-                      <Button
-                        onClick={() => handleSubscribe(plan.id, 'monthly')}
-                        disabled={isProcessing}
-                        className="w-full"
-                      >
-                        {isProcessing ? 'Processando...' : `Assinar Mensal - R$ ${plan.price_monthly}`}
-                      </Button>
-                    )}
-                    {plan.price_yearly && (
-                      <Button
-                        onClick={() => handleSubscribe(plan.id, 'yearly')}
-                        disabled={isProcessing}
-                        variant="outline"
-                        className="w-full"
-                      >
-                        {isProcessing ? 'Processando...' : `Assinar Anual - R$ ${plan.price_yearly}`}
-                      </Button>
-                    )}
-                  </div>
-                )}
-
-                {isCurrentPlan && (
+                {!isCurrentPlan ? (
+                  <Button
+                    onClick={() => setSelectedPlan(plan)}
+                    className="w-full"
+                  >
+                    Escolher Plano
+                  </Button>
+                ) : (
                   <Button disabled className="w-full">
                     Plano Ativo
                   </Button>
