@@ -1,14 +1,11 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { DollarSign, TrendingUp, TrendingDown, Target } from 'lucide-react';
 import { RecentTransactions } from '@/components/dashboard/RecentTransactions';
 import { ExpenseChart } from '@/components/dashboard/ExpenseChart';
 import { MonthlyOverview } from '@/components/dashboard/MonthlyOverview';
 import { DailyMovement } from '@/components/dashboard/DailyMovement';
 import { PeriodFilter } from '@/components/dashboard/PeriodFilter';
-import { TransactionForm } from '@/components/transactions/TransactionForm';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,7 +13,6 @@ import { DateRange } from 'react-day-picker';
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const [isTransactionFormOpen, setIsTransactionFormOpen] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Últimos 30 dias por padrão
     to: new Date()
@@ -124,16 +120,7 @@ const Dashboard = () => {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
           <p className="text-gray-600 dark:text-gray-400">Bem-vindo ao seu controle financeiro</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-          <PeriodFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
-          <Button 
-            className="bg-primary hover:bg-primary/90"
-            onClick={() => setIsTransactionFormOpen(true)}
-          >
-            <DollarSign className="mr-2 h-4 w-4" />
-            Nova Transação
-          </Button>
-        </div>
+        <PeriodFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
       </div>
 
       {/* Stats Cards */}
@@ -215,12 +202,6 @@ const Dashboard = () => {
 
       {/* Recent Transactions */}
       <RecentTransactions />
-
-      {/* Transaction Form Modal */}
-      <TransactionForm 
-        isOpen={isTransactionFormOpen} 
-        onClose={() => setIsTransactionFormOpen(false)} 
-      />
     </div>
   );
 };
