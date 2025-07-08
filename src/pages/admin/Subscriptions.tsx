@@ -115,9 +115,12 @@ const AdminSubscriptions = () => {
         const profilesData = subscription.profiles;
         let validProfile: ProfileData | null = null;
         
-        if (profilesData && typeof profilesData === 'object' && !('error' in profilesData)) {
-          // Check if it has the required properties for ProfileData
-          if ('id' in profilesData && 'full_name' in profilesData && 'email' in profilesData) {
+        if (profilesData && typeof profilesData === 'object') {
+          // Check if it's not an error object and has the required properties
+          if (!('error' in profilesData) && 
+              'id' in profilesData && 
+              'full_name' in profilesData && 
+              'email' in profilesData) {
             validProfile = profilesData as ProfileData;
           }
         }
