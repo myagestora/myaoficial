@@ -44,17 +44,36 @@ export const Header = () => {
     }
   });
 
+  // Buscar cor primária do sistema
+  const { data: primaryColor } = useQuery({
+    queryKey: ['system-config-header'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('system_config')
+        .select('value')
+        .eq('key', 'primary_color')
+        .maybeSingle();
+      
+      if (error) throw error;
+      
+      return data?.value as string || '#3B82F6';
+    }
+  });
+
   return (
     <header className="h-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 flex flex-col">
       {/* Primeira linha com controles */}
-      <div className="h-12 flex items-center justify-end px-6">
+      <div 
+        className="h-12 flex items-center justify-end px-6"
+        style={{ backgroundColor: primaryColor || '#3B82F6' }}
+      >
         <div className="flex items-center space-x-4">
           {/* Theme Toggle */}
           <Button
             variant="ghost"
             size="sm"
             onClick={toggleTheme}
-            className="h-9 w-9 p-0"
+            className="h-9 w-9 p-0 text-white hover:bg-white/20"
           >
             {theme === 'dark' ? (
               <Sun className="h-4 w-4" />
@@ -69,7 +88,7 @@ export const Header = () => {
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+              <Button variant="ghost" className="relative h-9 w-9 rounded-full text-white hover:bg-white/20">
                 <Avatar className="h-9 w-9">
                   <AvatarImage src="/avatars/01.png" alt="Avatar" />
                   <AvatarFallback>
