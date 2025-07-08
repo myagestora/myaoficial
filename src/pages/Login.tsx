@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { AuthForm } from '@/components/auth/AuthForm';
+import { useQuery } from '@tanstack/react-query';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -13,6 +13,27 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
+
+  // Buscar cor primária do sistema
+  const { data: primaryColor } = useQuery({
+    queryKey: ['system-config-login'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('system_config')
+        .select('value')
+        .eq('key', 'primary_color')
+        .maybeSingle();
+      
+      if (error) throw error;
+
+      // Extrair o valor corretamente do JSON
+      const colorValue = data?.value;
+      if (typeof colorValue === 'string') {
+        return colorValue.replace(/^"|"$/g, '');
+      }
+      return JSON.stringify(colorValue).replace(/^"|"$/g, '') || '#3B82F6';
+    }
+  });
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,7 +120,10 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+    <div 
+      className="min-h-screen flex items-center justify-center"
+      style={{ backgroundColor: primaryColor || '#3B82F6' }}
+    >
       <div className="w-full max-w-md">
         <AuthForm
           email={email}
