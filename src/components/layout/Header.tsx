@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -60,7 +61,7 @@ export const Header = () => {
       {/* Primeira linha com controles */}
       <div 
         style={{ backgroundColor: primaryColor || '#3B82F6' }} 
-        className="h-12 flex items-center justify-end px-6 bg-[#b998f3]"
+        className="h-12 flex items-center justify-end px-6"
       >
         <div className="flex items-center space-x-4">
           {/* Theme Toggle */}
