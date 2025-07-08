@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,6 @@ import {
   BarChart3, 
   CreditCard,
   Bell,
-  PieChart,
   Zap,
   DollarSign
 } from 'lucide-react';
@@ -21,7 +19,6 @@ const adminNavigation = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { name: 'Usuários', href: '/admin/users', icon: Users },
   { name: 'Relatórios', href: '/admin/reports', icon: BarChart3 },
-  { name: 'Categorias', href: '/admin/categories', icon: PieChart },
   { name: 'Assinaturas', href: '/admin/subscriptions', icon: CreditCard },
   { name: 'Notificações', href: '/admin/notifications', icon: Bell },
   { name: 'Sistema', href: '/admin/system', icon: Zap },
