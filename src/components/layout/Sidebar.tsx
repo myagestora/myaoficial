@@ -50,35 +50,13 @@ export const Sidebar = () => {
     }
   });
 
-  // Buscar frase motivacional aleatória
-  const { data: motivationalPhrase } = useQuery({
-    queryKey: ['motivational-phrase'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('motivational_phrases')
-        .select('phrase')
-        .eq('is_active', true);
-      
-      if (error) throw error;
-      
-      const phrases = data as Array<{phrase: string}>;
-      
-      if (phrases.length > 0) {
-        const randomIndex = Math.floor(Math.random() * phrases.length);
-        return phrases[randomIndex].phrase;
-      }
-      
-      return 'MYA registra. MYA lembra. MYA cuida! 💰';
-    }
-  });
-
   const appName = systemConfig?.app_name || 'Controle Financeiro';
   const appLogo = systemConfig?.app_logo;
 
   return (
     <div className="flex flex-col w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
       {/* Logo */}
-      <div className="flex items-center justify-center h-16 px-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-center h-20 px-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-3">
           {appLogo ? (
             <img 
@@ -126,10 +104,9 @@ export const Sidebar = () => {
 
       {/* Footer */}
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-        <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
-          <p>{motivationalPhrase}</p>
-          <p className="mt-1">© 2024 {systemConfig?.app_name || 'MYA Gestora'}</p>
-        </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+          © 2024 {systemConfig?.app_name || 'MYA Gestora'}
+        </p>
       </div>
     </div>
   );
