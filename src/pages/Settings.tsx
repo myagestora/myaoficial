@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,38 +26,54 @@ const SettingsPage = () => {
   const [animations, setAnimations] = useState(true);
   const [notificationSound, setNotificationSound] = useState(true);
 
-  // Buscar dados do perfil com query mais simples
-  const { data: profile, isLoading } = useQuery({
+  // Buscar dados do perfil de forma mais direta
+  const { data: profile, isLoading, error } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
       
       console.log('Buscando perfil para usuário:', user.id);
       
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .limit(1);
-        
-        if (error) {
-          console.error('Erro ao buscar perfil:', error);
-          return null;
+      // Buscar diretamente com os campos específicos
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, avatar_url, whatsapp, subscription_status')
+        .eq('id', user.id)
+        .single();
+      
+      if (profileError) {
+        console.error('Erro ao buscar perfil:', profileError);
+        // Se não encontrar o perfil, vamos criá-lo
+        if (profileError.code === 'PGRST116') {
+          console.log('Perfil não encontrado, criando um novo...');
+          const { data: newProfile, error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: user.id,
+              email: user.email,
+              full_name: user.user_metadata?.full_name || '',
+              whatsapp: user.user_metadata?.whatsapp || ''
+            })
+            .select()
+            .single();
+          
+          if (insertError) {
+            console.error('Erro ao criar perfil:', insertError);
+            return null;
+          }
+          
+          console.log('Perfil criado:', newProfile);
+          return newProfile;
         }
-        
-        const profileData = data && data.length > 0 ? data[0] : null;
-        console.log('Dados do perfil carregados:', profileData);
-        return profileData;
-      } catch (err) {
-        console.error('Erro na busca do perfil:', err);
         return null;
       }
+      
+      console.log('Dados do perfil carregados:', profileData);
+      return profileData;
     },
     enabled: !!user?.id,
-    retry: 2,
-    retryDelay: 1000,
-    staleTime: 30000, // Cache por 30 segundos
+    retry: 1,
+    staleTime: 30000,
   });
 
   // Effect para carregar preferências do usuário
@@ -267,6 +282,10 @@ const SettingsPage = () => {
         </div>
       </div>
     );
+  }
+
+  if (error) {
+    console.error('Erro na query do perfil:', error);
   }
 
   return (
