@@ -122,7 +122,9 @@ const AdminSubscriptions = () => {
         stripe_customer_id: subscription.stripe_customer_id,
         stripe_subscription_id: subscription.stripe_subscription_id,
         subscription_plans: subscription.subscription_plans,
-        profiles: subscription.profiles as ProfileData | null
+        profiles: subscription.profiles && typeof subscription.profiles === 'object' && 'id' in subscription.profiles 
+          ? subscription.profiles as ProfileData 
+          : null
       })) || [];
       
       return transformedData;
