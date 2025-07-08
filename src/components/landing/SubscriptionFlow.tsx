@@ -2,16 +2,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { SubscriptionPlans } from '@/components/subscription/SubscriptionPlans';
-import { AuthForm } from '@/components/auth/AuthForm';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { PlanSelectionStep } from './subscription/PlanSelectionStep';
+import { AuthStep } from './subscription/AuthStep';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Check, CreditCard } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { CreditCard } from 'lucide-react';
 
 interface SubscriptionPlan {
   id: string;
@@ -27,16 +25,25 @@ interface SubscriptionFlowProps {
   selectedPlan?: SubscriptionPlan;
 }
 
-export const SubscriptionFlow = ({ onClose, selectedPlan }: SubscriptionFlowProps) => {
+type FlowStep = 'planSelection' | 'auth' | 'checkout';
+
+export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }: SubscriptionFlowProps) => {
   const { user } = useAuth();
+  const [currentStep, setCurrentStep] = useState<FlowStep>(
+    initialSelectedPlan ? 'auth' : 'planSelection'
+  );
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(
+    initialSelectedPlan || null
+  );
+  const [frequency, setFrequency] = useState<'monthly' | 'yearly'>('monthly');
+  
+  // Auth form states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(true);
-  const [showPlans, setShowPlans] = useState(!selectedPlan);
-  const [frequency, setFrequency] = useState<'monthly' | 'yearly'>('monthly');
 
   const { data: plans } = useQuery({
     queryKey: ['subscription-plans'],
@@ -160,7 +167,7 @@ export const SubscriptionFlow = ({ onClose, selectedPlan }: SubscriptionFlowProp
   };
 
   // Se usuário está logado e tem plano selecionado, mostrar checkout
-  if (user && selectedPlan) {
+  if (user && selectedPlan && currentStep === 'checkout') {
     const currentPrice = frequency === 'monthly' ? selectedPlan.price_monthly : selectedPlan.price_yearly;
     const savings = selectedPlan.price_monthly && selectedPlan.price_yearly 
       ? Math.round(((selectedPlan.price_monthly * 12 - selectedPlan.price_yearly) / (selectedPlan.price_monthly * 12)) * 100)
@@ -193,61 +200,6 @@ export const SubscriptionFlow = ({ onClose, selectedPlan }: SubscriptionFlowProp
                 </p>
               </div>
 
-              {/* Seleção de Frequência */}
-              <div className="space-y-4">
-                <Label className="text-lg font-semibold">Escolha seu plano:</Label>
-                <RadioGroup value={frequency} onValueChange={(value: 'monthly' | 'yearly') => setFrequency(value)} className="space-y-3">
-                  {/* Opção Mensal */}
-                  {selectedPlan.price_monthly && (
-                    <Label htmlFor="monthly" className="flex items-center space-x-3 p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                      <RadioGroupItem value="monthly" id="monthly" />
-                      <div className="flex-1 flex justify-between items-center">
-                        <div>
-                          <div className="font-semibold text-lg">Plano Mensal</div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">
-                            Cobrança mensal
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-blue-600">
-                            R$ {selectedPlan.price_monthly}
-                          </div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">por mês</div>
-                        </div>
-                      </div>
-                    </Label>
-                  )}
-
-                  {/* Opção Anual */}
-                  {selectedPlan.price_yearly && (
-                    <Label htmlFor="yearly" className="flex items-center space-x-3 p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                      <RadioGroupItem value="yearly" id="yearly" />
-                      <div className="flex-1 flex justify-between items-center">
-                        <div>
-                          <div className="font-semibold text-lg flex items-center gap-2">
-                            Plano Anual
-                            {savings > 0 && (
-                              <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
-                                {savings}% OFF
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">
-                            Cobrança anual (economize {savings}%)
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-green-600">
-                            R$ {selectedPlan.price_yearly}
-                          </div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">por ano</div>
-                        </div>
-                      </div>
-                    </Label>
-                  )}
-                </RadioGroup>
-              </div>
-
               {/* Resumo */}
               <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
                 <div className="flex justify-between items-center text-lg font-bold">
@@ -256,6 +208,9 @@ export const SubscriptionFlow = ({ onClose, selectedPlan }: SubscriptionFlowProp
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   {frequency === 'monthly' ? 'Pagamento mensal' : 'Pagamento anual'}
+                  {frequency === 'yearly' && savings > 0 && (
+                    <span className="text-green-600 ml-2">(Economize {savings}%)</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -313,125 +268,49 @@ export const SubscriptionFlow = ({ onClose, selectedPlan }: SubscriptionFlowProp
     );
   }
 
-  // Se não está logado, mostrar seleção de frequência E formulário de auth
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-md w-full max-h-[90vh] flex flex-col">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-          <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">
-              {selectedPlan ? `Assinar ${selectedPlan.name}` : 'Entre ou Cadastre-se'}
-            </h2>
-            <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 text-2xl"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-        
-        <ScrollArea className="flex-1">
-          <div className="p-6">
-            {selectedPlan && (
-              <>
-                {/* Informações do Plano */}
-                <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <h3 className="font-semibold text-blue-900 dark:text-blue-100">
-                    {selectedPlan.name}
-                  </h3>
-                  <p className="text-sm text-blue-700 dark:text-blue-300">
-                    {selectedPlan.description}
-                  </p>
-                </div>
+  // Flow steps para usuários não logados
+  if (currentStep === 'planSelection') {
+    return (
+      <PlanSelectionStep
+        plans={plans}
+        selectedPlan={selectedPlan}
+        frequency={frequency}
+        onPlanSelect={setSelectedPlan}
+        onFrequencyChange={setFrequency}
+        onNext={() => setCurrentStep('auth')}
+        onClose={onClose}
+      />
+    );
+  }
 
-                {/* Seleção de Frequência */}
-                <div className="mb-6 space-y-4">
-                  <Label className="text-base font-semibold">Escolha a frequência:</Label>
-                  <RadioGroup value={frequency} onValueChange={(value: 'monthly' | 'yearly') => setFrequency(value)} className="space-y-3">
-                    {/* Opção Mensal */}
-                    {selectedPlan.price_monthly && (
-                      <Label htmlFor="monthly-auth" className="flex items-center space-x-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                        <RadioGroupItem value="monthly" id="monthly-auth" />
-                        <div className="flex-1 flex justify-between items-center">
-                          <div>
-                            <div className="font-medium">Mensal</div>
-                            <div className="text-sm text-gray-600 dark:text-gray-400">
-                              Cobrança todo mês
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-lg font-bold text-blue-600">
-                              R$ {selectedPlan.price_monthly}
-                            </div>
-                            <div className="text-xs text-gray-600 dark:text-gray-400">por mês</div>
-                          </div>
-                        </div>
-                      </Label>
-                    )}
+  if (currentStep === 'auth' && selectedPlan) {
+    // Check if user just logged in and redirect to checkout
+    if (user) {
+      setCurrentStep('checkout');
+      return null;
+    }
 
-                    {/* Opção Anual */}
-                    {selectedPlan.price_yearly && (
-                      <Label htmlFor="yearly-auth" className="flex items-center space-x-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                        <RadioGroupItem value="yearly" id="yearly-auth" />
-                        <div className="flex-1 flex justify-between items-center">
-                          <div>
-                            <div className="font-medium flex items-center gap-2">
-                              Anual
-                              {selectedPlan.price_monthly && selectedPlan.price_yearly && (
-                                <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
-                                  {Math.round(((selectedPlan.price_monthly * 12 - selectedPlan.price_yearly) / (selectedPlan.price_monthly * 12)) * 100)}% OFF
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="text-sm text-gray-600 dark:text-gray-400">
-                              Cobrança anual
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-lg font-bold text-green-600">
-                              R$ {selectedPlan.price_yearly}
-                            </div>
-                            <div className="text-xs text-gray-600 dark:text-gray-400">por ano</div>
-                          </div>
-                        </div>
-                      </Label>
-                    )}
-                  </RadioGroup>
-                </div>
+    return (
+      <AuthStep
+        selectedPlan={selectedPlan}
+        frequency={frequency}
+        email={email}
+        setEmail={setEmail}
+        password={password}
+        setPassword={setPassword}
+        fullName={fullName}
+        setFullName={setFullName}
+        whatsapp={whatsapp}
+        setWhatsapp={setWhatsapp}
+        loading={loading}
+        isSignUp={isSignUp}
+        setIsSignUp={setIsSignUp}
+        onSubmit={handleAuth}
+        onBack={() => setCurrentStep('planSelection')}
+        onClose={onClose}
+      />
+    );
+  }
 
-                {/* Resumo do valor selecionado */}
-                <div className="mb-6 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">Valor selecionado:</span>
-                    <span className="font-bold text-blue-600">
-                      R$ {frequency === 'monthly' ? selectedPlan.price_monthly : selectedPlan.price_yearly}
-                      <span className="text-sm text-gray-600 ml-1">
-                        /{frequency === 'monthly' ? 'mês' : 'ano'}
-                      </span>
-                    </span>
-                  </div>
-                </div>
-              </>
-            )}
-
-            <AuthForm
-              email={email}
-              setEmail={setEmail}
-              password={password}
-              setPassword={setPassword}
-              fullName={fullName}
-              setFullName={setFullName}
-              whatsapp={whatsapp}
-              setWhatsapp={setWhatsapp}
-              loading={loading}
-              isSignUp={isSignUp}
-              setIsSignUp={setIsSignUp}
-              onSubmit={handleAuth}
-            />
-          </div>
-        </ScrollArea>
-      </div>
-    </div>
-  );
+  return null;
 };
