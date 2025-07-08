@@ -7,35 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-
-interface ProfileData {
-  id: string;
-  full_name: string | null;
-  email: string | null;
-}
-
-interface SubscriptionData {
-  id: string;
-  user_id: string;
-  plan_id: string;
-  status: string;
-  current_period_start: string | null;
-  current_period_end: string | null;
-  created_at: string;
-  updated_at: string;
-  stripe_customer_id: string | null;
-  stripe_subscription_id: string | null;
-  subscription_plans: {
-    name: string;
-    description: string | null;
-    price_monthly: number | null;
-    price_yearly: number | null;
-  } | null;
-  profiles: ProfileData | null;
-}
+import { SubscriptionWithProfile } from '@/types/subscription';
 
 interface EditSubscriptionDialogProps {
-  subscription: SubscriptionData | null;
+  subscription: SubscriptionWithProfile | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }

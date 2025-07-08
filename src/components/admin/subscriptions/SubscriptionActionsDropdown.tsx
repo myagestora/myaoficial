@@ -9,39 +9,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-
-interface ProfileData {
-  id: string;
-  full_name: string | null;
-  email: string | null;
-}
-
-interface SubscriptionData {
-  id: string;
-  user_id: string;
-  plan_id: string;
-  status: string;
-  current_period_start: string | null;
-  current_period_end: string | null;
-  created_at: string;
-  updated_at: string;
-  stripe_customer_id: string | null;
-  stripe_subscription_id: string | null;
-  subscription_plans: {
-    name: string;
-    description: string | null;
-    price_monthly: number | null;
-    price_yearly: number | null;
-  } | null;
-  profiles: ProfileData | null;
-}
+import { SubscriptionWithProfile } from '@/types/subscription';
 
 interface SubscriptionActionsDropdownProps {
-  subscription: SubscriptionData;
-  onView: (subscription: SubscriptionData) => void;
-  onEdit: (subscription: SubscriptionData) => void;
-  onCancel: (subscription: SubscriptionData) => void;
-  onReactivate: (subscription: SubscriptionData) => void;
+  subscription: SubscriptionWithProfile;
+  onView: (subscription: SubscriptionWithProfile) => void;
+  onEdit: (subscription: SubscriptionWithProfile) => void;
+  onCancel: (subscription: SubscriptionWithProfile) => void;
+  onReactivate: (subscription: SubscriptionWithProfile) => void;
 }
 
 export const SubscriptionActionsDropdown = ({
