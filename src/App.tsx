@@ -1,8 +1,9 @@
+
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import SEOHead from '@/components/SEOHead';
-import ProtectedRoute from '@/components/ProtectedRoute';
-import HomePage from '@/pages/Home';
+import { SEOHead } from '@/components/SEOHead';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import IndexPage from '@/pages/Index';
 import LoginPage from '@/pages/Login';
 import DashboardPage from '@/pages/Dashboard';
 import SettingsPage from '@/pages/Settings';
@@ -16,7 +17,7 @@ function App() {
       <SEOHead />
       <div className="min-h-screen bg-background text-foreground">
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<IndexPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
