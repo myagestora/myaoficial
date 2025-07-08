@@ -32,19 +32,45 @@ const AdminCategories = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('categories')
-        .select(`
-          *,
-          profiles:user_id (
-            full_name,
-            whatsapp
-          )
-        `)
+        .select('*')
         .order('is_default', { ascending: false })
         .order('name');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching categories:', error);
+        throw error;
+      }
       return data;
     }
+  });
+
+  const { data: profiles } = useQuery({
+    queryKey: ['category-profiles'],
+    queryFn: async () => {
+      if (!categories) return {};
+      
+      const userIds = categories
+        .filter(cat => !cat.is_default && cat.user_id)
+        .map(cat => cat.user_id);
+      
+      if (userIds.length === 0) return {};
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, whatsapp')
+        .in('id', userIds);
+      
+      if (error) {
+        console.error('Error fetching profiles:', error);
+        return {};
+      }
+      
+      return data.reduce((acc, profile) => {
+        acc[profile.id] = profile;
+        return acc;
+      }, {} as Record<string, any>);
+    },
+    enabled: !!categories
   });
 
   const createCategoryMutation = useMutation({
@@ -112,8 +138,9 @@ const AdminCategories = () => {
   const filteredUserCategories = userCategories.filter((category: any) => {
     const searchLower = searchTerm.toLowerCase();
     const categoryName = category.name.toLowerCase();
-    const userName = category.profiles?.full_name?.toLowerCase() || '';
-    const userPhone = category.profiles?.whatsapp?.toLowerCase() || '';
+    const profile = profiles?.[category.user_id];
+    const userName = profile?.full_name?.toLowerCase() || '';
+    const userPhone = profile?.whatsapp?.toLowerCase() || '';
     
     return categoryName.includes(searchLower) || 
            userName.includes(searchLower) || 
@@ -231,7 +258,7 @@ const AdminCategories = () => {
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={handleCreateCategory}>
+              <Button onClick={() => createCategoryMutation.mutate(newCategory)}>
                 Criar Categoria
               </Button>
               <Button variant="outline" onClick={() => setIsCreating(false)}>
@@ -300,10 +327,10 @@ const AdminCategories = () => {
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={handleUpdateCategory}>
+              <Button onClick={() => updateCategoryMutation.mutate(editingCategory)}>
                 Salvar Alterações
               </Button>
-              <Button variant="outline" onClick={cancelEditing}>
+              <Button variant="outline" onClick={() => setEditingCategory(null)}>
                 Cancelar
               </Button>
             </div>
@@ -355,7 +382,7 @@ const AdminCategories = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => startEditing(category)}
+                            onClick={() => setEditingCategory(category)}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -404,53 +431,56 @@ const AdminCategories = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredUserCategories.map((category: any) => (
-                    <TableRow key={category.id}>
-                      <TableCell className="font-medium">{category.name}</TableCell>
-                      <TableCell>
-                        {getTypeBadge(category.type)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-4 h-4 rounded-full" 
-                            style={{ backgroundColor: category.color }}
-                          />
-                          {category.color}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-medium">
-                            {category.profiles?.full_name || 'Usuário sem nome'}
-                          </span>
-                          {category.profiles?.whatsapp && (
-                            <span className="text-sm text-gray-500">
-                              {category.profiles.whatsapp}
+                  {filteredUserCategories.map((category: any) => {
+                    const profile = profiles?.[category.user_id];
+                    return (
+                      <TableRow key={category.id}>
+                        <TableCell className="font-medium">{category.name}</TableCell>
+                        <TableCell>
+                          {getTypeBadge(category.type)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-4 h-4 rounded-full" 
+                              style={{ backgroundColor: category.color }}
+                            />
+                            {category.color}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {profile?.full_name || 'Usuário sem nome'}
                             </span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => startEditing(category)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => deleteCategoryMutation.mutate(category.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                            {profile?.whatsapp && (
+                              <span className="text-sm text-gray-500">
+                                {profile.whatsapp}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setEditingCategory(category)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => deleteCategoryMutation.mutate(category.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                   {filteredUserCategories.length === 0 && searchTerm && (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-8 text-gray-500">
