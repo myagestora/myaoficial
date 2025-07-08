@@ -30,7 +30,36 @@ export const DeactivateAccountSection = () => {
 
       console.log('Iniciando desativação da conta para usuário:', user.id);
       
-      // Remover o número de WhatsApp do perfil
+      // Primeiro, cancelar assinatura ativa se existir
+      const { data: activeSubscription, error: subscriptionError } = await supabase
+        .from('user_subscriptions')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (subscriptionError) {
+        console.error('Erro ao buscar assinatura:', subscriptionError);
+        throw subscriptionError;
+      }
+
+      if (activeSubscription) {
+        console.log('Cancelando assinatura ativa:', activeSubscription.id);
+        const { error: cancelError } = await supabase
+          .from('user_subscriptions')
+          .update({ 
+            status: 'canceled',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', activeSubscription.id);
+
+        if (cancelError) {
+          console.error('Erro ao cancelar assinatura:', cancelError);
+          throw cancelError;
+        }
+      }
+      
+      // Remover o número de WhatsApp do perfil e desativar status
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ 
@@ -44,7 +73,7 @@ export const DeactivateAccountSection = () => {
         throw updateError;
       }
 
-      console.log('Perfil atualizado, removendo WhatsApp e desativando conta');
+      console.log('Conta desativada com sucesso - perfil atualizado e assinatura cancelada');
       
       // Fazer logout do usuário
       await signOut();
@@ -52,7 +81,7 @@ export const DeactivateAccountSection = () => {
     onSuccess: () => {
       toast({
         title: "Conta desativada",
-        description: "Sua conta foi desativada e você foi desconectado do sistema.",
+        description: "Sua conta foi desativada, assinatura cancelada e você foi desconectado do sistema.",
       });
     },
     onError: (error: any) => {
@@ -89,8 +118,8 @@ export const DeactivateAccountSection = () => {
           <div>
             <h4 className="font-medium text-destructive">Desativar Conta</h4>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Ao desativar sua conta, seu número de WhatsApp será removido do sistema e você será desconectado. 
-              Esta ação remove seu acesso ao sistema.
+              Ao desativar sua conta, seu número de WhatsApp será removido do sistema, sua assinatura será cancelada 
+              e você será desconectado. Esta ação remove seu acesso ao sistema.
             </p>
           </div>
           
@@ -122,8 +151,9 @@ export const DeactivateAccountSection = () => {
                   <p className="font-medium">Esta ação irá:</p>
                   <ul className="list-disc list-inside space-y-1 text-sm">
                     <li>Remover seu número de WhatsApp do sistema</li>
+                    <li>Cancelar sua assinatura ativa (se houver)</li>
                     <li>Desconectar você imediatamente</li>
-                    <li>Desativar sua assinatura</li>
+                    <li>Desativar seu status de assinatura</li>
                   </ul>
                   <p className="text-destructive font-medium">
                     Esta ação não pode ser desfeita facilmente.
