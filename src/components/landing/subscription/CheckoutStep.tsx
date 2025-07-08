@@ -29,10 +29,10 @@ export const CheckoutStep = ({
 }: CheckoutStepProps) => {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-lg max-h-[95vh] flex flex-col">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">Finalizar Assinatura</h2>
+            <h2 className="text-xl font-bold">Finalizar Assinatura</h2>
             <button
               onClick={onClose}
               className="text-gray-500 hover:text-gray-700 text-2xl"
@@ -42,12 +42,12 @@ export const CheckoutStep = ({
           </div>
         </div>
 
-        <div className="flex-1 min-h-0">
-          <ScrollArea className="h-full max-h-[calc(90vh-200px)]">
-            <div className="p-6">
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="p-4">
               {/* Verificação de configuração do Mercado Pago */}
               {!isMercadoPagoConfigured && (
-                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 mb-6">
+                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 mb-4">
                   <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
                     <AlertTriangle className="h-5 w-5" />
                     <h4 className="font-medium">Sistema de Pagamentos em Configuração</h4>
@@ -70,16 +70,18 @@ export const CheckoutStep = ({
           </ScrollArea>
         </div>
 
-        {/* Botão de Cancelar */}
-        <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="w-full"
-          >
-            Cancelar
-          </Button>
-        </div>
+        {/* Botão de Cancelar alternativo (caso não esteja configurado) */}
+        {!isMercadoPagoConfigured && (
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="w-full"
+            >
+              Cancelar
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
