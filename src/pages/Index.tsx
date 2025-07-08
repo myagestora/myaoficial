@@ -233,7 +233,7 @@ const Index = () => {
               {subscriptionPlans.map((plan, index) => {
                 const features = Array.isArray(plan.features) 
                   ? plan.features 
-                  : JSON.parse(plan.features || '[]');
+                  : JSON.parse((plan.features as string) || '[]');
                 
                 const isPopular = index === 1; // Segundo plano como popular
                 
@@ -241,7 +241,7 @@ const Index = () => {
                   <Card 
                     key={plan.id} 
                     className={`relative ${isPopular ? 'ring-2 scale-105' : ''}`}
-                    style={isPopular ? { ringColor: primaryColor } : {}}
+                    style={isPopular ? { borderColor: primaryColor, borderWidth: '2px' } : {}}
                   >
                     {isPopular && (
                       <Badge 
