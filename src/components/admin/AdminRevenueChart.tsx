@@ -74,7 +74,7 @@ export const AdminRevenueChart = ({ dateRange }: AdminRevenueChartProps) => {
 
   if (isLoading) {
     return (
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <CardTitle>Evolução da Receita</CardTitle>
         </CardHeader>
@@ -95,14 +95,14 @@ export const AdminRevenueChart = ({ dateRange }: AdminRevenueChartProps) => {
   };
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Evolução da Receita</CardTitle>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-80">
+        <ChartContainer config={chartConfig} className="h-80 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
+            <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <XAxis dataKey="month" />
               <YAxis />
               <ChartTooltip 

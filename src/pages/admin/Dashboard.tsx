@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, CreditCard, DollarSign, TrendingUp, Calendar, UserCheck, UserX } from 'lucide-react';
+import { Users, CreditCard, DollarSign, TrendingUp, Calendar, UserCheck, UserX, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -72,6 +72,29 @@ const AdminDashboard = () => {
         return total + (plan?.price_monthly || 0);
       }, 0) || 0;
 
+      // Buscar transações para calcular valores totais
+      let transactionsQuery = supabase
+        .from('transactions')
+        .select('amount, type');
+
+      // Aplicar filtro de período se especificado
+      if (dateRange?.from && dateRange?.to) {
+        transactionsQuery = transactionsQuery
+          .gte('date', dateRange.from.toISOString().split('T')[0])
+          .lte('date', dateRange.to.toISOString().split('T')[0]);
+      }
+
+      const { data: transactions, error: transactionsError } = await transactionsQuery;
+      
+      if (transactionsError) {
+        console.error('❌ Erro ao buscar transações:', transactionsError);
+      }
+
+      // Calcular valores totais de transações
+      const totalRevenues = transactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0;
+      const totalExpenses = transactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0;
+      const totalTransactionVolume = totalRevenues + totalExpenses;
+
       // Buscar usuários dos últimos 30 dias para calcular crescimento
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -88,26 +111,15 @@ const AdminDashboard = () => {
       // Calcular taxa de crescimento (simplificado)
       const growthRate = totalUsers ? ((newUsers || 0) / totalUsers * 100) : 0;
 
-      // Buscar usuários com filtro de período
-      let filteredUsersQuery = supabase
-        .from('profiles')
-        .select('subscription_status', { count: 'exact', head: true });
-
-      if (dateRange?.from && dateRange?.to) {
-        filteredUsersQuery = filteredUsersQuery
-          .gte('created_at', dateRange.from.toISOString())
-          .lte('created_at', dateRange.to.toISOString());
-      }
-
-      const { count: periodUsers } = await filteredUsersQuery;
-
       console.log('📊 Estatísticas calculadas:', {
         totalUsers,
         activeSubscriptions,
         canceledSubscriptions,
         monthlyRevenue,
-        growthRate: growthRate.toFixed(1),
-        periodUsers
+        totalRevenues,
+        totalExpenses,
+        totalTransactionVolume,
+        growthRate: growthRate.toFixed(1)
       });
 
       return {
@@ -115,8 +127,10 @@ const AdminDashboard = () => {
         activeSubscriptions: activeSubscriptions || 0,
         canceledSubscriptions: canceledSubscriptions || 0,
         monthlyRevenue: monthlyRevenue,
-        growthRate: Number(growthRate.toFixed(1)),
-        periodUsers: periodUsers || 0
+        totalRevenues,
+        totalExpenses,
+        totalTransactionVolume,
+        growthRate: Number(growthRate.toFixed(1))
       };
     }
   });
@@ -146,8 +160,8 @@ const AdminDashboard = () => {
       <div className="p-6">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-            {[1, 2, 3, 4, 5].map((i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="h-32 bg-gray-200 rounded"></div>
             ))}
           </div>
@@ -168,7 +182,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
@@ -220,25 +234,82 @@ const AdminDashboard = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Receitas</CardTitle>
+            <ArrowUpCircle className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              R$ {stats?.totalRevenues ? stats.totalRevenues.toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+              }) : '0,00'}
+            </div>
+            <p className="text-xs text-muted-foreground">Receitas registradas</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Despesas</CardTitle>
+            <ArrowDownCircle className="h-4 w-4 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">
+              R$ {stats?.totalExpenses ? stats.totalExpenses.toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+              }) : '0,00'}
+            </div>
+            <p className="text-xs text-muted-foreground">Despesas registradas</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Additional Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Volume Total de Transações</CardTitle>
+            <DollarSign className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-blue-600">
+              R$ {stats?.totalTransactionVolume ? stats.totalTransactionVolume.toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+              }) : '0,00'}
+            </div>
+            <p className="text-sm text-muted-foreground">Valor total movimentado na plataforma</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Taxa de Crescimento</CardTitle>
             <TrendingUp className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.growthRate || 0}%</div>
-            <p className="text-xs text-muted-foreground">Últimos 30 dias</p>
+            <div className="text-3xl font-bold text-orange-600">{stats?.growthRate || 0}%</div>
+            <p className="text-sm text-muted-foreground">Crescimento de usuários nos últimos 30 dias</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <AdminMonthlyOverview dateRange={dateRange} />
-        <AdminRevenueChart dateRange={dateRange} />
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="w-full">
+          <AdminMonthlyOverview dateRange={dateRange} />
+        </div>
+        <div className="w-full">
+          <AdminRevenueChart dateRange={dateRange} />
+        </div>
       </div>
 
       {/* User Activity and Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <AdminUserActivity dateRange={dateRange} />
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="w-full">
+          <AdminUserActivity dateRange={dateRange} />
+        </div>
         
         <Card>
           <CardHeader>

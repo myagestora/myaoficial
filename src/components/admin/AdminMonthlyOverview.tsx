@@ -76,7 +76,7 @@ export const AdminMonthlyOverview = ({ dateRange }: AdminMonthlyOverviewProps) =
 
   if (isLoading) {
     return (
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <CardTitle>Crescimento Mensal</CardTitle>
         </CardHeader>
@@ -101,14 +101,14 @@ export const AdminMonthlyOverview = ({ dateRange }: AdminMonthlyOverviewProps) =
   };
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Crescimento Mensal</CardTitle>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-80">
+        <ChartContainer config={chartConfig} className="h-80 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
+            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <XAxis dataKey="month" />
               <YAxis />
               <ChartTooltip content={<ChartTooltipContent />} />
