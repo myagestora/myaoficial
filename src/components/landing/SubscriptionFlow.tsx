@@ -231,31 +231,33 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
             </div>
           </div>
 
-          <ScrollArea className="flex-1">
-            <div className="p-6">
-              {/* Verificação de configuração do Mercado Pago */}
-              {!isMercadoPagoConfigured && (
-                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 mb-6">
-                  <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
-                    <AlertTriangle className="h-5 w-5" />
-                    <h4 className="font-medium">Sistema de Pagamentos em Configuração</h4>
+          <div className="flex-1 min-h-0">
+            <ScrollArea className="h-full max-h-[calc(90vh-200px)]">
+              <div className="p-6">
+                {/* Verificação de configuração do Mercado Pago */}
+                {!isMercadoPagoConfigured && (
+                  <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 mb-6">
+                    <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+                      <AlertTriangle className="h-5 w-5" />
+                      <h4 className="font-medium">Sistema de Pagamentos em Configuração</h4>
+                    </div>
+                    <p className="text-sm text-amber-700 dark:text-amber-300 mt-2">
+                      Estamos finalizando a configuração do sistema de pagamentos. 
+                      Por favor, tente novamente em alguns minutos.
+                    </p>
                   </div>
-                  <p className="text-sm text-amber-700 dark:text-amber-300 mt-2">
-                    Estamos finalizando a configuração do sistema de pagamentos. 
-                    Por favor, tente novamente em alguns minutos.
-                  </p>
-                </div>
-              )}
+                )}
 
-              {isMercadoPagoConfigured && (
-                <TransparentCheckout
-                  selectedPlan={selectedPlan}
-                  frequency={frequency}
-                  onClose={onClose}
-                />
-              )}
-            </div>
-          </ScrollArea>
+                {isMercadoPagoConfigured && (
+                  <TransparentCheckout
+                    selectedPlan={selectedPlan}
+                    frequency={frequency}
+                    onClose={onClose}
+                  />
+                )}
+              </div>
+            </ScrollArea>
+          </div>
 
           {/* Botão de Cancelar */}
           <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
