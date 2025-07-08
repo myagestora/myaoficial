@@ -54,6 +54,14 @@ export const SubscriptionDetailsDialog = ({ subscription, open, onOpenChange }: 
                 </Badge>
               </div>
               <div>
+                <label className="text-sm font-medium text-gray-500">Frequência</label>
+                <p className="text-sm">
+                  {subscription.frequency === 'monthly' ? 'Mensal' : 
+                   subscription.frequency === 'yearly' ? 'Anual' : 
+                   subscription.frequency || 'Não informado'}
+                </p>
+              </div>
+              <div>
                 <label className="text-sm font-medium text-gray-500">Data de Início</label>
                 <p className="text-sm">
                   {subscription.current_period_start 
@@ -93,24 +101,16 @@ export const SubscriptionDetailsDialog = ({ subscription, open, onOpenChange }: 
           </div>
 
           {/* IDs do Sistema */}
-          {(subscription.stripe_customer_id || subscription.stripe_subscription_id) && (
+          {subscription.mercado_pago_subscription_id && (
             <>
               <Separator />
               <div>
                 <h3 className="text-lg font-semibold mb-3">IDs do Sistema</h3>
                 <div className="grid grid-cols-1 gap-4">
-                  {subscription.stripe_customer_id && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Stripe Customer ID</label>
-                      <p className="text-xs font-mono bg-gray-100 p-2 rounded">{subscription.stripe_customer_id}</p>
-                    </div>
-                  )}
-                  {subscription.stripe_subscription_id && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Stripe Subscription ID</label>
-                      <p className="text-xs font-mono bg-gray-100 p-2 rounded">{subscription.stripe_subscription_id}</p>
-                    </div>
-                  )}
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Mercado Pago Subscription ID</label>
+                    <p className="text-xs font-mono bg-gray-100 p-2 rounded">{subscription.mercado_pago_subscription_id}</p>
+                  </div>
                 </div>
               </div>
             </>
