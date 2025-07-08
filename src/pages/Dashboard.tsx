@@ -14,8 +14,8 @@ import { DateRange } from 'react-day-picker';
 const Dashboard = () => {
   const { user } = useAuth();
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Últimos 30 dias por padrão
-    to: new Date()
+    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1), // Primeiro dia do mês atual
+    to: new Date() // Data atual
   });
 
   // Buscar estatísticas do usuário
