@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +14,7 @@ import Transactions from "./pages/Transactions";
 import Reports from "./pages/Reports";
 import Goals from "./pages/Goals";
 import Scheduled from "./pages/Scheduled";
+import Categories from "./pages/Categories";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminUsers from "./pages/admin/Users";
@@ -73,6 +73,20 @@ function AppContent() {
                 <Header />
                 <main className="flex-1 overflow-y-auto">
                   <Transactions />
+                </main>
+              </div>
+            </div>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/categories" element={
+          <ProtectedRoute>
+            <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+              <Sidebar />
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <Header />
+                <main className="flex-1 overflow-y-auto">
+                  <Categories />
                 </main>
               </div>
             </div>
