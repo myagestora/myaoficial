@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import IconSelector from '@/components/admin/IconSelector';
 
 const AdminCategories = () => {
   const [isCreating, setIsCreating] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<any>(null);
   const [newCategory, setNewCategory] = useState({
     name: '',
     type: 'expense' as 'income' | 'expense',
@@ -61,6 +63,25 @@ const AdminCategories = () => {
     }
   });
 
+  const updateCategoryMutation = useMutation({
+    mutationFn: async ({ id, ...categoryData }: any) => {
+      const { error } = await supabase
+        .from('categories')
+        .update(categoryData)
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      setEditingCategory(null);
+      toast({
+        title: 'Sucesso!',
+        description: 'Categoria atualizada com sucesso.',
+      });
+    }
+  });
+
   const deleteCategoryMutation = useMutation({
     mutationFn: async (categoryId: string) => {
       const { error } = await supabase
@@ -86,6 +107,20 @@ const AdminCategories = () => {
     createCategoryMutation.mutate(newCategory);
   };
 
+  const handleUpdateCategory = () => {
+    if (editingCategory) {
+      updateCategoryMutation.mutate(editingCategory);
+    }
+  };
+
+  const startEditing = (category: any) => {
+    setEditingCategory({ ...category });
+  };
+
+  const cancelEditing = () => {
+    setEditingCategory(null);
+  };
+
   const getTypeBadge = (type: string) => {
     if (type === 'income') {
       return (
@@ -100,7 +135,7 @@ const AdminCategories = () => {
       return (
         <Badge 
           variant="outline" 
-          className="border-red-400 text-red-600 bg-red-50"
+          className="border-red-500 text-red-700 bg-red-50"
         >
           Despesa
         </Badge>
@@ -190,6 +225,75 @@ const AdminCategories = () => {
         </Card>
       )}
 
+      {editingCategory && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Editar Categoria</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-name">Nome</Label>
+                <Input
+                  id="edit-name"
+                  value={editingCategory.name}
+                  onChange={(e) => setEditingCategory(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Nome da categoria"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-type">Tipo</Label>
+                <Select 
+                  value={editingCategory.type} 
+                  onValueChange={(value: 'income' | 'expense') => setEditingCategory(prev => ({ ...prev, type: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="income">Receita</SelectItem>
+                    <SelectItem value="expense">Despesa</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-color">Cor</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="edit-color"
+                    type="color"
+                    value={editingCategory.color}
+                    onChange={(e) => setEditingCategory(prev => ({ ...prev, color: e.target.value }))}
+                    className="w-16 h-10"
+                  />
+                  <Input
+                    value={editingCategory.color}
+                    onChange={(e) => setEditingCategory(prev => ({ ...prev, color: e.target.value }))}
+                    placeholder="#3B82F6"
+                  />
+                </div>
+              </div>
+              <IconSelector
+                value={editingCategory.icon}
+                onValueChange={(icon) => setEditingCategory(prev => ({ ...prev, icon }))}
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={handleUpdateCategory}>
+                Salvar Alterações
+              </Button>
+              <Button variant="outline" onClick={cancelEditing}>
+                Cancelar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Tabs defaultValue="default" className="space-y-6">
         <TabsList>
           <TabsTrigger value="default">Categorias Padrão ({defaultCategories.length})</TabsTrigger>
@@ -230,13 +334,22 @@ const AdminCategories = () => {
                       </TableCell>
                       <TableCell>{category.icon}</TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteCategoryMutation.mutate(category.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => startEditing(category)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteCategoryMutation.mutate(category.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -280,13 +393,22 @@ const AdminCategories = () => {
                       </TableCell>
                       <TableCell>{category.user_id}</TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteCategoryMutation.mutate(category.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => startEditing(category)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteCategoryMutation.mutate(category.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
