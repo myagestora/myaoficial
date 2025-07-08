@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -49,7 +48,7 @@ const AdminSubscriptions = () => {
 
   const { data: subscriptions, isLoading } = useQuery({
     queryKey: ['user-subscriptions'],
-    queryFn: async (): Promise<SubscriptionWithProfile[]> => {
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('user_subscriptions')
         .select(`
@@ -94,14 +93,39 @@ const AdminSubscriptions = () => {
         if (profilesError) throw profilesError;
         
         const combinedData: SubscriptionWithProfile[] = subscriptionsData?.map(subscription => ({
-          ...subscription,
+          id: subscription.id,
+          user_id: subscription.user_id,
+          plan_id: subscription.plan_id,
+          status: subscription.status || 'inactive',
+          current_period_start: subscription.current_period_start,
+          current_period_end: subscription.current_period_end,
+          created_at: subscription.created_at || '',
+          updated_at: subscription.updated_at || '',
+          stripe_customer_id: subscription.stripe_customer_id,
+          stripe_subscription_id: subscription.stripe_subscription_id,
+          subscription_plans: subscription.subscription_plans,
           profiles: profilesData?.find(profile => profile.id === subscription.user_id) || null
         })) || [];
         
         return combinedData;
       }
       
-      return data as SubscriptionWithProfile[];
+      const transformedData: SubscriptionWithProfile[] = data?.map(subscription => ({
+        id: subscription.id,
+        user_id: subscription.user_id,
+        plan_id: subscription.plan_id,
+        status: subscription.status || 'inactive',
+        current_period_start: subscription.current_period_start,
+        current_period_end: subscription.current_period_end,
+        created_at: subscription.created_at || '',
+        updated_at: subscription.updated_at || '',
+        stripe_customer_id: subscription.stripe_customer_id,
+        stripe_subscription_id: subscription.stripe_subscription_id,
+        subscription_plans: subscription.subscription_plans,
+        profiles: subscription.profiles as ProfileData | null
+      })) || [];
+      
+      return transformedData;
     }
   });
 
