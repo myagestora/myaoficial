@@ -1,21 +1,36 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Filter, ArrowUpCircle, ArrowDownCircle, Edit, Trash2, Repeat, Calendar, Play, Pause } from 'lucide-react';
+import { Plus, Search, ArrowUpCircle, ArrowDownCircle, Edit, Trash2, Repeat, Calendar, Play, Pause } from 'lucide-react';
 import { TransactionForm } from '@/components/transactions/TransactionForm';
+import { FilterDialog } from '@/components/scheduled/FilterDialog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
+
+interface FilterOptions {
+  type: string;
+  category: string;
+  frequency: string;
+  status: string;
+  nextExecution: string;
+}
 
 const Scheduled = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filters, setFilters] = useState<FilterOptions>({
+    type: '',
+    category: '',
+    frequency: '',
+    status: '',
+    nextExecution: ''
+  });
 
   const { data: scheduledTransactions, isLoading } = useQuery({
     queryKey: ['scheduled-transactions', user?.id],
@@ -47,6 +62,26 @@ const Scheduled = () => {
 
       if (error) {
         console.error('Error fetching scheduled transactions:', error);
+        return [];
+      }
+
+      return data || [];
+    },
+    enabled: !!user?.id
+  });
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+
+      const { data, error } = await supabase
+        .from('categories')
+        .select('id, name, color')
+        .or(`user_id.eq.${user.id},is_default.eq.true`);
+
+      if (error) {
+        console.error('Error fetching categories:', error);
         return [];
       }
 
@@ -110,10 +145,69 @@ const Scheduled = () => {
     }
   });
 
-  const filteredTransactions = scheduledTransactions?.filter(transaction =>
-    transaction.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    transaction.categories?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  const applyFilters = (transaction: any) => {
+    // Filtro por tipo
+    if (filters.type && transaction.type !== filters.type) {
+      return false;
+    }
+
+    // Filtro por categoria
+    if (filters.category && transaction.categories?.id !== filters.category) {
+      return false;
+    }
+
+    // Filtro por frequência
+    if (filters.frequency && transaction.recurrence_frequency !== filters.frequency) {
+      return false;
+    }
+
+    // Filtro por status
+    if (filters.status) {
+      const isActive = transaction.is_recurring;
+      if ((filters.status === 'active' && !isActive) || (filters.status === 'paused' && isActive)) {
+        return false;
+      }
+    }
+
+    // Filtro por próxima execução  
+    if (filters.nextExecution && transaction.next_recurrence_date) {
+      const nextDate = new Date(transaction.next_recurrence_date);
+      const today = new Date();
+      const diffTime = nextDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      switch (filters.nextExecution) {
+        case 'today':
+          if (diffDays !== 0) return false;
+          break;
+        case 'tomorrow':
+          if (diffDays !== 1) return false;
+          break;
+        case 'week':
+          if (diffDays < 0 || diffDays > 7) return false;
+          break;
+        case 'month':
+          if (diffDays < 0 || diffDays > 30) return false;
+          break;
+        case 'overdue':
+          if (diffDays >= 0) return false;
+          break;
+      }
+    }
+
+    return true;
+  };
+
+  const filteredTransactions = scheduledTransactions?.filter(transaction => {
+    // Aplicar filtro de busca por texto
+    const matchesSearch = transaction.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      transaction.categories?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Aplicar filtros avançados
+    const matchesFilters = applyFilters(transaction);
+    
+    return matchesSearch && matchesFilters;
+  }) || [];
 
   const formatRecurrenceInfo = (transaction: any) => {
     const frequencyMap = {
@@ -251,10 +345,11 @@ const Scheduled = () => {
                 className="pl-10"
               />
             </div>
-            <Button variant="outline">
-              <Filter className="mr-2 h-4 w-4" />
-              Filtros
-            </Button>
+            <FilterDialog 
+              filters={filters}
+              onFiltersChange={setFilters}
+              categories={categories}
+            />
           </div>
         </CardContent>
       </Card>
@@ -271,7 +366,10 @@ const Scheduled = () => {
                 <Calendar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                 <p className="text-gray-500">Nenhum agendamento encontrado</p>
                 <p className="text-sm text-gray-400 mt-2">
-                  Comece criando seu primeiro agendamento!
+                  {Object.values(filters).some(f => f !== '') || searchTerm ? 
+                    'Tente ajustar os filtros ou busca.' :
+                    'Comece criando seu primeiro agendamento!'
+                  }
                 </p>
               </div>
             ) : (
