@@ -1,1 +1,31 @@
-project_id = "fimgalqlsezgxqbmktpz"
+
+project_id = "c46de564-3ee4-45c1-9f4a-43d78557c5ef"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+smtp_port = 54325
+pop3_port = 54326
+
+[functions.create-mercado-pago-payment]
+verify_jwt = true
+
+[functions.mercado-pago-webhook]
+verify_jwt = false
+
+[auth]
+enabled = true
