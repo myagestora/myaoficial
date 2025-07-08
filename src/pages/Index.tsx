@@ -93,46 +93,46 @@ const Index = () => {
   const organizationFeatures = [
     {
       icon: Calculator,
-      title: 'Planejamento Financeiro',
-      description: 'Organize seu orçamento mensal e anual com facilidade'
+      title: 'Orçamento Inteligente',
+      description: 'Crie e gerencie seu orçamento mensal com facilidade total'
     },
     {
       icon: PieChart,
-      title: 'Análise de Gastos',
-      description: 'Visualize onde seu dinheiro está sendo gasto'
+      title: 'Relatórios Visuais',
+      description: 'Gráficos intuitivos para entender seus hábitos financeiros'
     },
     {
       icon: Bell,
-      title: 'Lembretes Inteligentes',
-      description: 'Nunca esqueça de pagar uma conta importante'
+      title: 'Alertas Personalizados',
+      description: 'Receba avisos sobre gastos e prazos importantes'
     },
     {
       icon: TrendingUp,
-      title: 'Metas de Economia',
-      description: 'Defina e alcance seus objetivos de poupança'
+      title: 'Crescimento Financeiro',
+      description: 'Acompanhe sua evolução patrimonial mês a mês'
     }
   ];
 
   const whyChooseFeatures = [
     {
       icon: Shield,
-      title: 'Segurança Bancária',
-      description: 'Seus dados protegidos com a mesma segurança dos bancos'
+      title: 'Proteção Máxima',
+      description: 'Tecnologia de segurança bancária para proteger seus dados'
     },
     {
       icon: Clock,
-      title: 'Economia de Tempo',
-      description: 'Automatize suas finanças e economize horas por semana'
+      title: 'Praticidade Total',
+      description: 'Gerencie tudo pelo WhatsApp, sem complicação'
     },
     {
       icon: Users,
-      title: 'Suporte Especializado',
-      description: 'Nossa equipe está sempre pronta para te ajudar'
+      title: 'Suporte Humano',
+      description: 'Equipe dedicada para tirar suas dúvidas sempre'
     },
     {
       icon: Zap,
-      title: 'Atualizações Constantes',
-      description: 'Sempre com novas funcionalidades e melhorias'
+      title: 'Sempre Evoluindo',
+      description: 'Melhorias constantes baseadas no seu feedback'
     }
   ];
 
@@ -147,7 +147,7 @@ const Index = () => {
                 <img 
                   src={appLogo} 
                   alt={appName}
-                  className="h-12 w-auto object-contain"
+                  className="h-16 w-auto object-contain"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';
@@ -161,10 +161,10 @@ const Index = () => {
               
               <div className={`flex items-center space-x-2 logo-fallback ${appLogo && appLogo.trim() !== '' ? 'hidden' : ''}`}>
                 <div 
-                  className="w-12 h-12 rounded-lg flex items-center justify-center"
+                  className="w-16 h-16 rounded-lg flex items-center justify-center"
                   style={{ backgroundColor: primaryColor }}
                 >
-                  <DollarSign className="w-7 h-7 text-white" />
+                  <DollarSign className="w-9 h-9 text-white" />
                 </div>
                 <span className="text-2xl font-bold text-gray-900 dark:text-white">
                   {appName}
@@ -188,33 +188,26 @@ const Index = () => {
 
       {/* Hero Section */}
       <section className="relative py-20 overflow-hidden">
-        <div 
-          className="absolute inset-0 opacity-10"
-          style={{ 
-            background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)` 
-          }}
-        />
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
-            Suas finanças
+            Organize suas finanças
             <span className="block mt-2">
-              no controle,
+              sem sair do
             </span>
             <span className="block mt-2">
               <span 
-                className="text-transparent bg-clip-text"
+                className="text-transparent bg-clip-text bg-gradient-to-r"
                 style={{ 
                   backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
-                  WebkitBackgroundClip: 'text',
-                  backgroundClip: 'text'
                 }}
               >
-                direto no WhatsApp
+                WhatsApp
               </span>
             </span>
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-6">
-            Já pensou controlar suas finanças sem sair do WhatsApp? Com o {appName}, isso é realidade!
+            Controle total da sua vida financeira através de conversas simples e intuitivas
           </p>
           
           {/* Rating Section */}
@@ -249,7 +242,7 @@ const Index = () => {
                 className="text-lg px-8 py-4"
                 style={{ backgroundColor: primaryColor }}
               >
-                ⚡ Assinar Agora
+                ⚡ Começar Gratuitamente
               </Button>
             </Link>
             <Button size="lg" variant="outline" className="text-lg px-8 py-4">
@@ -258,7 +251,7 @@ const Index = () => {
           </div>
           
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            ⚡ Sua grana sob controle com um simples "Oi" no zap
+            ⚡ Controle financeiro inteligente a um clique de distância
           </p>
         </div>
       </section>
@@ -270,14 +263,14 @@ const Index = () => {
             <div>
               <div className="inline-block px-4 py-2 bg-green-100 dark:bg-green-900/20 rounded-full mb-4">
                 <span className="text-green-600 dark:text-green-400 font-semibold flex items-center">
-                  ✨ Transformação Garantida
+                  ✨ Revolucione sua Vida Financeira
                 </span>
               </div>
               <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-6">
-                Suas finanças no controle, direto no WhatsApp
+                Suas finanças organizadas pelo WhatsApp
               </h2>
               <p className="text-xl text-gray-600 dark:text-gray-300 mb-6">
-                Já pensou controlar suas finanças sem sair do WhatsApp? Com o {appName}, isso é realidade!
+                Registre gastos e receitas conversando naturalmente. Nosso assistente entende você e organiza tudo automaticamente!
               </p>
             </div>
             
@@ -286,84 +279,84 @@ const Index = () => {
               <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl p-6 max-w-md mx-auto">
                 {/* WhatsApp Header */}
                 <div className="flex items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-600">
-                  <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center mr-3">
-                    <span className="text-white font-bold text-sm">FA</span>
+                  <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center mr-3">
+                    <span className="text-white font-bold text-sm">{appName.charAt(0)}</span>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">Facilite Já AI</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">{appName} Assistente</h3>
                     <div className="flex items-center text-sm text-green-600">
                       <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
                       online
                     </div>
                   </div>
-                  <div className="ml-auto text-green-600">
-                    <span className="bg-green-100 px-2 py-1 rounded-full text-xs">100% Seguro</span>
+                  <div className="ml-auto text-blue-600">
+                    <span className="bg-blue-100 px-2 py-1 rounded-full text-xs">🔒 Seguro</span>
                   </div>
                 </div>
 
                 {/* Messages */}
                 <div className="space-y-4">
-                  {/* Bot Message */}
-                  <div className="flex items-start">
-                    <div className="bg-gray-200 dark:bg-gray-600 rounded-lg p-3 max-w-xs">
-                      <p className="text-sm text-gray-800 dark:text-gray-200">
-                        Oi! 👋 Sou sua assistente financeira! Como posso te ajudar hoje?
-                      </p>
-                      <span className="text-xs text-gray-500">09:10</span>
-                    </div>
-                  </div>
-
-                  {/* User Message */}
+                  {/* User Message 1 */}
                   <div className="flex justify-end">
                     <div className="bg-green-500 text-white rounded-lg p-3 max-w-xs">
-                      <p className="text-sm">Qual meu resumo de gasto da semana?</p>
-                      <span className="text-xs text-green-100">09:15</span>
+                      <p className="text-sm">Gastei R$ 150 de gasolina hoje</p>
+                      <span className="text-xs text-green-100">14:22</span>
                     </div>
                   </div>
 
-                  {/* Bot Response with Summary */}
+                  {/* Bot Response 1 */}
                   <div className="flex items-start">
                     <div className="bg-gray-200 dark:bg-gray-600 rounded-lg p-3 max-w-xs">
                       <div className="text-sm text-gray-800 dark:text-gray-200">
-                        <p className="font-semibold mb-2">📊 Resumo da Semana</p>
-                        <div className="space-y-1 text-xs">
-                          <div>💰 Total gasto: <span className="text-red-600 font-bold">R$ 847,30</span></div>
-                          <div>🍽️ Alimentação: R$ 320,50</div>
-                          <div>🚗 Transporte: R$ 180,00</div>
-                          <div>🎮 Lazer: R$ 127,80</div>
-                          <div>🏠 Casa: R$ 219,00</div>
-                          <div className="pt-2 border-t border-gray-300">
-                            <div className="text-green-600 font-semibold">
-                              ✅ Você economizou R$ 152,70 em relação à semana passada!
-                            </div>
-                          </div>
+                        <p className="mb-2">✅ <strong>Despesa registrada!</strong></p>
+                        <div className="text-xs space-y-1 bg-white dark:bg-gray-700 p-2 rounded">
+                          <div>💰 <strong>Valor:</strong> R$ 150,00</div>
+                          <div>🏷️ <strong>Categoria:</strong> Transporte</div>
+                          <div>⛽ <strong>Descrição:</strong> Gasolina</div>
+                          <div>📅 <strong>Data:</strong> Hoje</div>
                         </div>
                       </div>
-                      <span className="text-xs text-gray-500">09:15</span>
+                      <span className="text-xs text-gray-500">14:22</span>
                     </div>
                   </div>
 
-                  {/* User Question */}
+                  {/* User Message 2 */}
                   <div className="flex justify-end">
                     <div className="bg-green-500 text-white rounded-lg p-3 max-w-xs">
-                      <p className="text-sm">Quer dicas para economizar mais? 🤔</p>
-                      <span className="text-xs text-green-100">09:16</span>
+                      <p className="text-sm">Recebi R$ 350 do freelancer no PIX</p>
+                      <span className="text-xs text-green-100">14:25</span>
                     </div>
                   </div>
 
-                  {/* Bot Tips */}
+                  {/* Bot Response 2 */}
                   <div className="flex items-start">
-                    <div className="bg-green-500 text-white rounded-lg p-3 max-w-xs">
-                      <p className="text-sm">Sim! 💡⚡</p>
-                      <span className="text-xs text-green-100">09:17</span>
+                    <div className="bg-gray-200 dark:bg-gray-600 rounded-lg p-3 max-w-xs">
+                      <div className="text-sm text-gray-800 dark:text-gray-200">
+                        <p className="mb-2">🎉 <strong>Receita adicionada!</strong></p>
+                        <div className="text-xs space-y-1 bg-white dark:bg-gray-700 p-2 rounded">
+                          <div>💚 <strong>Valor:</strong> R$ 350,00</div>
+                          <div>🏷️ <strong>Categoria:</strong> Trabalho</div>
+                          <div>💼 <strong>Descrição:</strong> Freelancer</div>
+                          <div>📱 <strong>Forma:</strong> PIX</div>
+                        </div>
+                        <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded text-green-700 dark:text-green-300">
+                          💡 <strong>Saldo do dia:</strong> +R$ 200,00
+                        </div>
+                      </div>
+                      <span className="text-xs text-gray-500">14:25</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Quick Actions */}
                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-                  <div className="bg-blue-500 text-white rounded-lg p-2 text-center">
-                    <span className="text-sm">🚀 Resultados Rápidos</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-blue-500 text-white rounded-lg p-2 text-center">
+                      <span className="text-xs">📊 Ver Resumo</span>
+                    </div>
+                    <div className="bg-purple-500 text-white rounded-lg p-2 text-center">
+                      <span className="text-xs">🎯 Minhas Metas</span>
+                    </div>
                   </div>
                 </div>
               </div>
