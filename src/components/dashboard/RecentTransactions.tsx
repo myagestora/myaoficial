@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,9 +6,11 @@ import { ArrowUpCircle, ArrowDownCircle, MoreHorizontal } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 export const RecentTransactions = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const { data: transactions, isLoading } = useQuery({
     queryKey: ['recent-transactions', user?.id],
@@ -72,7 +73,11 @@ export const RecentTransactions = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Transações Recentes</CardTitle>
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => navigate('/transactions')}
+          >
             Ver Todas
           </Button>
         </CardHeader>
@@ -92,7 +97,11 @@ export const RecentTransactions = () => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Transações Recentes</CardTitle>
-        <Button variant="outline" size="sm">
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => navigate('/transactions')}
+        >
           Ver Todas
         </Button>
       </CardHeader>
