@@ -27,7 +27,7 @@ const SettingsPage = () => {
   const [animations, setAnimations] = useState(true);
   const [notificationSound, setNotificationSound] = useState(true);
 
-  // Buscar dados do perfil com melhor tratamento de erro
+  // Buscar dados do perfil com query mais simples
   const { data: profile, isLoading } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
@@ -35,23 +35,30 @@ const SettingsPage = () => {
       
       console.log('Buscando perfil para usuário:', user.id);
       
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, email, avatar_url, whatsapp, subscription_status')
-        .eq('id', user.id)
-        .maybeSingle();
-      
-      if (error) {
-        console.error('Erro ao buscar perfil:', error);
-        throw error;
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .limit(1);
+        
+        if (error) {
+          console.error('Erro ao buscar perfil:', error);
+          return null;
+        }
+        
+        const profileData = data && data.length > 0 ? data[0] : null;
+        console.log('Dados do perfil carregados:', profileData);
+        return profileData;
+      } catch (err) {
+        console.error('Erro na busca do perfil:', err);
+        return null;
       }
-      
-      console.log('Dados do perfil carregados:', data);
-      return data;
     },
     enabled: !!user?.id,
-    retry: 3,
+    retry: 2,
     retryDelay: 1000,
+    staleTime: 30000, // Cache por 30 segundos
   });
 
   // Effect para carregar preferências do usuário
