@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit, Trash2, Palette } from 'lucide-react';
+import { Plus, Edit, Trash2, Search } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -17,6 +16,7 @@ import IconSelector from '@/components/admin/IconSelector';
 const AdminCategories = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [newCategory, setNewCategory] = useState({
     name: '',
     type: 'expense' as 'income' | 'expense',
@@ -32,7 +32,13 @@ const AdminCategories = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('categories')
-        .select('*')
+        .select(`
+          *,
+          profiles:user_id (
+            full_name,
+            whatsapp
+          )
+        `)
         .order('is_default', { ascending: false })
         .order('name');
       
@@ -102,6 +108,17 @@ const AdminCategories = () => {
 
   const defaultCategories = categories?.filter((cat: any) => cat.is_default) || [];
   const userCategories = categories?.filter((cat: any) => !cat.is_default) || [];
+
+  const filteredUserCategories = userCategories.filter((category: any) => {
+    const searchLower = searchTerm.toLowerCase();
+    const categoryName = category.name.toLowerCase();
+    const userName = category.profiles?.full_name?.toLowerCase() || '';
+    const userPhone = category.profiles?.whatsapp?.toLowerCase() || '';
+    
+    return categoryName.includes(searchLower) || 
+           userName.includes(searchLower) || 
+           userPhone.includes(searchLower);
+  });
 
   const handleCreateCategory = () => {
     createCategoryMutation.mutate(newCategory);
@@ -362,7 +379,18 @@ const AdminCategories = () => {
         <TabsContent value="user">
           <Card>
             <CardHeader>
-              <CardTitle>Categorias Criadas por Usuários</CardTitle>
+              <div className="flex justify-between items-center">
+                <CardTitle>Categorias Criadas por Usuários</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Search className="h-4 w-4 text-gray-500" />
+                  <Input
+                    placeholder="Buscar por categoria, nome ou telefone..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-80"
+                  />
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
@@ -376,7 +404,7 @@ const AdminCategories = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {userCategories.map((category: any) => (
+                  {filteredUserCategories.map((category: any) => (
                     <TableRow key={category.id}>
                       <TableCell className="font-medium">{category.name}</TableCell>
                       <TableCell>
@@ -391,7 +419,18 @@ const AdminCategories = () => {
                           {category.color}
                         </div>
                       </TableCell>
-                      <TableCell>{category.user_id}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {category.profiles?.full_name || 'Usuário sem nome'}
+                          </span>
+                          {category.profiles?.whatsapp && (
+                            <span className="text-sm text-gray-500">
+                              {category.profiles.whatsapp}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
                           <Button
@@ -412,6 +451,20 @@ const AdminCategories = () => {
                       </TableCell>
                     </TableRow>
                   ))}
+                  {filteredUserCategories.length === 0 && searchTerm && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                        Nenhuma categoria encontrada para "{searchTerm}"
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {userCategories.length === 0 && !searchTerm && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                        Nenhuma categoria de usuário encontrada
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
