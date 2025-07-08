@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -179,13 +178,29 @@ const AdminSubscriptions = () => {
   });
 
   const startEditing = (plan: any) => {
+    console.log('Editing plan:', plan);
     setEditingPlan(plan.id);
+    
+    // Parse das features do JSON para array
+    let featuresArray = [''];
+    if (plan.features) {
+      try {
+        const parsedFeatures = Array.isArray(plan.features) 
+          ? plan.features 
+          : JSON.parse(plan.features);
+        featuresArray = parsedFeatures.length > 0 ? parsedFeatures : [''];
+      } catch (error) {
+        console.error('Error parsing features:', error);
+        featuresArray = [''];
+      }
+    }
+    
     setNewPlan({
-      name: plan.name,
+      name: plan.name || '',
       description: plan.description || '',
-      price_monthly: plan.price_monthly?.toString() || '',
-      price_yearly: plan.price_yearly?.toString() || '',
-      features: plan.features ? JSON.parse(plan.features) : ['']
+      price_monthly: plan.price_monthly ? plan.price_monthly.toString() : '',
+      price_yearly: plan.price_yearly ? plan.price_yearly.toString() : '',
+      features: featuresArray
     });
   };
 
