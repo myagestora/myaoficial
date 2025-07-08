@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,10 +52,12 @@ export const FaviconUpload: React.FC<FaviconUploadProps> = ({
         if (error) throw error;
       }
 
-      // Atualizar o favicon no HTML
+      // Atualizar o favicon no HTML imediatamente
       updateFaviconInHTML(faviconUrl);
 
-      queryClient.invalidateQueries({ queryKey: ['system-config'] });
+      // Invalidar cache do SEO config para recarregar
+      queryClient.invalidateQueries({ queryKey: ['seo-config'] });
+      
       console.log('Favicon salvo no banco com sucesso!');
     } catch (error) {
       console.error('Erro ao salvar favicon no banco:', error);
@@ -65,19 +66,26 @@ export const FaviconUpload: React.FC<FaviconUploadProps> = ({
   };
 
   const updateFaviconInHTML = (faviconUrl: string) => {
-    // Remover favicon existente
-    const existingFavicon = document.querySelector('link[rel="icon"]');
-    if (existingFavicon) {
-      existingFavicon.remove();
-    }
+    // Remover todos os favicons existentes
+    const existingFavicons = document.querySelectorAll('link[rel*="icon"]');
+    existingFavicons.forEach(favicon => favicon.remove());
 
-    // Adicionar novo favicon
     if (faviconUrl) {
+      // Adicionar novo favicon
       const link = document.createElement('link');
       link.rel = 'icon';
       link.href = faviconUrl;
       link.type = 'image/png';
       document.head.appendChild(link);
+
+      // Também adicionar shortcut icon para melhor compatibilidade
+      const shortcutLink = document.createElement('link');
+      shortcutLink.rel = 'shortcut icon';
+      shortcutLink.href = faviconUrl;
+      shortcutLink.type = 'image/png';
+      document.head.appendChild(shortcutLink);
+
+      console.log('Favicon atualizado no HTML:', faviconUrl);
     }
   };
 
@@ -136,7 +144,7 @@ export const FaviconUpload: React.FC<FaviconUploadProps> = ({
 
       toast({
         title: 'Sucesso',
-        description: 'Favicon enviado e salvo com sucesso!',
+        description: 'Favicon enviado e aplicado com sucesso!',
       });
 
     } catch (error) {

@@ -27,7 +27,8 @@ export const SEOHead = () => {
           'google_analytics',
           'facebook_pixel',
           'custom_head_scripts',
-          'custom_body_scripts'
+          'custom_body_scripts',
+          'app_favicon'
         ]);
       
       if (error) throw error;
@@ -49,6 +50,36 @@ export const SEOHead = () => {
     // Update document title
     if (seoConfig.seo_title) {
       document.title = seoConfig.seo_title;
+    }
+
+    // Update favicon
+    const updateFavicon = (faviconUrl: string) => {
+      // Remove all existing favicons
+      const existingFavicons = document.querySelectorAll('link[rel*="icon"]');
+      existingFavicons.forEach(favicon => favicon.remove());
+
+      if (faviconUrl) {
+        // Add new favicon
+        const link = document.createElement('link');
+        link.rel = 'icon';
+        link.href = faviconUrl;
+        link.type = 'image/png';
+        document.head.appendChild(link);
+
+        // Also add shortcut icon for better compatibility
+        const shortcutLink = document.createElement('link');
+        shortcutLink.rel = 'shortcut icon';
+        shortcutLink.href = faviconUrl;
+        shortcutLink.type = 'image/png';
+        document.head.appendChild(shortcutLink);
+
+        console.log('Favicon atualizado para:', faviconUrl);
+      }
+    };
+
+    // Apply favicon if configured
+    if (seoConfig.app_favicon) {
+      updateFavicon(seoConfig.app_favicon);
     }
 
     // Update or create meta tags
