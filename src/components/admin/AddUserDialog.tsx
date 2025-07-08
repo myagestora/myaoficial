@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { UserPlus } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -146,11 +147,10 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
 
           <div>
             <Label htmlFor="whatsapp">WhatsApp</Label>
-            <Input
+            <PhoneInput
               id="whatsapp"
               value={whatsapp}
-              onChange={(e) => setWhatsapp(e.target.value)}
-              placeholder="+55 11 99999-9999"
+              onChange={(value) => setWhatsapp(value || '')}
             />
           </div>
 
