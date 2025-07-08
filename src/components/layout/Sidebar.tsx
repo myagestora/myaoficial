@@ -68,42 +68,40 @@ export const Sidebar = () => {
     <div className="flex flex-col w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
       {/* Logo */}
       <div className="flex items-center justify-center h-20 px-4 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center justify-center">
           {appLogo && appLogo.trim() !== '' ? (
-            <div className="flex items-center space-x-3">
-              <img 
-                src={appLogo} 
-                alt={appName}
-                className="h-8 w-auto object-contain"
-                onError={(e) => {
-                  console.error('Erro ao carregar logo:', appLogo);
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  // Mostrar fallback
-                  const fallback = target.parentElement?.querySelector('.logo-fallback') as HTMLElement;
-                  if (fallback) {
-                    fallback.style.display = 'flex';
-                  }
-                }}
-                onLoad={() => {
-                  console.log('Logo carregada com sucesso:', appLogo);
-                }}
-              />
-              <div 
-                className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center logo-fallback"
-                style={{ display: 'none' }}
-              >
-                <DollarSign className="w-5 h-5 text-white" />
-              </div>
-            </div>
-          ) : (
+            // Quando tem logo, mostra apenas o logo
+            <img 
+              src={appLogo} 
+              alt={appName}
+              className="h-10 w-auto object-contain"
+              onError={(e) => {
+                console.error('Erro ao carregar logo:', appLogo);
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                // Mostrar fallback com nome
+                const fallback = target.parentElement?.querySelector('.logo-fallback') as HTMLElement;
+                if (fallback) {
+                  fallback.style.display = 'flex';
+                }
+              }}
+              onLoad={() => {
+                console.log('Logo carregada com sucesso:', appLogo);
+              }}
+            />
+          ) : null}
+          
+          {/* Fallback: quando não tem logo ou erro no carregamento */}
+          <div 
+            className={`flex items-center space-x-3 logo-fallback ${appLogo && appLogo.trim() !== '' ? 'hidden' : ''}`}
+          >
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <DollarSign className="w-5 h-5 text-white" />
             </div>
-          )}
-          <span className="text-xl font-bold text-gray-900 dark:text-white">
-            {appName}
-          </span>
+            <span className="text-xl font-bold text-gray-900 dark:text-white">
+              {appName}
+            </span>
+          </div>
         </div>
       </div>
 
