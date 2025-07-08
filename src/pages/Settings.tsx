@@ -1,16 +1,354 @@
 
-import React from 'react';
-import { CategoryManager } from '@/components/categories/CategoryManager';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { PhoneInput } from '@/components/ui/phone-input';
+import { useToast } from '@/hooks/use-toast';
+import { User, Settings, Shield, Bell, Palette } from 'lucide-react';
 
 const Settings = () => {
-  return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Configurações</h1>
-        <p className="text-gray-600 dark:text-gray-400">Gerencie suas categorias e preferências</p>
-      </div>
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [loading, setLoading] = useState(false);
+
+  // Buscar dados do perfil
+  const { data: profile, isLoading } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
       
-      <CategoryManager />
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  // Mutação para atualizar perfil
+  const updateProfileMutation = useMutation({
+    mutationFn: async (updates: any) => {
+      if (!user?.id) throw new Error('User not found');
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      toast({
+        title: "Perfil atualizado",
+        description: "Suas informações foram salvas com sucesso!",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao atualizar",
+        description: "Não foi possível salvar as alterações.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleUpdateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    const formData = new FormData(e.currentTarget);
+    const updates = {
+      full_name: formData.get('full_name') as string,
+      whatsapp: formData.get('whatsapp') as string,
+    };
+    
+    await updateProfileMutation.mutateAsync(updates);
+    setLoading(false);
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    const formData = new FormData(e.currentTarget);
+    const newPassword = formData.get('new_password') as string;
+    const confirmPassword = formData.get('confirm_password') as string;
+    
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Erro",
+        description: "As senhas não coincidem.",
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
+    
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    
+    if (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível alterar a senha.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Senha alterada",
+        description: "Sua senha foi alterada com sucesso!",
+      });
+      (e.target as HTMLFormElement).reset();
+    }
+    
+    setLoading(false);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="container mx-auto px-4 py-6 max-w-4xl">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Configurações</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            Gerencie suas informações pessoais e preferências da conta
+          </p>
+        </div>
+
+        <Tabs defaultValue="profile" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="profile" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Perfil
+            </TabsTrigger>
+            <TabsTrigger value="security" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Segurança
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="flex items-center gap-2">
+              <Bell className="h-4 w-4" />
+              Notificações
+            </TabsTrigger>
+            <TabsTrigger value="preferences" className="flex items-center gap-2">
+              <Palette className="h-4 w-4" />
+              Preferências
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="profile">
+            <Card>
+              <CardHeader>
+                <CardTitle>Informações do Perfil</CardTitle>
+                <CardDescription>
+                  Atualize suas informações pessoais e de contato
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center space-x-4">
+                  <Avatar className="h-20 w-20">
+                    <AvatarImage src={profile?.avatar_url} />
+                    <AvatarFallback className="text-lg">
+                      {profile?.full_name?.charAt(0)?.toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-medium">{profile?.full_name || 'Usuário'}</h3>
+                    <p className="text-sm text-gray-500">{user?.email}</p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <form onSubmit={handleUpdateProfile} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="full_name">Nome Completo</Label>
+                      <Input
+                        id="full_name"
+                        name="full_name"
+                        defaultValue={profile?.full_name || ''}
+                        placeholder="Digite seu nome completo"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={user?.email || ''}
+                        disabled
+                        className="bg-gray-100 dark:bg-gray-800"
+                      />
+                      <p className="text-xs text-gray-500">
+                        O email não pode ser alterado por aqui
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="whatsapp">WhatsApp</Label>
+                    <PhoneInput
+                      id="whatsapp"
+                      name="whatsapp"
+                      value={profile?.whatsapp || ''}
+                      onChange={() => {}}
+                      className="w-full"
+                    />
+                  </div>
+
+                  <Button type="submit" disabled={loading}>
+                    {loading ? 'Salvando...' : 'Salvar Alterações'}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="security">
+            <Card>
+              <CardHeader>
+                <CardTitle>Segurança da Conta</CardTitle>
+                <CardDescription>
+                  Altere sua senha e gerencie a segurança da sua conta
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handlePasswordChange} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="new_password">Nova Senha</Label>
+                    <Input
+                      id="new_password"
+                      name="new_password"
+                      type="password"
+                      placeholder="Digite sua nova senha"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm_password">Confirmar Nova Senha</Label>
+                    <Input
+                      id="confirm_password"
+                      name="confirm_password"
+                      type="password"
+                      placeholder="Confirme sua nova senha"
+                      required
+                    />
+                  </div>
+                  <Button type="submit" disabled={loading}>
+                    {loading ? 'Alterando...' : 'Alterar Senha'}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="notifications">
+            <Card>
+              <CardHeader>
+                <CardTitle>Preferências de Notificação</CardTitle>
+                <CardDescription>
+                  Configure como você gostaria de receber notificações
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Notificações por Email</Label>
+                    <p className="text-sm text-gray-500">
+                      Receba notificações sobre transações por email
+                    </p>
+                  </div>
+                  <Switch />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Lembretes de Metas</Label>
+                    <p className="text-sm text-gray-500">
+                      Receba lembretes sobre suas metas financeiras
+                    </p>
+                  </div>
+                  <Switch />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Relatórios Mensais</Label>
+                    <p className="text-sm text-gray-500">
+                      Receba um resumo mensal das suas finanças
+                    </p>
+                  </div>
+                  <Switch />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="preferences">
+            <Card>
+              <CardHeader>
+                <CardTitle>Preferências do Sistema</CardTitle>
+                <CardDescription>
+                  Personalize sua experiência no aplicativo
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Tema Escuro</Label>
+                    <p className="text-sm text-gray-500">
+                      Ativar tema escuro automaticamente
+                    </p>
+                  </div>
+                  <Switch />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Animações</Label>
+                    <p className="text-sm text-gray-500">
+                      Habilitar animações na interface
+                    </p>
+                  </div>
+                  <Switch />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Som das Notificações</Label>
+                    <p className="text-sm text-gray-500">
+                      Reproduzir som ao receber notificações
+                    </p>
+                  </div>
+                  <Switch />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };
