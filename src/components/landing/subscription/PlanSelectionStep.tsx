@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -34,6 +34,13 @@ export const PlanSelectionStep = ({
   onNext,
   onClose
 }: PlanSelectionStepProps) => {
+  // Automaticamente selecionar o primeiro plano quando os planos são carregados
+  useEffect(() => {
+    if (plans && plans.length > 0 && !selectedPlan) {
+      onPlanSelect(plans[0]);
+    }
+  }, [plans, selectedPlan, onPlanSelect]);
+
   const savings = selectedPlan?.price_monthly && selectedPlan?.price_yearly 
     ? Math.round(((selectedPlan.price_monthly * 12 - selectedPlan.price_yearly) / (selectedPlan.price_monthly * 12)) * 100)
     : 0;
