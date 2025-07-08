@@ -164,6 +164,45 @@ serve(async (req) => {
 
     console.log('Valor do pagamento:', amount);
 
+    // Criar ou buscar assinatura do usuário
+    let subscriptionId;
+    const { data: existingSubscription } = await supabaseClient
+      .from('user_subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('plan_id', planId)
+      .maybeSingle();
+
+    if (existingSubscription) {
+      subscriptionId = existingSubscription.id;
+    } else {
+      // Criar nova assinatura
+      const { data: newSubscription, error: subscriptionError } = await supabaseClient
+        .from('user_subscriptions')
+        .insert({
+          user_id: user.id,
+          plan_id: planId,
+          status: 'inactive',
+          frequency: frequency,
+          current_period_start: new Date().toISOString(),
+          current_period_end: new Date(Date.now() + (frequency === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000).toISOString(),
+        })
+        .select()
+        .single();
+
+      if (subscriptionError) {
+        console.error('Erro ao criar assinatura:', subscriptionError);
+        return new Response(JSON.stringify({ 
+          error: 'Erro ao criar assinatura: ' + subscriptionError.message
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500,
+        });
+      }
+
+      subscriptionId = newSubscription.id;
+    }
+
     // Criar referência externa única
     const externalReference = `${user.id}_${planId}_${Date.now()}`;
     console.log('External reference:', externalReference);
@@ -254,6 +293,7 @@ serve(async (req) => {
       .insert({
         user_id: user.id,
         plan_id: planId,
+        subscription_id: subscriptionId, // Vincular com a assinatura
         amount: Number(amount),
         currency: 'BRL',
         payment_method: paymentMethod,
@@ -281,39 +321,13 @@ serve(async (req) => {
     if (mpPayment.status === 'approved') {
       console.log('Pagamento aprovado imediatamente - ativando assinatura...');
       
-      const currentDate = new Date();
-      const periodEnd = new Date(currentDate);
-      periodEnd.setMonth(periodEnd.getMonth() + (frequency === 'yearly' ? 12 : 1));
-
-      // Verificar se já existe assinatura
-      const { data: existingSubscription } = await supabaseClient
+      await supabaseClient
         .from('user_subscriptions')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('plan_id', planId)
-        .maybeSingle();
-
-      if (existingSubscription) {
-        await supabaseClient
-          .from('user_subscriptions')
-          .update({
-            status: 'active',
-            current_period_start: currentDate.toISOString(),
-            current_period_end: periodEnd.toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingSubscription.id);
-      } else {
-        await supabaseClient
-          .from('user_subscriptions')
-          .insert({
-            user_id: user.id,
-            plan_id: planId,
-            status: 'active',
-            current_period_start: currentDate.toISOString(),
-            current_period_end: periodEnd.toISOString(),
-          });
-      }
+        .update({
+          status: 'active',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', subscriptionId);
 
       // Atualizar perfil
       await supabaseClient
@@ -337,7 +351,8 @@ serve(async (req) => {
       date_approved: mpPayment.date_approved,
       external_reference: mpPayment.external_reference,
       transaction_amount: mpPayment.transaction_amount,
-      payment_record_id: paymentRecord.id
+      payment_record_id: paymentRecord.id,
+      subscription_id: subscriptionId
     };
 
     // Se for PIX, incluir dados do QR Code

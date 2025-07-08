@@ -452,11 +452,11 @@ export type Database = {
           created_at: string | null
           current_period_end: string | null
           current_period_start: string | null
+          frequency: string | null
           id: string
+          mercado_pago_subscription_id: string | null
           plan_id: string
           status: Database["public"]["Enums"]["subscription_status"] | null
-          stripe_customer_id: string | null
-          stripe_subscription_id: string | null
           updated_at: string | null
           user_id: string
         }
@@ -464,11 +464,11 @@ export type Database = {
           created_at?: string | null
           current_period_end?: string | null
           current_period_start?: string | null
+          frequency?: string | null
           id?: string
+          mercado_pago_subscription_id?: string | null
           plan_id: string
           status?: Database["public"]["Enums"]["subscription_status"] | null
-          stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -476,11 +476,11 @@ export type Database = {
           created_at?: string | null
           current_period_end?: string | null
           current_period_start?: string | null
+          frequency?: string | null
           id?: string
+          mercado_pago_subscription_id?: string | null
           plan_id?: string
           status?: Database["public"]["Enums"]["subscription_status"] | null
-          stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
           updated_at?: string | null
           user_id?: string
         }

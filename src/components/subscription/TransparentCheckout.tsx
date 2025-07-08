@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -102,7 +101,7 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
 
   // Redirecionar quando pagamento for aprovado
   useEffect(() => {
-    if (paymentStatus?.status === 'approved') {
+    if (paymentStatus?.status === 'completed') {
       // Invalidar queries de assinatura
       queryClient.invalidateQueries({ queryKey: ['user-subscription'] });
       queryClient.invalidateQueries({ queryKey: ['user-active-subscription'] });
@@ -217,7 +216,7 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
   const currentPrice = frequency === 'monthly' ? selectedPlan.price_monthly : selectedPlan.price_yearly;
 
   // Se pagamento foi aprovado, mostrar tela de sucesso
-  if (paymentStatus?.status === 'approved') {
+  if (paymentStatus?.status === 'completed') {
     return (
       <div className="space-y-6 text-center">
         <div className="flex items-center justify-center">
@@ -305,6 +304,7 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
 
   return (
     <div ref={containerRef} className="space-y-6 max-h-full overflow-y-auto">
+      
       {/* Plan Header */}
       <div className="text-center">
         <div className="flex items-center justify-between">
