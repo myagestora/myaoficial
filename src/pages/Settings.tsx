@@ -27,22 +27,31 @@ const SettingsPage = () => {
   const [animations, setAnimations] = useState(true);
   const [notificationSound, setNotificationSound] = useState(true);
 
-  // Buscar dados do perfil
+  // Buscar dados do perfil com melhor tratamento de erro
   const { data: profile, isLoading } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
       
+      console.log('Buscando perfil para usuário:', user.id);
+      
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, full_name, email, avatar_url, whatsapp, subscription_status')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar perfil:', error);
+        throw error;
+      }
+      
+      console.log('Dados do perfil carregados:', data);
       return data;
     },
     enabled: !!user?.id,
+    retry: 3,
+    retryDelay: 1000,
   });
 
   // Effect para carregar preferências do usuário
@@ -60,6 +69,7 @@ const SettingsPage = () => {
   // Atualizar o valor do WhatsApp quando o perfil carregar
   React.useEffect(() => {
     if (profile?.whatsapp) {
+      console.log('Definindo WhatsApp do perfil:', profile.whatsapp);
       setWhatsappValue(profile.whatsapp);
     }
   }, [profile]);
@@ -69,12 +79,17 @@ const SettingsPage = () => {
     mutationFn: async (updates: any) => {
       if (!user?.id) throw new Error('User not found');
       
+      console.log('Atualizando perfil com dados:', updates);
+      
       const { error } = await supabase
         .from('profiles')
         .update(updates)
         .eq('id', user.id);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao atualizar perfil:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
@@ -84,6 +99,7 @@ const SettingsPage = () => {
       });
     },
     onError: (error) => {
+      console.error('Erro na mutação:', error);
       toast({
         title: "Erro ao atualizar",
         description: "Não foi possível salvar as alterações.",
@@ -285,7 +301,7 @@ const SettingsPage = () => {
                   <Avatar className="h-20 w-20">
                     <AvatarImage src={profile?.avatar_url} />
                     <AvatarFallback className="text-lg">
-                      {profile?.full_name?.charAt(0)?.toUpperCase() || 'U'}
+                      {profile?.full_name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U'}
                     </AvatarFallback>
                   </Avatar>
                   <div className="space-y-2">
