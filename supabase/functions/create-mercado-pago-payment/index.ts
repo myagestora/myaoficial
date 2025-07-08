@@ -135,35 +135,34 @@ serve(async (req) => {
       )
     }
 
-    // Get user profile
+    // Try to get user profile, but fallback to user data if not found
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
       .select('*')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
-    if (profileError) {
-      logStep('Error fetching profile', profileError);
-      return new Response(
-        JSON.stringify({ error: 'Perfil não encontrado' }),
-        { 
-          status: 404, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
-    }
+    // Use profile data if available, otherwise fallback to user data
+    const userEmail = profile?.email || user.email
+    const userName = profile?.full_name || user.user_metadata?.full_name || 'Cliente'
+    const userCpf = cardData?.cpf || profile?.whatsapp || '00000000000'
 
-    logStep('Profile found for user', { userId: user.id });
+    logStep('User data prepared', { 
+      userId: user.id, 
+      hasProfile: !!profile, 
+      email: userEmail,
+      name: userName 
+    });
 
     let paymentData: any = {
       transaction_amount: amount,
       description: `Assinatura ${plan.name} - ${frequency === 'monthly' ? 'Mensal' : 'Anual'}`,
       payer: {
-        email: profile.email || user.email,
-        first_name: profile.full_name || 'Cliente',
+        email: userEmail,
+        first_name: userName,
         identification: {
           type: 'CPF',
-          number: cardData?.cpf || '00000000000'
+          number: userCpf
         }
       },
       external_reference: `subscription_${user.id}_${planId}_${Date.now()}`,
