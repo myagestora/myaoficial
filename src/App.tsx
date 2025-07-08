@@ -4,185 +4,149 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "@/hooks/useAuth";
-import { ThemeProvider } from "@/hooks/useTheme";
+import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { AdminLayout } from "@/components/admin/AdminLayout";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { Header } from "@/components/layout/Header";
+import { SubscriptionGuard } from "@/components/subscription/SubscriptionGuard";
+import { SEOHead } from "@/components/SEOHead";
+
+// Regular pages
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
-import Goals from "./pages/Goals";
-import Scheduled from "./pages/Scheduled";
-import Reports from "./pages/Reports";
 import Categories from "./pages/Categories";
+import Goals from "./pages/Goals";
+import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import Scheduled from "./pages/Scheduled";
 import NotFound from "./pages/NotFound";
 
-// Admin Pages
+// Admin pages
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminUsers from "./pages/admin/Users";
-import AdminReports from "./pages/admin/Reports";
 import AdminCategories from "./pages/admin/Categories";
-import AdminSubscriptions from "./pages/admin/Subscriptions";
+import AdminSettings from "./pages/admin/Settings";
+import AdminReports from "./pages/admin/Reports";
 import AdminNotifications from "./pages/admin/Notifications";
 import AdminSystem from "./pages/admin/System";
-import AdminSettings from "./pages/admin/Settings";
+import AdminSubscriptions from "./pages/admin/Subscriptions";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+const queryClient = new QueryClient();
 
-const Layout = ({ children }: { children: React.ReactNode }) => (
-  <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
-    <Sidebar />
-    <div className="flex-1 flex flex-col">
-      <Header />
-      <main className="flex-1 overflow-auto">
-        {children}
-      </main>
-    </div>
-  </div>
-);
-
-// Componente para redirecionar usuários logados
-const RootRedirect = () => {
-  const { user, loading } = useAuth();
-  
-  if (loading) {
-    return <div>Carregando...</div>;
-  }
-  
-  if (user) {
-    return <Navigate to="/dashboard" replace />;
-  }
-  
-  return <Index />;
-};
-
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <SEOHead />
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
         <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/login" element={<Login />} />
-                
-                {/* Root route - redirect logged users to dashboard */}
-                <Route path="/" element={<RootRedirect />} />
-                
-                {/* Protected Routes */}
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <Dashboard />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/transactions"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <Transactions />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/goals"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <Goals />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/scheduled"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <Scheduled />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/reports"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <Reports />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/categories"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <Categories />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/settings"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <Settings />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            
+            {/* Protected routes with subscription guard */}
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <SubscriptionGuard>
+                  <Dashboard />
+                </SubscriptionGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/transactions" element={
+              <ProtectedRoute>
+                <SubscriptionGuard>
+                  <Transactions />
+                </SubscriptionGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/categories" element={
+              <ProtectedRoute>
+                <SubscriptionGuard>
+                  <Categories />
+                </SubscriptionGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/goals" element={
+              <ProtectedRoute>
+                <SubscriptionGuard>
+                  <Goals />
+                </SubscriptionGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/reports" element={
+              <ProtectedRoute>
+                <SubscriptionGuard>
+                  <Reports />
+                </SubscriptionGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <SubscriptionGuard>
+                  <Settings />
+                </SubscriptionGuard>
+              </ProtectedRoute>
+            } />
+            <Route path="/scheduled" element={
+              <ProtectedRoute>
+                <SubscriptionGuard>
+                  <Scheduled />
+                </SubscriptionGuard>
+              </ProtectedRoute>
+            } />
 
-                {/* Admin Routes */}
-                <Route
-                  path="/admin"
-                  element={
-                    <ProtectedRoute requireAdmin>
-                      <AdminLayout />
-                    </ProtectedRoute>
-                  }
-                >
-                  <Route index element={<AdminDashboard />} />
-                  <Route path="users" element={<AdminUsers />} />
-                  <Route path="reports" element={<AdminReports />} />
-                  <Route path="categories" element={<AdminCategories />} />
-                  <Route path="subscriptions" element={<AdminSubscriptions />} />
-                  <Route path="notifications" element={<AdminNotifications />} />
-                  <Route path="system" element={<AdminSystem />} />
-                  <Route path="settings" element={<AdminSettings />} />
-                </Route>
+            {/* Admin routes without subscription guard */}
+            <Route path="/admin/dashboard" element={
+              <ProtectedRoute requireAdmin>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/users" element={
+              <ProtectedRoute requireAdmin>
+                <AdminUsers />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/categories" element={
+              <ProtectedRoute requireAdmin>
+                <AdminCategories />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/settings" element={
+              <ProtectedRoute requireAdmin>
+                <AdminSettings />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/reports" element={
+              <ProtectedRoute requireAdmin>
+                <AdminReports />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/notifications" element={
+              <ProtectedRoute requireAdmin>
+                <AdminNotifications />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/system" element={
+              <ProtectedRoute requireAdmin>
+                <AdminSystem />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/subscriptions" element={
+              <ProtectedRoute requireAdmin>
+                <AdminSubscriptions />
+              </ProtectedRoute>
+            } />
 
-                {/* 404 */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
+            {/* Fallback routes */}
+            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
         </AuthProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
-  );
-}
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;
