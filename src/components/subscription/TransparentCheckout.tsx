@@ -6,11 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Check, CreditCard, QrCode, X } from 'lucide-react';
+import { Check, CreditCard, QrCode, X, CheckCircle, Clock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 interface SubscriptionPlan {
   id: string;
@@ -38,6 +39,8 @@ interface CardData {
 
 export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: TransparentCheckoutProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit_card'>('pix');
   const [cardData, setCardData] = useState<CardData>({
     cardNumber: '',
@@ -47,7 +50,7 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
     securityCode: '',
     cpf: ''
   });
-  const [pixData, setPixData] = useState<{ qr_code?: string; qr_code_base64?: string } | null>(null);
+  const [pixData, setPixData] = useState<{ qr_code?: string; qr_code_base64?: string; payment_id?: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll when credit card is selected
@@ -71,6 +74,50 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
       return () => clearTimeout(timer);
     }
   }, [paymentMethod]);
+
+  // Polling para verificar status do pagamento PIX
+  const { data: paymentStatus } = useQuery({
+    queryKey: ['payment-status', pixData?.payment_id],
+    queryFn: async () => {
+      if (!pixData?.payment_id || !user) return null;
+      
+      const { data, error } = await supabase
+        .from('payments')
+        .select('status, payment_date')
+        .eq('mercado_pago_payment_id', pixData.payment_id.toString())
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Erro ao verificar status do pagamento:', error);
+        return null;
+      }
+      
+      return data;
+    },
+    enabled: !!pixData?.payment_id && !!user,
+    refetchInterval: pixData?.payment_id ? 3000 : false, // Verifica a cada 3 segundos
+    refetchIntervalInBackground: true,
+  });
+
+  // Redirecionar quando pagamento for aprovado
+  useEffect(() => {
+    if (paymentStatus?.status === 'approved') {
+      // Invalidar queries de assinatura
+      queryClient.invalidateQueries({ queryKey: ['user-subscription'] });
+      queryClient.invalidateQueries({ queryKey: ['user-active-subscription'] });
+      
+      toast({
+        title: 'Pagamento Confirmado! 🎉',
+        description: 'Sua assinatura foi ativada com sucesso. Redirecionando...',
+      });
+      
+      // Redirecionar após 2 segundos
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 2000);
+    }
+  }, [paymentStatus, navigate, queryClient]);
 
   const createPaymentMutation = useMutation({
     mutationFn: async (paymentData: {
@@ -97,17 +144,27 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
       console.log('Payment created successfully:', data);
       
       if (data.pix_data) {
-        setPixData(data.pix_data);
+        setPixData({
+          ...data.pix_data,
+          payment_id: data.id
+        });
         toast({
           title: 'PIX gerado com sucesso!',
-          description: 'Use o QR Code para finalizar o pagamento.',
+          description: 'Use o QR Code para finalizar o pagamento. Aguardando confirmação...',
         });
       } else if (data.status === 'approved') {
         toast({
           title: 'Pagamento aprovado!',
           description: 'Sua assinatura foi ativada com sucesso.',
         });
-        onClose();
+        
+        // Invalidar queries e redirecionar
+        queryClient.invalidateQueries({ queryKey: ['user-subscription'] });
+        queryClient.invalidateQueries({ queryKey: ['user-active-subscription'] });
+        
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 2000);
       } else {
         toast({
           title: 'Pagamento processado',
@@ -159,17 +216,54 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
 
   const currentPrice = frequency === 'monthly' ? selectedPlan.price_monthly : selectedPlan.price_yearly;
 
+  // Se pagamento foi aprovado, mostrar tela de sucesso
+  if (paymentStatus?.status === 'approved') {
+    return (
+      <div className="space-y-6 text-center">
+        <div className="flex items-center justify-center">
+          <div className="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
+            <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
+          </div>
+        </div>
+        
+        <div>
+          <h3 className="text-xl font-semibold text-green-600 dark:text-green-400 mb-2">
+            Pagamento Confirmado! 🎉
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            Sua assinatura foi ativada com sucesso!
+          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-500">
+            Redirecionando para o dashboard...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // If PIX QR code is available, show it
   if (pixData && pixData.qr_code) {
+    const isWaitingPayment = paymentStatus?.status === 'pending' || !paymentStatus;
+    
     return (
       <div className="space-y-4">
         <div className="text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
             <QrCode className="h-6 w-6" />
             <h3 className="text-lg font-semibold">Pagamento PIX</h3>
+            {isWaitingPayment && (
+              <div className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
+                <Clock className="h-4 w-4 animate-pulse" />
+                <span className="text-sm">Aguardando...</span>
+              </div>
+            )}
           </div>
+          
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            Escaneie o QR Code abaixo para finalizar o pagamento
+            {isWaitingPayment 
+              ? 'Escaneie o QR Code para finalizar o pagamento. Verificando automaticamente...'
+              : 'Escaneie o QR Code abaixo para finalizar o pagamento'
+            }
           </p>
           
           {pixData.qr_code_base64 && (
@@ -194,7 +288,10 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
               Valor: <span className="font-bold">R$ {currentPrice}</span>
             </p>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              O pagamento será processado automaticamente após a confirmação.
+              {isWaitingPayment 
+                ? 'Assim que o pagamento for confirmado, você será redirecionado automaticamente.'
+                : 'O pagamento será processado automaticamente após a confirmação.'
+              }
             </p>
           </div>
 
@@ -208,14 +305,14 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
 
   return (
     <div ref={containerRef} className="space-y-6 max-h-full overflow-y-auto">
-      {/* Plan Header - Novo layout com nome, frequência e preço */}
+      {/* Plan Header */}
       <div className="text-center">
         <div className="flex items-center justify-between">
           <div className="text-left">
-            <h3 className="text-xl font-semibold">{selectedPlan.name}</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 capitalize">
               {frequency === 'monthly' ? 'Mensal' : 'Anual'}
             </p>
+            <h3 className="text-xl font-semibold">{selectedPlan.name}</h3>
           </div>
           <div className="text-right">
             <div className="text-xl font-bold">R$ {currentPrice}</div>
