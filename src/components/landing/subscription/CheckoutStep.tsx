@@ -29,7 +29,7 @@ export const CheckoutStep = ({
 }: CheckoutStepProps) => {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-lg max-h-[95vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold">Finalizar Assinatura</h2>
@@ -42,7 +42,7 @@ export const CheckoutStep = ({
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="flex-1 overflow-hidden">
           <ScrollArea className="h-full">
             <div className="p-4">
               {/* Verificação de configuração do Mercado Pago */}
