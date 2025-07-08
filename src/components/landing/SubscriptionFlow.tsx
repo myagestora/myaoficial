@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { SubscriptionPlans } from '@/components/subscription/SubscriptionPlans';
@@ -166,7 +167,7 @@ export const SubscriptionFlow = ({ onClose, selectedPlan }: SubscriptionFlowProp
 
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-lg w-full max-h-[90vh]">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-lg w-full">
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">Finalizar Assinatura</h2>
@@ -305,10 +306,10 @@ export const SubscriptionFlow = ({ onClose, selectedPlan }: SubscriptionFlowProp
     );
   }
 
-  // Se não está logado, mostrar formulário de auth
+  // Se não está logado, mostrar seleção de frequência E formulário de auth
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-md w-full">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold">
@@ -323,19 +324,85 @@ export const SubscriptionFlow = ({ onClose, selectedPlan }: SubscriptionFlowProp
           </div>
           
           {selectedPlan && (
-            <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <h3 className="font-semibold text-blue-900 dark:text-blue-100">
-                {selectedPlan.name}
-              </h3>
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                {selectedPlan.description}
-              </p>
-              {selectedPlan.price_monthly && (
-                <p className="text-lg font-bold text-blue-900 dark:text-blue-100 mt-2">
-                  R$ {selectedPlan.price_monthly}/mês
+            <>
+              {/* Informações do Plano */}
+              <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <h3 className="font-semibold text-blue-900 dark:text-blue-100">
+                  {selectedPlan.name}
+                </h3>
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  {selectedPlan.description}
                 </p>
-              )}
-            </div>
+              </div>
+
+              {/* Seleção de Frequência */}
+              <div className="mb-6 space-y-4">
+                <Label className="text-base font-semibold">Escolha a frequência:</Label>
+                <RadioGroup value={frequency} onValueChange={(value: 'monthly' | 'yearly') => setFrequency(value)} className="space-y-3">
+                  {/* Opção Mensal */}
+                  {selectedPlan.price_monthly && (
+                    <Label htmlFor="monthly-auth" className="flex items-center space-x-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                      <RadioGroupItem value="monthly" id="monthly-auth" />
+                      <div className="flex-1 flex justify-between items-center">
+                        <div>
+                          <div className="font-medium">Mensal</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            Cobrança todo mês
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-blue-600">
+                            R$ {selectedPlan.price_monthly}
+                          </div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">por mês</div>
+                        </div>
+                      </div>
+                    </Label>
+                  )}
+
+                  {/* Opção Anual */}
+                  {selectedPlan.price_yearly && (
+                    <Label htmlFor="yearly-auth" className="flex items-center space-x-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                      <RadioGroupItem value="yearly" id="yearly-auth" />
+                      <div className="flex-1 flex justify-between items-center">
+                        <div>
+                          <div className="font-medium flex items-center gap-2">
+                            Anual
+                            {selectedPlan.price_monthly && selectedPlan.price_yearly && (
+                              <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
+                                {Math.round(((selectedPlan.price_monthly * 12 - selectedPlan.price_yearly) / (selectedPlan.price_monthly * 12)) * 100)}% OFF
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            Cobrança anual
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-green-600">
+                            R$ {selectedPlan.price_yearly}
+                          </div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">por ano</div>
+                        </div>
+                      </div>
+                    </Label>
+                  )}
+                </RadioGroup>
+              </div>
+
+              {/* Resumo do valor selecionado */}
+              <div className="mb-6 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Valor selecionado:</span>
+                  <span className="font-bold text-blue-600">
+                    R$ {frequency === 'monthly' ? selectedPlan.price_monthly : selectedPlan.price_yearly}
+                    <span className="text-sm text-gray-600 ml-1">
+                      /{frequency === 'monthly' ? 'mês' : 'ano'}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            </>
           )}
 
           <AuthForm
