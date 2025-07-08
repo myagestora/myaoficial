@@ -66,8 +66,8 @@ export const useSubscriptions = () => {
             current_period_end: subscription.current_period_end,
             created_at: subscription.created_at || '',
             updated_at: subscription.updated_at || '',
-            stripe_customer_id: subscription.stripe_customer_id,
-            stripe_subscription_id: subscription.stripe_subscription_id,
+            frequency: subscription.frequency,
+            mercado_pago_subscription_id: subscription.mercado_pago_subscription_id,
             subscription_plans: subscription.subscription_plans,
             profiles: profilesData?.find(profile => profile.id === subscription.user_id) || null
           })) || [];
@@ -105,8 +105,8 @@ export const useSubscriptions = () => {
             current_period_end: subscription.current_period_end,
             created_at: subscription.created_at || '',
             updated_at: subscription.updated_at || '',
-            stripe_customer_id: subscription.stripe_customer_id,
-            stripe_subscription_id: subscription.stripe_subscription_id,
+            frequency: subscription.frequency,
+            mercado_pago_subscription_id: subscription.mercado_pago_subscription_id,
             subscription_plans: subscription.subscription_plans,
             profiles: validProfile
           };
