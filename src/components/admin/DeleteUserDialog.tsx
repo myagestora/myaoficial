@@ -30,18 +30,7 @@ export const DeleteUserDialog = ({ user, onUserDeleted }: DeleteUserDialogProps)
     mutationFn: async (userId: string) => {
       console.log('🗑️ Starting user deletion for ID:', userId);
 
-      // Primeiro tentar deletar do Supabase Auth
-      console.log('🗑️ Attempting to delete from auth.users');
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-      
-      if (authError) {
-        console.error('❌ Auth deletion error (will continue with profile deletion):', authError);
-        // Não vamos interromper se falhar no auth, continuamos com o profile
-      } else {
-        console.log('✅ User deleted from auth successfully');
-      }
-
-      // Depois remover assinaturas do usuário
+      // Remover assinaturas do usuário primeiro
       console.log('🗑️ Removing user subscriptions');
       const { error: subscriptionsError } = await supabase
         .from('user_subscriptions')
@@ -53,7 +42,7 @@ export const DeleteUserDialog = ({ user, onUserDeleted }: DeleteUserDialogProps)
         throw subscriptionsError;
       }
 
-      // Depois remover roles do usuário
+      // Remover roles do usuário
       console.log('🗑️ Removing user roles');
       const { error: rolesError } = await supabase
         .from('user_roles')
@@ -65,7 +54,7 @@ export const DeleteUserDialog = ({ user, onUserDeleted }: DeleteUserDialogProps)
         throw rolesError;
       }
 
-      // Por fim remover o perfil
+      // Por fim remover o perfil (isso deve desativar o usuário)
       console.log('🗑️ Removing user profile');
       const { error: profileError } = await supabase
         .from('profiles')
@@ -77,18 +66,25 @@ export const DeleteUserDialog = ({ user, onUserDeleted }: DeleteUserDialogProps)
         throw profileError;
       }
 
-      console.log('✅ User deleted successfully');
+      console.log('✅ User data deleted successfully from public tables');
     },
     onSuccess: () => {
       toast({
         title: 'Sucesso',
         description: 'Usuário removido com sucesso',
       });
-      // Invalidar múltiples queries para garantir atualização
+      
+      // Forçar atualização da lista
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       queryClient.refetchQueries({ queryKey: ['admin-users'] });
+      
       setOpen(false);
       onUserDeleted?.();
+      
+      // Recarregar a página como fallback para garantir que a lista seja atualizada
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     },
     onError: (error: any) => {
       console.error('❌ Delete user error:', error);
@@ -116,7 +112,8 @@ export const DeleteUserDialog = ({ user, onUserDeleted }: DeleteUserDialogProps)
           <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
           <AlertDialogDescription>
             Tem certeza que deseja remover o usuário <strong>{user.full_name || user.email}</strong>?
-            Esta ação não pode ser desfeita e removerá todas as assinaturas e dados relacionados.
+            Esta ação removerá todos os dados do usuário das tabelas públicas. 
+            O usuário não conseguirá mais fazer login, mas pode precisar ser removido manualmente do Supabase Auth.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
