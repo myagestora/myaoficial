@@ -10,12 +10,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Bell, Moon, Sun, User, LogOut, Settings, Shield } from 'lucide-react';
+import { Moon, Sun, User, LogOut, Settings, Shield } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/hooks/useAuth';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 export const Header = () => {
   const { theme, toggleTheme } = useTheme();
@@ -63,12 +64,7 @@ export const Header = () => {
           </Button>
 
           {/* Notifications */}
-          <Button variant="ghost" size="sm" className="h-9 w-9 p-0 relative">
-            <Bell className="h-4 w-4" />
-            <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-xs flex items-center justify-center text-white">
-              3
-            </span>
-          </Button>
+          <NotificationBell />
 
           {/* User Menu */}
           <DropdownMenu>
