@@ -49,9 +49,7 @@ const AppRoutes = () => {
         path="/admin"
         element={
           user && isAdmin ? (
-            <AdminLayout>
-              <div>Admin Dashboard</div>
-            </AdminLayout>
+            <AdminLayout />
           ) : user ? (
             <Navigate to="/" replace />
           ) : (
@@ -63,9 +61,7 @@ const AppRoutes = () => {
         path="/admin/settings"
         element={
           user && isAdmin ? (
-            <AdminLayout>
-              <Settings />
-            </AdminLayout>
+            <AdminLayout />
           ) : user ? (
             <Navigate to="/" replace />
           ) : (
