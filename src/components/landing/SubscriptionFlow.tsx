@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { SubscriptionPlans } from '@/components/subscription/SubscriptionPlans';
@@ -29,9 +28,20 @@ type FlowStep = 'planSelection' | 'auth' | 'checkout';
 
 export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }: SubscriptionFlowProps) => {
   const { user } = useAuth();
-  const [currentStep, setCurrentStep] = useState<FlowStep>(
-    initialSelectedPlan ? 'auth' : 'planSelection'
-  );
+  
+  // Sempre começar com planSelection quando não há usuário logado e não há plano pré-selecionado
+  const getInitialStep = (): FlowStep => {
+    if (user && initialSelectedPlan) {
+      return 'checkout';
+    }
+    if (user && !initialSelectedPlan) {
+      return 'planSelection';
+    }
+    // Para usuários não logados, sempre começar com seleção de plano
+    return 'planSelection';
+  };
+
+  const [currentStep, setCurrentStep] = useState<FlowStep>(getInitialStep());
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(
     initialSelectedPlan || null
   );
@@ -215,6 +225,52 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
     }
   };
 
+  // Flow steps para usuários não logados ou seleção de plano
+  if (currentStep === 'planSelection') {
+    return (
+      <PlanSelectionStep
+        plans={plans}
+        selectedPlan={selectedPlan}
+        frequency={frequency}
+        onPlanSelect={setSelectedPlan}
+        onFrequencyChange={setFrequency}
+        onNext={() => {
+          if (user) {
+            // Se usuário já está logado, vai direto para checkout
+            setCurrentStep('checkout');
+          } else {
+            // Se não está logado, vai para autenticação
+            setCurrentStep('auth');
+          }
+        }}
+        onClose={onClose}
+      />
+    );
+  }
+
+  if (currentStep === 'auth' && selectedPlan) {
+    return (
+      <AuthStep
+        selectedPlan={selectedPlan}
+        frequency={frequency}
+        email={email}
+        setEmail={setEmail}
+        password={password}
+        setPassword={setPassword}
+        fullName={fullName}
+        setFullName={setFullName}
+        whatsapp={whatsapp}
+        setWhatsapp={setWhatsapp}
+        loading={loading}
+        isSignUp={isSignUp}
+        setIsSignUp={setIsSignUp}
+        onSubmit={handleAuth}
+        onBack={() => setCurrentStep('planSelection')}
+        onClose={onClose}
+      />
+    );
+  }
+
   // Se usuário está logado e tem plano selecionado, mostrar checkout
   if ((user || currentStep === 'checkout') && selectedPlan) {
     const currentPrice = frequency === 'monthly' ? selectedPlan.price_monthly : selectedPlan.price_yearly;
@@ -328,44 +384,6 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
           </ScrollArea>
         </div>
       </div>
-    );
-  }
-
-  // Flow steps para usuários não logados
-  if (currentStep === 'planSelection') {
-    return (
-      <PlanSelectionStep
-        plans={plans}
-        selectedPlan={selectedPlan}
-        frequency={frequency}
-        onPlanSelect={setSelectedPlan}
-        onFrequencyChange={setFrequency}
-        onNext={() => setCurrentStep('auth')}
-        onClose={onClose}
-      />
-    );
-  }
-
-  if (currentStep === 'auth' && selectedPlan) {
-    return (
-      <AuthStep
-        selectedPlan={selectedPlan}
-        frequency={frequency}
-        email={email}
-        setEmail={setEmail}
-        password={password}
-        setPassword={setPassword}
-        fullName={fullName}
-        setFullName={setFullName}
-        whatsapp={whatsapp}
-        setWhatsapp={setWhatsapp}
-        loading={loading}
-        isSignUp={isSignUp}
-        setIsSignUp={setIsSignUp}
-        onSubmit={handleAuth}
-        onBack={() => setCurrentStep('planSelection')}
-        onClose={onClose}
-      />
     );
   }
 
