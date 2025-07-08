@@ -44,7 +44,7 @@ export const Header = () => {
     }
   });
 
-  // Buscar cor primária do sistema
+  // Buscar cor primária do sistema - corrigindo a busca
   const { data: primaryColor } = useQuery({
     queryKey: ['system-config-header'],
     queryFn: async () => {
@@ -56,7 +56,12 @@ export const Header = () => {
       
       if (error) throw error;
       
-      return data?.value as string || '#3B82F6';
+      // Extrair o valor corretamente do JSON
+      const colorValue = data?.value;
+      if (typeof colorValue === 'string') {
+        return colorValue.replace(/^"|"$/g, '');
+      }
+      return JSON.stringify(colorValue).replace(/^"|"$/g, '') || '#3B82F6';
     }
   });
 
@@ -91,7 +96,7 @@ export const Header = () => {
               <Button variant="ghost" className="relative h-9 w-9 rounded-full text-white hover:bg-white/20">
                 <Avatar className="h-9 w-9">
                   <AvatarImage src="/avatars/01.png" alt="Avatar" />
-                  <AvatarFallback>
+                  <AvatarFallback className="bg-white text-gray-900">
                     <User className="h-4 w-4" />
                   </AvatarFallback>
                 </Avatar>
