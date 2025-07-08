@@ -9,7 +9,7 @@ import { PlanSelectionStep } from './subscription/PlanSelectionStep';
 import { AuthStep } from './subscription/AuthStep';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { CreditCard } from 'lucide-react';
+import { CreditCard, AlertTriangle } from 'lucide-react';
 
 interface SubscriptionPlan {
   id: string;
@@ -63,6 +63,31 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
     }
   });
 
+  // Verificar configurações do Mercado Pago
+  const { data: mercadoPagoConfig } = useQuery({
+    queryKey: ['mercado-pago-config'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('system_config')
+        .select('key, value')
+        .in('key', ['mercado_pago_enabled', 'mercado_pago_access_token']);
+      
+      if (error) throw error;
+      
+      const config: Record<string, string> = {};
+      data.forEach(item => {
+        config[item.key] = typeof item.value === 'string' ? 
+          item.value.replace(/^"|"$/g, '') : 
+          JSON.stringify(item.value).replace(/^"|"$/g, '');
+      });
+      
+      return config;
+    }
+  });
+
+  const isMercadoPagoConfigured = mercadoPagoConfig?.mercado_pago_enabled === 'true' && 
+                                  mercadoPagoConfig?.mercado_pago_access_token;
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -94,6 +119,9 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
           title: 'Conta criada!',
           description: 'Verifique seu email para confirmar a conta.',
         });
+        
+        // Avançar para o checkout após o cadastro
+        setCurrentStep('checkout');
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -113,6 +141,9 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
           title: 'Login realizado!',
           description: 'Redirecionando para o checkout...',
         });
+        
+        // Avançar para o checkout após o login
+        setCurrentStep('checkout');
       }
     } catch (error) {
       toast({
@@ -135,9 +166,20 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
       return;
     }
 
+    if (!isMercadoPagoConfigured) {
+      toast({
+        title: 'Serviço Temporariamente Indisponível',
+        description: 'O sistema de pagamentos está sendo configurado. Tente novamente em alguns minutos.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setLoading(true);
     
     try {
+      console.log('Tentando criar assinatura...', { planId: plan.id, frequency });
+      
       const { data, error } = await supabase.functions.invoke('create-mercado-pago-subscription', {
         body: { 
           planId: plan.id, 
@@ -145,7 +187,12 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro da edge function:', error);
+        throw error;
+      }
+
+      console.log('Resposta da edge function:', data);
 
       if (data.init_point) {
         window.open(data.init_point, '_blank');
@@ -153,6 +200,8 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
           title: 'Redirecionamento',
           description: 'Você será redirecionado para completar sua assinatura.',
         });
+      } else {
+        throw new Error('URL de pagamento não fornecida');
       }
     } catch (error) {
       console.error('Erro ao criar assinatura:', error);
@@ -167,7 +216,7 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
   };
 
   // Se usuário está logado e tem plano selecionado, mostrar checkout
-  if (user && selectedPlan && currentStep === 'checkout') {
+  if ((user || currentStep === 'checkout') && selectedPlan) {
     const currentPrice = frequency === 'monthly' ? selectedPlan.price_monthly : selectedPlan.price_yearly;
     const savings = selectedPlan.price_monthly && selectedPlan.price_yearly 
       ? Math.round(((selectedPlan.price_monthly * 12 - selectedPlan.price_yearly) / (selectedPlan.price_monthly * 12)) * 100)
@@ -200,6 +249,20 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
                 </p>
               </div>
 
+              {/* Verificação de configuração do Mercado Pago */}
+              {!isMercadoPagoConfigured && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+                    <AlertTriangle className="h-5 w-5" />
+                    <h4 className="font-medium">Sistema de Pagamentos em Configuração</h4>
+                  </div>
+                  <p className="text-sm text-amber-700 dark:text-amber-300 mt-2">
+                    Estamos finalizando a configuração do sistema de pagamentos. 
+                    Por favor, tente novamente em alguns minutos.
+                  </p>
+                </div>
+              )}
+
               {/* Resumo */}
               <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
                 <div className="flex justify-between items-center text-lg font-bold">
@@ -229,7 +292,7 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
               </Button>
               <Button
                 onClick={() => handleSubscribe(selectedPlan)}
-                disabled={loading}
+                disabled={loading || !isMercadoPagoConfigured}
                 className="flex-1 flex items-center gap-2"
               >
                 <CreditCard className="h-4 w-4" />
@@ -284,12 +347,6 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
   }
 
   if (currentStep === 'auth' && selectedPlan) {
-    // Check if user just logged in and redirect to checkout
-    if (user) {
-      setCurrentStep('checkout');
-      return null;
-    }
-
     return (
       <AuthStep
         selectedPlan={selectedPlan}
