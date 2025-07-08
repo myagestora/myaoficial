@@ -1,80 +1,97 @@
 
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { SEOHead } from '@/components/SEOHead';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { AppLayout } from '@/components/layout/AppLayout';
-import { AdminLayout } from '@/components/admin/AdminLayout';
-import IndexPage from '@/pages/Index';
-import LoginPage from '@/pages/Login';
-import DashboardPage from '@/pages/Dashboard';
-import TransactionsPage from '@/pages/Transactions';
-import CategoriesPage from '@/pages/Categories';
-import GoalsPage from '@/pages/Goals';
-import ReportsPage from '@/pages/Reports';
-import ScheduledPage from '@/pages/Scheduled';
-import SettingsPage from '@/pages/Settings';
-import SubscriptionPage from '@/pages/Subscription';
-import SubscriptionSuccess from '@/pages/subscription/Success';
-import SubscriptionFailure from '@/pages/subscription/Failure';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "@/hooks/useAuth";
+import { ThemeProvider } from "@/hooks/useTheme";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { SubscriptionGuard } from "@/components/subscription/SubscriptionGuard";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { AdminLayout } from "@/components/admin/AdminLayout";
+import { SEOHead } from "@/components/SEOHead";
+
+// Regular pages
+import Index from "./pages/Index";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import Transactions from "./pages/Transactions";
+import Categories from "./pages/Categories";
+import Goals from "./pages/Goals";
+import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
+import Scheduled from "./pages/Scheduled";
+import NotFound from "./pages/NotFound";
 
 // Admin pages
-import AdminDashboard from '@/pages/admin/Dashboard';
-import AdminUsers from '@/pages/admin/Users';
-import AdminReports from '@/pages/admin/Reports';
-import AdminSubscriptions from '@/pages/admin/Subscriptions';
-import AdminNotifications from '@/pages/admin/Notifications';
-import AdminSystem from '@/pages/admin/System';
-import AdminSettings from '@/pages/admin/Settings';
-import AdminCategories from '@/pages/admin/Categories';
+import AdminDashboard from "./pages/admin/Dashboard";
+import AdminUsers from "./pages/admin/Users";
+import AdminCategories from "./pages/admin/Categories";
+import AdminSettings from "./pages/admin/Settings";
+import AdminReports from "./pages/admin/Reports";
+import AdminNotifications from "./pages/admin/Notifications";
+import AdminSystem from "./pages/admin/System";
+import AdminSubscriptions from "./pages/admin/Subscriptions";
 
-function App() {
-  return (
-    <>
-      <SEOHead />
-      <div className="min-h-screen bg-background text-foreground">
-        <Routes>
-          <Route path="/" element={<IndexPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          
-          {/* Rotas protegidas com layout */}
-          <Route path="/" element={
-            <ProtectedRoute>
-              <AppLayout />
-            </ProtectedRoute>
-          }>
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/transactions" element={<TransactionsPage />} />
-            <Route path="/categories" element={<CategoriesPage />} />
-            <Route path="/goals" element={<GoalsPage />} />
-            <Route path="/reports" element={<ReportsPage />} />
-            <Route path="/scheduled" element={<ScheduledPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/subscription" element={<SubscriptionPage />} />
-            <Route path="/subscription/success" element={<SubscriptionSuccess />} />
-            <Route path="/subscription/failure" element={<SubscriptionFailure />} />
-          </Route>
+const queryClient = new QueryClient();
 
-          {/* Rotas de admin protegidas */}
-          <Route path="/admin" element={
-            <ProtectedRoute requireAdmin={true}>
-              <AdminLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<Navigate to="/admin/dashboard" replace />} />
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/admin/users" element={<AdminUsers />} />
-            <Route path="/admin/reports" element={<AdminReports />} />
-            <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
-            <Route path="/admin/notifications" element={<AdminNotifications />} />
-            <Route path="/admin/system" element={<AdminSystem />} />
-            <Route path="/admin/settings" element={<AdminSettings />} />
-            <Route path="/admin/categories" element={<AdminCategories />} />
-          </Route>
-        </Routes>
-      </div>
-    </>
-  );
-}
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <ThemeProvider>
+      <TooltipProvider>
+        <SEOHead />
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Login />} />
+              
+              {/* Protected routes with AppLayout and subscription guard */}
+              <Route path="/*" element={
+                <ProtectedRoute>
+                  <SubscriptionGuard>
+                    <AppLayout />
+                  </SubscriptionGuard>
+                </ProtectedRoute>
+              }>
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="transactions" element={<Transactions />} />
+                <Route path="categories" element={<Categories />} />
+                <Route path="goals" element={<Goals />} />
+                <Route path="reports" element={<Reports />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="scheduled" element={<Scheduled />} />
+              </Route>
+
+              {/* Admin routes with AdminLayout without subscription guard */}
+              <Route path="/admin/*" element={
+                <ProtectedRoute requireAdmin>
+                  <AdminLayout />
+                </ProtectedRoute>
+              }>
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="categories" element={<AdminCategories />} />
+                <Route path="settings" element={<AdminSettings />} />
+                <Route path="reports" element={<AdminReports />} />
+                <Route path="notifications" element={<AdminNotifications />} />
+                <Route path="system" element={<AdminSystem />} />
+                <Route path="subscriptions" element={<AdminSubscriptions />} />
+                <Route index element={<Navigate to="dashboard" replace />} />
+              </Route>
+
+              {/* Fallback routes */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
+  </QueryClientProvider>
+);
 
 export default App;
