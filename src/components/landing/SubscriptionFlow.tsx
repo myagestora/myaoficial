@@ -27,6 +27,8 @@ interface SubscriptionFlowProps {
 export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }: SubscriptionFlowProps) => {
   const { user } = useAuth();
   
+  console.log('SubscriptionFlow render - user:', !!user, 'initialSelectedPlan:', !!initialSelectedPlan);
+  
   const {
     currentStep,
     setCurrentStep,
@@ -94,6 +96,12 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
     mercadoPagoConfig?.mercado_pago_access_token
   );
 
+  console.log('Current flow state:', {
+    currentStep,
+    hasUser: !!user,
+    hasSelectedPlan: !!selectedPlan
+  });
+
   // Fluxo: planSelection -> auth (se não logado) -> checkout
   if (currentStep === 'planSelection') {
     return (
@@ -119,8 +127,14 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
     );
   }
 
-  // Etapa de autenticação (apenas para usuários não logados)
-  if (currentStep === 'auth' && selectedPlan && !user) {
+  // Etapa de autenticação (obrigatória para usuários não logados)
+  if (currentStep === 'auth') {
+    if (!selectedPlan) {
+      // Se chegou até aqui sem plano, voltar para seleção
+      setCurrentStep('planSelection');
+      return null;
+    }
+
     return (
       <AuthStep
         selectedPlan={selectedPlan}
@@ -144,7 +158,19 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
   }
 
   // Etapa de checkout (usuário logado e plano selecionado)
-  if (currentStep === 'checkout' && selectedPlan && user) {
+  if (currentStep === 'checkout') {
+    if (!selectedPlan) {
+      // Se não tem plano, voltar para seleção
+      setCurrentStep('planSelection');
+      return null;
+    }
+
+    if (!user) {
+      // Se não tem usuário, voltar para autenticação
+      setCurrentStep('auth');
+      return null;
+    }
+
     return (
       <CheckoutStep
         selectedPlan={selectedPlan}
@@ -153,11 +179,6 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
         onClose={onClose}
       />
     );
-  }
-
-  // Se usuário está logado mas não tem plano selecionado, mostrar planos
-  if (user && !selectedPlan) {
-    return <PlanSelectionModal onClose={onClose} />;
   }
 
   // Fallback - voltar para seleção de planos

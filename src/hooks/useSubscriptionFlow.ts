@@ -19,12 +19,6 @@ export const useSubscriptionFlow = (
   initialSelectedPlan?: SubscriptionPlan
 ) => {
   const getInitialStep = (): FlowStep => {
-    // Se tem plano inicial e usuário logado, ir direto para checkout
-    if (user && initialSelectedPlan) {
-      return 'checkout';
-    }
-    
-    // Sempre começar com seleção de plano se não tem plano inicial
     return 'planSelection';
   };
 
@@ -111,13 +105,16 @@ export const useSubscriptionFlow = (
   };
 
   const goToNextStep = () => {
+    console.log('goToNextStep called - currentStep:', currentStep, 'user:', !!user);
+    
     if (currentStep === 'planSelection') {
-      // Se tem usuário logado, ir direto para checkout
-      if (user) {
-        setCurrentStep('checkout');
-      } else {
-        // Se não tem usuário, ir para autenticação
+      // SEMPRE verificar se o usuário está logado
+      if (!user) {
+        console.log('User not logged in, going to auth step');
         setCurrentStep('auth');
+      } else {
+        console.log('User logged in, going to checkout');
+        setCurrentStep('checkout');
       }
     } else if (currentStep === 'auth') {
       setCurrentStep('checkout');
