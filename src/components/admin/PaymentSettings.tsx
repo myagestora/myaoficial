@@ -20,8 +20,8 @@ export const PaymentSettings = ({ settings, onInputChange, onSave, isLoading }: 
     onInputChange('mercado_pago_enabled', checked.toString());
   };
 
-  // Gerar a URL do webhook baseada na URL atual
-  const webhookUrl = `${window.location.origin}/api/webhooks/mercado-pago`;
+  // URL correta da Edge Function do Supabase
+  const webhookUrl = 'https://c46de564-3ee4-45c1-9f4a-43d78557c5ef.supabase.co/functions/v1/mercado-pago-webhook';
 
   const copyWebhookUrl = async () => {
     try {
@@ -117,13 +117,13 @@ export const PaymentSettings = ({ settings, onInputChange, onSave, isLoading }: 
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Globe className="h-4 w-4" />
-                URL do Webhook (Gerada automaticamente)
+                URL do Webhook (Supabase Edge Function)
               </Label>
               <div className="flex gap-2">
                 <Input
                   value={webhookUrl}
                   readOnly
-                  className="bg-gray-50 dark:bg-gray-800"
+                  className="bg-gray-50 dark:bg-gray-800 font-mono text-sm"
                 />
                 <Button
                   type="button"
@@ -149,26 +149,28 @@ export const PaymentSettings = ({ settings, onInputChange, onSave, isLoading }: 
               <li>1. Acesse o painel do Mercado Pago</li>
               <li>2. Vá em "Suas integrações" → "Credenciais"</li>
               <li>3. Copie a Public Key e o Access Token</li>
-              <li>4. Configure o webhook usando a URL gerada acima</li>
+              <li>4. Configure o webhook usando a URL correta acima</li>
               <li>5. Copie a assinatura secreta do webhook</li>
               <li>6. Selecione os eventos: payment.created, payment.updated</li>
               <li>7. Teste os pagamentos no ambiente de sandbox primeiro</li>
             </ol>
           </div>
 
-          <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg">
-            <h4 className="font-medium text-amber-900 dark:text-amber-100 mb-2">
-              ⚠️ Configuração do Webhook:
+          <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+            <h4 className="font-medium text-green-900 dark:text-green-100 mb-2">
+              ✅ URL Correta do Webhook:
             </h4>
-            <div className="text-sm text-amber-800 dark:text-amber-200 space-y-2">
-              <p><strong>URL do Webhook:</strong> {webhookUrl}</p>
+            <div className="text-sm text-green-800 dark:text-green-200 space-y-2">
+              <p className="font-mono bg-green-100 dark:bg-green-800 p-2 rounded text-xs break-all">
+                {webhookUrl}
+              </p>
               <p><strong>Eventos necessários:</strong></p>
               <ul className="ml-4 list-disc">
                 <li>payment.created</li>
                 <li>payment.updated</li>
                 <li>merchant_order.updated</li>
               </ul>
-              <p><strong>Importante:</strong> Não esqueça de configurar a assinatura secreta para validar a autenticidade dos webhooks!</p>
+              <p><strong>Importante:</strong> Use exatamente esta URL no painel do Mercado Pago!</p>
             </div>
           </div>
 
