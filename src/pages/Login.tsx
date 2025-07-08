@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -14,25 +15,36 @@ const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
 
-  // Buscar cor primária do sistema
+  // Buscar cor primária do sistema com tratamento de erro melhorado
   const { data: primaryColor } = useQuery({
     queryKey: ['system-config-login'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('system_config')
-        .select('value')
-        .eq('key', 'primary_color')
-        .maybeSingle();
-      
-      if (error) throw error;
+      try {
+        const { data, error } = await supabase
+          .from('system_config')
+          .select('value')
+          .eq('key', 'primary_color')
+          .maybeSingle();
+        
+        if (error) {
+          console.error('Error fetching primary color:', error);
+          return '#3B82F6';
+        }
 
-      // Extrair o valor corretamente do JSON
-      const colorValue = data?.value;
-      if (typeof colorValue === 'string') {
-        return colorValue.replace(/^"|"$/g, '');
+        // Extrair o valor corretamente do JSON
+        const colorValue = data?.value;
+        if (typeof colorValue === 'string') {
+          return colorValue.replace(/^"|"$/g, '');
+        }
+        return colorValue ? JSON.stringify(colorValue).replace(/^"|"$/g, '') : '#3B82F6';
+      } catch (error) {
+        console.error('Error in primary color query:', error);
+        return '#3B82F6';
       }
-      return JSON.stringify(colorValue).replace(/^"|"$/g, '') || '#3B82F6';
-    }
+    },
+    retry: 1,
+    retryDelay: 1000,
+    refetchOnWindowFocus: false,
   });
 
   const handleAuth = async (e: React.FormEvent) => {

@@ -38,26 +38,37 @@ export const AuthForm: React.FC<AuthFormProps> = ({
   setIsSignUp,
   onSubmit
 }) => {
-  // Buscar configurações do sistema para logo e nome
+  // Buscar configurações do sistema para logo e nome com tratamento de erro melhorado
   const { data: systemConfig } = useQuery({
     queryKey: ['system-config-auth'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('system_config')
-        .select('*')
-        .in('key', ['app_name', 'app_logo']);
-      
-      if (error) throw error;
-      
-      const configObj: Record<string, string> = {};
-      data.forEach(item => {
-        configObj[item.key] = typeof item.value === 'string' ? 
-          item.value.replace(/^"|"$/g, '') : 
-          JSON.stringify(item.value).replace(/^"|"$/g, '');
-      });
-      
-      return configObj;
-    }
+      try {
+        const { data, error } = await supabase
+          .from('system_config')
+          .select('*')
+          .in('key', ['app_name', 'app_logo']);
+        
+        if (error) {
+          console.error('Error fetching system config:', error);
+          return { app_name: 'MYA Gestora', app_logo: '' };
+        }
+        
+        const configObj: Record<string, string> = {};
+        data?.forEach(item => {
+          configObj[item.key] = typeof item.value === 'string' ? 
+            item.value.replace(/^"|"$/g, '') : 
+            JSON.stringify(item.value).replace(/^"|"$/g, '');
+        });
+        
+        return configObj;
+      } catch (error) {
+        console.error('Error in system config query:', error);
+        return { app_name: 'MYA Gestora', app_logo: '' };
+      }
+    },
+    retry: 1,
+    retryDelay: 1000,
+    refetchOnWindowFocus: false,
   });
 
   const appName = systemConfig?.app_name || 'MYA Gestora';
@@ -79,6 +90,9 @@ export const AuthForm: React.FC<AuthFormProps> = ({
                 if (fallback) {
                   fallback.style.display = 'flex';
                 }
+              }}
+              onLoad={() => {
+                console.log('Logo carregado com sucesso');
               }}
             />
           ) : null}
