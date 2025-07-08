@@ -16,7 +16,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: Home },
+  { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Transações', href: '/transactions', icon: CreditCard },
   { name: 'Metas', href: '/goals', icon: Target },
   { name: 'Agendamentos', href: '/scheduled', icon: Calendar },
