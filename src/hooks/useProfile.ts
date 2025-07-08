@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { checkWhatsappExists } from '@/utils/whatsappValidation';
 
 export const useProfile = () => {
   const { user } = useAuth();
@@ -74,6 +75,16 @@ export const useProfile = () => {
     mutationFn: async (updates: any) => {
       if (!user?.id) throw new Error('User not found');
       
+      // Validar WhatsApp único se foi fornecido
+      if (updates.whatsapp && updates.whatsapp.trim() !== '') {
+        console.log('Validando WhatsApp único:', updates.whatsapp);
+        const whatsappExists = await checkWhatsappExists(updates.whatsapp, user.id);
+        
+        if (whatsappExists) {
+          throw new Error('Este número de WhatsApp já está sendo usado por outro usuário.');
+        }
+      }
+      
       console.log('Atualizando perfil com dados:', updates);
       
       try {
@@ -92,6 +103,12 @@ export const useProfile = () => {
         
         if (upsertError) {
           console.error('Erro ao fazer upsert do perfil:', upsertError);
+          
+          // Verificar se é erro de violação de unicidade
+          if (upsertError.code === '23505' && upsertError.message.includes('profiles_whatsapp_unique_idx')) {
+            throw new Error('Este número de WhatsApp já está sendo usado por outro usuário.');
+          }
+          
           throw upsertError;
         }
         
@@ -109,11 +126,11 @@ export const useProfile = () => {
         description: "Suas informações foram salvas com sucesso!",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Erro na mutação:', error);
       toast({
         title: "Erro ao atualizar",
-        description: "Não foi possível salvar as alterações.",
+        description: error.message || "Não foi possível salvar as alterações.",
         variant: "destructive",
       });
     },

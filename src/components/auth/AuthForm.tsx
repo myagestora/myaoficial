@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +7,7 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { DollarSign } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { checkWhatsappExists } from '@/utils/whatsappValidation';
 
 interface AuthFormProps {
   email: string;
@@ -38,6 +38,9 @@ export const AuthForm: React.FC<AuthFormProps> = ({
   setIsSignUp,
   onSubmit
 }) => {
+  const [whatsappError, setWhatsappError] = useState('');
+  const [validatingWhatsapp, setValidatingWhatsapp] = useState(false);
+
   // Buscar configurações do sistema para logo e nome com tratamento de erro melhorado
   const { data: systemConfig } = useQuery({
     queryKey: ['system-config-auth'],
@@ -74,6 +77,37 @@ export const AuthForm: React.FC<AuthFormProps> = ({
   const appName = systemConfig?.app_name || 'MYA Gestora';
   const appLogo = systemConfig?.app_logo;
 
+  const handleWhatsappChange = async (value: string) => {
+    setWhatsapp(value || '');
+    setWhatsappError('');
+    
+    // Validar apenas no modo de cadastro e se o valor não estiver vazio
+    if (isSignUp && value && value.trim() !== '') {
+      setValidatingWhatsapp(true);
+      try {
+        const exists = await checkWhatsappExists(value);
+        if (exists) {
+          setWhatsappError('Este número de WhatsApp já está sendo usado por outro usuário.');
+        }
+      } catch (error) {
+        console.error('Erro ao validar WhatsApp:', error);
+      } finally {
+        setValidatingWhatsapp(false);
+      }
+    }
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Verificar se há erro de WhatsApp antes de submeter
+    if (isSignUp && whatsappError) {
+      return;
+    }
+    
+    onSubmit(e);
+  };
+
   return (
     <Card>
       <CardHeader className="text-center">
@@ -108,7 +142,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form onSubmit={handleFormSubmit} className="space-y-4">
           {isSignUp && (
             <div>
               <Label htmlFor="fullName">Nome Completo</Label>
@@ -139,8 +173,14 @@ export const AuthForm: React.FC<AuthFormProps> = ({
               <PhoneInput
                 id="whatsapp"
                 value={whatsapp}
-                onChange={(value) => setWhatsapp(value || '')}
+                onChange={handleWhatsappChange}
               />
+              {validatingWhatsapp && (
+                <p className="text-sm text-gray-500 mt-1">Verificando disponibilidade...</p>
+              )}
+              {whatsappError && (
+                <p className="text-sm text-red-500 mt-1">{whatsappError}</p>
+              )}
             </div>
           )}
           
@@ -155,7 +195,11 @@ export const AuthForm: React.FC<AuthFormProps> = ({
             />
           </div>
           
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={loading || validatingWhatsapp || (isSignUp && !!whatsappError)}
+          >
             {loading ? 'Processando...' : (isSignUp ? 'Criar Conta' : 'Entrar')}
           </Button>
         </form>

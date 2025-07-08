@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,7 @@ import { UserPlus } from 'lucide-react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { checkWhatsappExists } from '@/utils/whatsappValidation';
 
 interface AddUserDialogProps {
   onUserAdded?: () => void;
@@ -22,6 +22,8 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
   const [whatsapp, setWhatsapp] = useState('');
   const [password, setPassword] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState('inactive');
+  const [whatsappError, setWhatsappError] = useState('');
+  const [validatingWhatsapp, setValidatingWhatsapp] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: subscriptionPlans } = useQuery({
@@ -38,6 +40,26 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
     }
   });
 
+  const handleWhatsappChange = async (value: string) => {
+    setWhatsapp(value || '');
+    setWhatsappError('');
+    
+    // Validar se o valor não estiver vazio
+    if (value && value.trim() !== '') {
+      setValidatingWhatsapp(true);
+      try {
+        const exists = await checkWhatsappExists(value);
+        if (exists) {
+          setWhatsappError('Este número de WhatsApp já está sendo usado por outro usuário.');
+        }
+      } catch (error) {
+        console.error('Erro ao validar WhatsApp:', error);
+      } finally {
+        setValidatingWhatsapp(false);
+      }
+    }
+  };
+
   const addUserMutation = useMutation({
     mutationFn: async (userData: { 
       email: string; 
@@ -47,6 +69,14 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
       subscriptionStatus: string;
     }) => {
       console.log('🆕 Creating new user:', userData.email);
+      
+      // Validar WhatsApp único novamente antes de criar
+      if (userData.whatsapp && userData.whatsapp.trim() !== '') {
+        const whatsappExists = await checkWhatsappExists(userData.whatsapp);
+        if (whatsappExists) {
+          throw new Error('Este número de WhatsApp já está sendo usado por outro usuário.');
+        }
+      }
       
       // Criar usuário via Supabase Auth
       const { data, error } = await supabase.auth.signUp({
@@ -80,6 +110,12 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
 
         if (profileError) {
           console.error('❌ Profile creation error:', profileError);
+          
+          // Verificar se é erro de violação de unicidade
+          if (profileError.code === '23505' && profileError.message.includes('profiles_whatsapp_unique_idx')) {
+            throw new Error('Este número de WhatsApp já está sendo usado por outro usuário.');
+          }
+          
           throw profileError;
         }
 
@@ -122,6 +158,7 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
       setWhatsapp('');
       setPassword('');
       setSubscriptionStatus('inactive');
+      setWhatsappError('');
       onUserAdded?.();
     },
     onError: (error: any) => {
@@ -140,6 +177,16 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
       toast({
         title: 'Erro',
         description: 'Preencha todos os campos obrigatórios',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Verificar se há erro de WhatsApp antes de submeter
+    if (whatsappError) {
+      toast({
+        title: 'Erro',
+        description: whatsappError,
         variant: 'destructive',
       });
       return;
@@ -208,8 +255,14 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
             <PhoneInput
               id="whatsapp"
               value={whatsapp}
-              onChange={(value) => setWhatsapp(value || '')}
+              onChange={handleWhatsappChange}
             />
+            {validatingWhatsapp && (
+              <p className="text-sm text-gray-500 mt-1">Verificando disponibilidade...</p>
+            )}
+            {whatsappError && (
+              <p className="text-sm text-red-500 mt-1">{whatsappError}</p>
+            )}
           </div>
 
           <div>
@@ -237,7 +290,7 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
             </Button>
             <Button
               type="submit"
-              disabled={addUserMutation.isPending}
+              disabled={addUserMutation.isPending || validatingWhatsapp || !!whatsappError}
             >
               {addUserMutation.isPending ? 'Adicionando...' : 'Adicionar'}
             </Button>
