@@ -76,7 +76,7 @@ export const Sidebar = () => {
             <img 
               src={appLogo} 
               alt={appName}
-              className="h-15 w-auto object-contain"
+              className="h-11 w-auto object-contain"
               onError={(e) => {
                 console.error('Erro ao carregar logo:', appLogo);
                 const target = e.target as HTMLImageElement;
