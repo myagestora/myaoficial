@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -197,7 +196,10 @@ const Index = () => {
         />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
-            Transforme sua
+            Suas finanças
+            <span className="block mt-2">
+              no controle,
+            </span>
             <span className="block mt-2">
               <span 
                 className="text-transparent bg-clip-text"
@@ -207,82 +209,163 @@ const Index = () => {
                   backgroundClip: 'text'
                 }}
               >
-                Vida Financeira
+                direto no WhatsApp
               </span>
             </span>
           </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
-            Controle completo das suas finanças com uma interface intuitiva, 
-            relatórios inteligentes e metas personalizadas para alcançar seus objetivos.
+          <p className="text-xl text-gray-600 dark:text-gray-300 mb-6">
+            Já pensou controlar suas finanças sem sair do WhatsApp? Com o {appName}, isso é realidade!
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          
+          {/* Rating Section */}
+          <div className="flex items-center justify-center space-x-4 mb-8">
+            <div className="flex items-center space-x-1">
+              <div className="flex space-x-1">
+                {[1, 2, 3, 4, 5].map((step) => (
+                  <div 
+                    key={step}
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                    style={{ backgroundColor: secondaryColor }}
+                  >
+                    {step}
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center ml-4">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
+                ))}
+                <span className="ml-2 text-gray-600 dark:text-gray-300">
+                  4.9/5 • 2.847 avaliações
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
             <Link to="/login">
               <Button 
                 size="lg" 
                 className="text-lg px-8 py-4"
                 style={{ backgroundColor: primaryColor }}
               >
-                Começar Gratuitamente
-                <ArrowRight className="ml-2 w-5 h-5" />
+                ⚡ Assinar Agora
               </Button>
             </Link>
             <Button size="lg" variant="outline" className="text-lg px-8 py-4">
-              Ver Demonstração
+              📱 Já tenho conta
             </Button>
           </div>
+          
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            ⚡ Sua grana sob controle com um simples "Oi" no zap
+          </p>
         </div>
       </section>
 
-      {/* WhatsApp Example Section */}
+      {/* WhatsApp Example Section - Updated Design */}
       <section className="py-20 bg-white dark:bg-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
+              <div className="inline-block px-4 py-2 bg-green-100 dark:bg-green-900/20 rounded-full mb-4">
+                <span className="text-green-600 dark:text-green-400 font-semibold flex items-center">
+                  ✨ Transformação Garantida
+                </span>
+              </div>
               <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-6">
-                Receba Notificações Inteligentes
+                Suas finanças no controle, direto no WhatsApp
               </h2>
               <p className="text-xl text-gray-600 dark:text-gray-300 mb-6">
-                Mantenha-se sempre informado sobre suas finanças com notificações 
-                personalizadas diretamente no seu WhatsApp.
+                Já pensou controlar suas finanças sem sair do WhatsApp? Com o {appName}, isso é realidade!
               </p>
-              <ul className="space-y-4">
-                <li className="flex items-start">
-                  <CheckCircle className="w-6 h-6 mr-3 mt-1" style={{ color: secondaryColor }} />
-                  <span className="text-gray-700 dark:text-gray-300">
-                    Lembretes de contas a vencer
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="w-6 h-6 mr-3 mt-1" style={{ color: secondaryColor }} />
-                  <span className="text-gray-700 dark:text-gray-300">
-                    Alertas de gastos excessivos
-                  </span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="w-6 h-6 mr-3 mt-1" style={{ color: secondaryColor }} />
-                  <span className="text-gray-700 dark:text-gray-300">
-                    Resumo mensal das finanças
-                  </span>
-                </li>
-              </ul>
             </div>
-            <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl p-8">
-              <div className="bg-green-500 text-white p-4 rounded-lg mb-4 max-w-xs">
-                <div className="flex items-center mb-2">
-                  <MessageCircle className="w-5 h-5 mr-2" />
-                  <span className="font-semibold">{appName}</span>
+            
+            {/* WhatsApp Chat Simulation */}
+            <div className="relative">
+              <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl p-6 max-w-md mx-auto">
+                {/* WhatsApp Header */}
+                <div className="flex items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-600">
+                  <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center mr-3">
+                    <span className="text-white font-bold text-sm">FA</span>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">Facilite Já AI</h3>
+                    <div className="flex items-center text-sm text-green-600">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
+                      online
+                    </div>
+                  </div>
+                  <div className="ml-auto text-green-600">
+                    <span className="bg-green-100 px-2 py-1 rounded-full text-xs">100% Seguro</span>
+                  </div>
                 </div>
-                <p className="text-sm">
-                  🚨 Atenção! Você tem 3 contas vencendo esta semana:
-                  <br />• Energia - R$ 180,00
-                  <br />• Internet - R$ 89,90
-                  <br />• Cartão de Crédito - R$ 450,00
-                </p>
-              </div>
-              <div className="bg-green-500 text-white p-4 rounded-lg max-w-xs ml-auto">
-                <p className="text-sm">
-                  ✅ Parabéns! Você economizou R$ 250,00 este mês comparado ao anterior. Continue assim!
-                </p>
+
+                {/* Messages */}
+                <div className="space-y-4">
+                  {/* Bot Message */}
+                  <div className="flex items-start">
+                    <div className="bg-gray-200 dark:bg-gray-600 rounded-lg p-3 max-w-xs">
+                      <p className="text-sm text-gray-800 dark:text-gray-200">
+                        Oi! 👋 Sou sua assistente financeira! Como posso te ajudar hoje?
+                      </p>
+                      <span className="text-xs text-gray-500">09:10</span>
+                    </div>
+                  </div>
+
+                  {/* User Message */}
+                  <div className="flex justify-end">
+                    <div className="bg-green-500 text-white rounded-lg p-3 max-w-xs">
+                      <p className="text-sm">Qual meu resumo de gasto da semana?</p>
+                      <span className="text-xs text-green-100">09:15</span>
+                    </div>
+                  </div>
+
+                  {/* Bot Response with Summary */}
+                  <div className="flex items-start">
+                    <div className="bg-gray-200 dark:bg-gray-600 rounded-lg p-3 max-w-xs">
+                      <div className="text-sm text-gray-800 dark:text-gray-200">
+                        <p className="font-semibold mb-2">📊 Resumo da Semana</p>
+                        <div className="space-y-1 text-xs">
+                          <div>💰 Total gasto: <span className="text-red-600 font-bold">R$ 847,30</span></div>
+                          <div>🍽️ Alimentação: R$ 320,50</div>
+                          <div>🚗 Transporte: R$ 180,00</div>
+                          <div>🎮 Lazer: R$ 127,80</div>
+                          <div>🏠 Casa: R$ 219,00</div>
+                          <div className="pt-2 border-t border-gray-300">
+                            <div className="text-green-600 font-semibold">
+                              ✅ Você economizou R$ 152,70 em relação à semana passada!
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <span className="text-xs text-gray-500">09:15</span>
+                    </div>
+                  </div>
+
+                  {/* User Question */}
+                  <div className="flex justify-end">
+                    <div className="bg-green-500 text-white rounded-lg p-3 max-w-xs">
+                      <p className="text-sm">Quer dicas para economizar mais? 🤔</p>
+                      <span className="text-xs text-green-100">09:16</span>
+                    </div>
+                  </div>
+
+                  {/* Bot Tips */}
+                  <div className="flex items-start">
+                    <div className="bg-green-500 text-white rounded-lg p-3 max-w-xs">
+                      <p className="text-sm">Sim! 💡⚡</p>
+                      <span className="text-xs text-green-100">09:17</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                  <div className="bg-blue-500 text-white rounded-lg p-2 text-center">
+                    <span className="text-sm">🚀 Resultados Rápidos</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -401,7 +484,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Pricing Section */}
+      {/* Pricing Section - Updated with centered prices */}
       {subscriptionPlans && subscriptionPlans.length > 0 && (
         <section className="py-20 bg-white dark:bg-gray-800">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -430,7 +513,7 @@ const Index = () => {
                 return (
                   <Card 
                     key={plan.id} 
-                    className={`relative ${isPopular ? 'ring-2 scale-105' : ''}`}
+                    className={`relative text-center ${isPopular ? 'ring-2 scale-105' : ''}`}
                     style={isPopular ? { borderColor: primaryColor, borderWidth: '2px' } : {}}
                   >
                     {isPopular && (
@@ -446,24 +529,26 @@ const Index = () => {
                       <p className="text-gray-600 dark:text-gray-300 mb-4">
                         {plan.description}
                       </p>
-                      <div className="text-4xl font-bold text-gray-900 dark:text-white">
-                        {plan.price_monthly ? (
-                          <>
-                            R${plan.price_monthly}
-                            <span className="text-lg text-gray-500">/mês</span>
-                          </>
-                        ) : (
-                          'Gratuito'
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+                          {plan.price_monthly ? (
+                            <>
+                              R${plan.price_monthly}
+                              <span className="text-lg text-gray-500">/mês</span>
+                            </>
+                          ) : (
+                            'Gratuito'
+                          )}
+                        </div>
+                        {plan.price_yearly && (
+                          <p className="text-sm text-gray-500">
+                            ou R${plan.price_yearly}/ano (economize 20%)
+                          </p>
                         )}
                       </div>
-                      {plan.price_yearly && (
-                        <p className="text-sm text-gray-500">
-                          ou R${plan.price_yearly}/ano (economize 20%)
-                        </p>
-                      )}
                     </CardHeader>
                     <CardContent>
-                      <ul className="space-y-3 mb-6">
+                      <ul className="space-y-3 mb-6 text-left">
                         {features.map((feature: string, featureIndex: number) => (
                           <li key={featureIndex} className="flex items-start">
                             <CheckCircle 
