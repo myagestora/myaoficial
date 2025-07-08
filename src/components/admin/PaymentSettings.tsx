@@ -20,8 +20,8 @@ export const PaymentSettings = ({ settings, onInputChange, onSave, isLoading }: 
     onInputChange('mercado_pago_enabled', checked.toString());
   };
 
-  // URL correta da Edge Function do Supabase
-  const webhookUrl = 'https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1/mercado-pago-webhook';
+  // URL correta da Edge Function do Supabase para webhook de assinatura
+  const webhookUrl = 'https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1/mercado-pago-subscription-webhook';
 
   const copyWebhookUrl = async () => {
     try {
@@ -117,7 +117,7 @@ export const PaymentSettings = ({ settings, onInputChange, onSave, isLoading }: 
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Globe className="h-4 w-4" />
-                URL do Webhook (Supabase Edge Function)
+                URL do Webhook de Assinatura (Supabase Edge Function)
               </Label>
               <div className="flex gap-2">
                 <Input
@@ -136,7 +136,7 @@ export const PaymentSettings = ({ settings, onInputChange, onSave, isLoading }: 
                 </Button>
               </div>
               <p className="text-xs text-gray-500">
-                Use esta URL para configurar o webhook no painel do Mercado Pago
+                Use esta URL para configurar o webhook de assinaturas no painel do Mercado Pago
               </p>
             </div>
           </div>
@@ -151,14 +151,14 @@ export const PaymentSettings = ({ settings, onInputChange, onSave, isLoading }: 
               <li>3. Copie a Public Key e o Access Token</li>
               <li>4. Configure o webhook usando a URL correta acima</li>
               <li>5. Copie a assinatura secreta do webhook</li>
-              <li>6. Selecione os eventos: payment.created, payment.updated</li>
-              <li>7. Teste os pagamentos no ambiente de sandbox primeiro</li>
+              <li>6. Selecione os eventos: subscription_preapproval, subscription_authorized_payment</li>
+              <li>7. Teste as assinaturas no ambiente de sandbox primeiro</li>
             </ol>
           </div>
 
           <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
             <h4 className="font-medium text-green-900 dark:text-green-100 mb-2">
-              ✅ URL Correta do Webhook:
+              ✅ URL Correta do Webhook de Assinatura:
             </h4>
             <div className="text-sm text-green-800 dark:text-green-200 space-y-2">
               <p className="font-mono bg-green-100 dark:bg-green-800 p-2 rounded text-xs break-all">
@@ -166,11 +166,26 @@ export const PaymentSettings = ({ settings, onInputChange, onSave, isLoading }: 
               </p>
               <p><strong>Eventos necessários:</strong></p>
               <ul className="ml-4 list-disc">
-                <li>payment.created</li>
-                <li>payment.updated</li>
-                <li>merchant_order.updated</li>
+                <li>subscription_preapproval (mudanças de status da assinatura)</li>
+                <li>subscription_authorized_payment (pagamentos das assinaturas)</li>
               </ul>
-              <p><strong>Importante:</strong> Use exatamente esta URL no painel do Mercado Pago!</p>
+              <p><strong>Importante:</strong> Use exatamente esta URL no painel do Mercado Pago para webhooks de assinatura!</p>
+            </div>
+          </div>
+
+          <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg">
+            <h4 className="font-medium text-amber-900 dark:text-amber-100 mb-2">
+              ℹ️ Webhooks Disponíveis:
+            </h4>
+            <div className="text-sm text-amber-800 dark:text-amber-200 space-y-2">
+              <p><strong>Para Assinaturas:</strong></p>
+              <p className="font-mono bg-amber-100 dark:bg-amber-800 p-2 rounded text-xs break-all">
+                https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1/mercado-pago-subscription-webhook
+              </p>
+              <p><strong>Para Pagamentos Únicos:</strong></p>
+              <p className="font-mono bg-amber-100 dark:bg-amber-800 p-2 rounded text-xs break-all">
+                https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1/mercado-pago-webhook
+              </p>
             </div>
           </div>
 
