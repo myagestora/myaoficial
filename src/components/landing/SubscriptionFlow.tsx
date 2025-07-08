@@ -45,6 +45,7 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
     isSignUp,
     setIsSignUp,
     handleAuth,
+    goToNextStep,
   } = useSubscriptionFlow(user, initialSelectedPlan);
 
   const { data: plans } = useQuery({
@@ -102,13 +103,15 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
         onPlanSelect={setSelectedPlan}
         onFrequencyChange={setFrequency}
         onNext={() => {
-          // Se usuário está logado, ir direto para checkout
-          if (user) {
-            setCurrentStep('checkout');
-          } else {
-            // Se não está logado, ir para autenticação
-            setCurrentStep('auth');
+          if (!selectedPlan) {
+            toast({
+              title: 'Selecione um plano',
+              description: 'Por favor, selecione um plano antes de continuar.',
+              variant: 'destructive',
+            });
+            return;
           }
+          goToNextStep();
         }}
         onClose={onClose}
       />
@@ -140,7 +143,7 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
   }
 
   // Etapa de checkout (usuário logado e plano selecionado)
-  if (currentStep === 'checkout' && selectedPlan) {
+  if (currentStep === 'checkout' && selectedPlan && user) {
     return (
       <CheckoutStep
         selectedPlan={selectedPlan}
@@ -156,5 +159,16 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
     return <PlanSelectionModal onClose={onClose} />;
   }
 
-  return null;
+  // Fallback - voltar para seleção de planos
+  return (
+    <PlanSelectionStep
+      plans={plans}
+      selectedPlan={selectedPlan}
+      frequency={frequency}
+      onPlanSelect={setSelectedPlan}
+      onFrequencyChange={setFrequency}
+      onNext={goToNextStep}
+      onClose={onClose}
+    />
+  );
 };
