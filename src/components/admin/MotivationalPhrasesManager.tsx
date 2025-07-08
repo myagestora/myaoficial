@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,9 +9,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Plus, Edit2, Trash2, Save, X } from 'lucide-react';
-import { Tables } from '@/integrations/supabase/types';
 
-type MotivationalPhrase = Tables<'motivational_phrases'>;
+interface MotivationalPhrase {
+  id: string;
+  phrase: string;
+  is_active: boolean | null;
+  created_at: string;
+  updated_at: string;
+}
 
 export const MotivationalPhrasesManager = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -174,7 +180,7 @@ export const MotivationalPhrasesManager = () => {
     }
   };
 
-  const handleToggleActive = (id: string, currentStatus: boolean) => {
+  const handleToggleActive = (id: string, currentStatus: boolean | null) => {
     toggleActiveMutation.mutate({ id, is_active: !currentStatus });
   };
 
@@ -262,7 +268,7 @@ export const MotivationalPhrasesManager = () => {
                 <div className="flex items-center space-x-2">
                   <Switch
                     checked={phrase.is_active || false}
-                    onCheckedChange={() => handleToggleActive(phrase.id, phrase.is_active || false)}
+                    onCheckedChange={() => handleToggleActive(phrase.id, phrase.is_active)}
                     disabled={toggleActiveMutation.isPending}
                   />
                   <span className="text-xs text-gray-500">
