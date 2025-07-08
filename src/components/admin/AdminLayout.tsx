@@ -27,14 +27,14 @@ const adminNavigation = [
 ];
 
 export const AdminLayout = () => {
-  // Buscar configurações do sistema para logo e nome
+  // Buscar configurações do sistema para logo, nome e cores
   const { data: systemConfig } = useQuery({
     queryKey: ['system-config-admin'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('system_config')
         .select('*')
-        .in('key', ['app_name', 'app_logo']);
+        .in('key', ['app_name', 'app_logo', 'secondary_color']);
       
       if (error) {
         console.error('Erro ao buscar configurações:', error);
@@ -56,6 +56,7 @@ export const AdminLayout = () => {
 
   const appName = systemConfig?.app_name || 'MYA Gestora';
   const appLogo = systemConfig?.app_logo;
+  const secondaryColor = systemConfig?.secondary_color || '#10B981';
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
@@ -119,10 +120,11 @@ export const AdminLayout = () => {
                 cn(
                   'flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors',
                   isActive
-                    ? 'bg-red-100 text-red-900 dark:bg-red-900/20 dark:text-red-300'
+                    ? 'text-white'
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                 )
               }
+              style={({ isActive }) => isActive ? { backgroundColor: secondaryColor } : {}}
             >
               <item.icon className="w-5 h-5 mr-3" />
               {item.name}

@@ -28,7 +28,7 @@ const navigation = [
 export const Sidebar = () => {
   const location = useLocation();
 
-  // Buscar configurações do sistema para logo e nome - com cache mais curto para refletir mudanças
+  // Buscar configurações do sistema para logo, nome e cores - com cache mais curto para refletir mudanças
   const { data: systemConfig } = useQuery({
     queryKey: ['system-config-sidebar'],
     queryFn: async () => {
@@ -36,7 +36,7 @@ export const Sidebar = () => {
       const { data, error } = await supabase
         .from('system_config')
         .select('*')
-        .in('key', ['app_name', 'app_logo']);
+        .in('key', ['app_name', 'app_logo', 'secondary_color']);
       
       if (error) {
         console.error('Erro ao buscar configurações:', error);
@@ -61,8 +61,10 @@ export const Sidebar = () => {
 
   const appName = systemConfig?.app_name || 'Controle Financeiro';
   const appLogo = systemConfig?.app_logo;
+  const secondaryColor = systemConfig?.secondary_color || '#10B981';
 
   console.log('Logo URL no sidebar:', appLogo);
+  console.log('Cor secundária:', secondaryColor);
 
   return (
     <div className="flex flex-col w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
@@ -116,9 +118,10 @@ export const Sidebar = () => {
               className={cn(
                 'flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors',
                 isActive
-                  ? 'bg-primary text-white'
+                  ? 'text-white'
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
               )}
+              style={isActive ? { backgroundColor: secondaryColor } : {}}
             >
               <item.icon className="w-5 h-5 mr-3" />
               {item.name}
