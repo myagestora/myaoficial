@@ -3,6 +3,7 @@ import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 import { PlanSelectionStep } from './subscription/PlanSelectionStep';
 import { AuthStep } from './subscription/AuthStep';
 import { CheckoutStep } from './subscription/CheckoutStep';
