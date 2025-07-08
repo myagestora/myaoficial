@@ -2,16 +2,71 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export const MonthlyOverview = () => {
-  const mockData = [
-    { month: 'Jan', income: 4800, expenses: 3200 },
-    { month: 'Fev', income: 5200, expenses: 3800 },
-    { month: 'Mar', income: 4900, expenses: 3400 },
-    { month: 'Abr', income: 5100, expenses: 3600 },
-    { month: 'Mai', income: 5300, expenses: 3900 },
-    { month: 'Jun', income: 5000, expenses: 3200 },
-  ];
+  const { user } = useAuth();
+
+  const { data: monthlyData, isLoading } = useQuery({
+    queryKey: ['monthly-overview', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+
+      // Buscar transações dos últimos 6 meses
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+      
+      const { data: transactions, error } = await supabase
+        .from('transactions')
+        .select('amount, type, date')
+        .eq('user_id', user.id)
+        .gte('date', sixMonthsAgo.toISOString().split('T')[0])
+        .order('date', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching monthly data:', error);
+        return [];
+      }
+
+      // Agrupar por mês
+      const monthlyStats: { [key: string]: { income: number; expense: number } } = {};
+      
+      // Inicializar os últimos 6 meses
+      for (let i = 5; i >= 0; i--) {
+        const date = new Date();
+        date.setMonth(date.getMonth() - i);
+        const monthKey = date.toISOString().substring(0, 7); // YYYY-MM
+        monthlyStats[monthKey] = { income: 0, expense: 0 };
+      }
+
+      // Agrupar transações por mês
+      transactions?.forEach(transaction => {
+        const monthKey = transaction.date.substring(0, 7);
+        if (monthlyStats[monthKey]) {
+          if (transaction.type === 'income') {
+            monthlyStats[monthKey].income += Number(transaction.amount);
+          } else {
+            monthlyStats[monthKey].expense += Number(transaction.amount);
+          }
+        }
+      });
+
+      // Converter para formato do gráfico
+      return Object.entries(monthlyStats).map(([monthKey, stats]) => {
+        const [year, month] = monthKey.split('-');
+        const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        
+        return {
+          month: monthNames[parseInt(month) - 1],
+          income: stats.income,
+          expenses: stats.expense
+        };
+      });
+    },
+    enabled: !!user?.id
+  });
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -33,6 +88,21 @@ export const MonthlyOverview = () => {
     return null;
   };
 
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Visão Mensal</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse">
+            <div className="h-[300px] bg-gray-200 rounded"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -40,7 +110,7 @@ export const MonthlyOverview = () => {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={mockData}>
+          <BarChart data={monthlyData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
             <YAxis />

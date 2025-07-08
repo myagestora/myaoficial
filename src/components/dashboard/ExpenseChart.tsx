@@ -2,19 +2,62 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export const ExpenseChart = () => {
-  const mockData = [
-    { name: 'Alimentação', value: 1200, color: '#8884d8' },
-    { name: 'Transporte', value: 600, color: '#82ca9d' },
-    { name: 'Utilidades', value: 800, color: '#ffc658' },
-    { name: 'Entretenimento', value: 400, color: '#ff7c7c' },
-    { name: 'Saúde', value: 200, color: '#8dd1e1' },
-  ];
+  const { user } = useAuth();
+
+  const { data: expenseData, isLoading } = useQuery({
+    queryKey: ['expense-chart', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+
+      const { data: transactions, error } = await supabase
+        .from('transactions')
+        .select(`
+          amount,
+          categories (
+            name,
+            color
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('type', 'expense');
+
+      if (error) {
+        console.error('Error fetching expense data:', error);
+        return [];
+      }
+
+      // Agrupar por categoria
+      const categoryTotals: { [key: string]: { amount: number; color: string } } = {};
+      
+      transactions?.forEach(transaction => {
+        const categoryName = transaction.categories?.name || 'Sem categoria';
+        const categoryColor = transaction.categories?.color || '#8884d8';
+        
+        if (!categoryTotals[categoryName]) {
+          categoryTotals[categoryName] = { amount: 0, color: categoryColor };
+        }
+        categoryTotals[categoryName].amount += Number(transaction.amount);
+      });
+
+      // Converter para formato do gráfico
+      return Object.entries(categoryTotals).map(([name, data]) => ({
+        name,
+        value: data.amount,
+        color: data.color
+      }));
+    },
+    enabled: !!user?.id
+  });
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0];
+      const totalExpenses = expenseData?.reduce((acc, item) => acc + item.value, 0) || 0;
       return (
         <div className="bg-white dark:bg-gray-800 p-3 border rounded-lg shadow-lg">
           <p className="font-medium">{data.name}</p>
@@ -22,13 +65,43 @@ export const ExpenseChart = () => {
             R$ {data.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
           <p className="text-xs text-gray-500">
-            {((data.value / mockData.reduce((acc, item) => acc + item.value, 0)) * 100).toFixed(1)}%
+            {totalExpenses > 0 ? ((data.value / totalExpenses) * 100).toFixed(1) : 0}%
           </p>
         </div>
       );
     }
     return null;
   };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Despesas por Categoria</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse">
+            <div className="h-[300px] bg-gray-200 rounded"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!expenseData || expenseData.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Despesas por Categoria</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-[300px]">
+            <p className="text-gray-500">Nenhuma despesa encontrada</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -39,7 +112,7 @@ export const ExpenseChart = () => {
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>
             <Pie
-              data={mockData}
+              data={expenseData}
               cx="50%"
               cy="50%"
               labelLine={false}
@@ -47,7 +120,7 @@ export const ExpenseChart = () => {
               fill="#8884d8"
               dataKey="value"
             >
-              {mockData.map((entry, index) => (
+              {expenseData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
