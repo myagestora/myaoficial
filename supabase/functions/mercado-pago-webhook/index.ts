@@ -69,7 +69,7 @@ serve(async (req) => {
 
     console.log('Token configurado:', accessToken ? 'SIM' : 'NÃO');
 
-    // ===== EVENTOS DE PAGAMENTO =====
+    // ===== PROCESSAR APENAS EVENTOS DE PAGAMENTO =====
     const isPaymentEvent = webhookData.type === 'payment' || 
                           webhookData.action === 'payment.updated' ||
                           webhookData.action === 'payment.created';
@@ -77,22 +77,11 @@ serve(async (req) => {
     if (isPaymentEvent) {
       console.log('=== PROCESSANDO EVENTO DE PAGAMENTO ===');
       await processPaymentEvent(webhookData, accessToken, supabaseClient);
-    }
-
-    // ===== EVENTOS DE ASSINATURA =====
-    const isSubscriptionEvent = webhookData.type === 'subscription_preapproval' ||
-                               webhookData.type === 'subscription_authorized_payment';
-
-    if (isSubscriptionEvent) {
-      console.log('=== PROCESSANDO EVENTO DE ASSINATURA ===');
-      await processSubscriptionEvent(webhookData, accessToken, supabaseClient);
-    }
-
-    // Se não é nenhum dos eventos conhecidos
-    if (!isPaymentEvent && !isSubscriptionEvent) {
+    } else {
       console.log('=== EVENTO IGNORADO ===');
       console.log('Tipo:', webhookData.type);
       console.log('Ação:', webhookData.action);
+      console.log('Este webhook processa apenas eventos de pagamento');
     }
 
     console.log('=== WEBHOOK PROCESSADO COM SUCESSO ===');
@@ -196,11 +185,11 @@ async function processPaymentEvent(webhookData: any, accessToken: string, supaba
     console.error('Buscado por payment_id:', paymentData.id);
     console.error('Buscado por external_reference:', paymentData.external_reference);
     
-    // Listar todos os pagamentos para debug
+    // Listar alguns pagamentos para debug
     const { data: allPayments } = await supabaseClient
       .from('payments')
       .select('id, mercado_pago_payment_id, mercado_pago_preference_id, status')
-      .limit(10);
+      .limit(5);
     
     console.log('Últimos pagamentos no banco:', allPayments);
     throw new Error(`Pagamento não encontrado - payment_id: ${paymentId}`);
@@ -242,102 +231,9 @@ async function processPaymentEvent(webhookData: any, accessToken: string, supaba
 
   console.log('Pagamento atualizado com sucesso');
 
-  // Se o pagamento foi aprovado, ativar assinatura
+  // Se o pagamento foi aprovado, ativar assinatura do usuário
   if (paymentData.status === 'approved') {
     await activateUserSubscription(paymentRecord, supabaseClient);
-  }
-}
-
-// Função para processar eventos de assinatura
-async function processSubscriptionEvent(webhookData: any, accessToken: string, supabaseClient: any) {
-  console.log('=== PROCESSANDO EVENTO DE ASSINATURA ===');
-  console.log('Tipo do evento:', webhookData.type);
-
-  // Verificar se é um evento de assinatura
-  if (webhookData.type === 'subscription_preapproval') {
-    const subscriptionId = webhookData.data?.id;
-    
-    if (subscriptionId) {
-      // Buscar detalhes da assinatura no Mercado Pago
-      const subscriptionResponse = await fetch(`https://api.mercadopago.com/preapproval/${subscriptionId}`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        }
-      });
-
-      if (subscriptionResponse.ok) {
-        const subscriptionData = await subscriptionResponse.json();
-        console.log('Dados da assinatura:', subscriptionData);
-
-        // Extrair user_id e plan_id da external_reference
-        const externalReference = subscriptionData.external_reference;
-        if (externalReference) {
-          const [userId, planId] = externalReference.split('_');
-
-          // Atualizar status da assinatura no banco
-          let newStatus = 'inactive';
-          if (subscriptionData.status === 'authorized') {
-            newStatus = 'active';
-          } else if (subscriptionData.status === 'cancelled') {
-            newStatus = 'canceled';
-          } else if (subscriptionData.status === 'paused') {
-            newStatus = 'inactive';
-          }
-
-          const { error: updateError } = await supabaseClient
-            .from('user_subscriptions')
-            .update({
-              status: newStatus,
-              updated_at: new Date().toISOString()
-            })
-            .eq('user_id', userId)
-            .eq('plan_id', planId);
-
-          if (updateError) {
-            console.error('Erro ao atualizar assinatura:', updateError);
-          } else {
-            console.log(`Assinatura atualizada para status: ${newStatus}`);
-          }
-        }
-      }
-    }
-  }
-
-  // Verificar se é um evento de pagamento de assinatura
-  if (webhookData.type === 'subscription_authorized_payment') {
-    const paymentId = webhookData.data?.id;
-    
-    if (paymentId) {
-      // Buscar detalhes do pagamento no Mercado Pago
-      const paymentResponse = await fetch(`https://api.mercadopago.com/authorized_payments/${paymentId}`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        }
-      });
-
-      if (paymentResponse.ok) {
-        const paymentData = await paymentResponse.json();
-        console.log('Dados do pagamento de assinatura:', paymentData);
-
-        // Registrar pagamento no banco
-        const { error: paymentError } = await supabaseClient
-          .from('payments')
-          .insert({
-            user_id: paymentData.external_reference?.split('_')[0],
-            plan_id: paymentData.external_reference?.split('_')[1],
-            amount: paymentData.transaction_amount,
-            currency: paymentData.currency_id,
-            payment_method: 'mercado_pago',
-            mercado_pago_payment_id: paymentData.id.toString(),
-            payment_date: paymentData.date_created,
-            status: paymentData.status === 'approved' ? 'completed' : 'failed'
-          });
-
-        if (paymentError) {
-          console.error('Erro ao registrar pagamento:', paymentError);
-        }
-      }
-    }
   }
 }
 
