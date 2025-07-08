@@ -38,6 +38,8 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
       adminOverride: boolean;
       isAdmin: boolean;
     }) => {
+      console.log('Updating user with data:', userData);
+      
       // Atualizar perfil
       const { error: profileError } = await supabase
         .from('profiles')
@@ -50,7 +52,10 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
         })
         .eq('id', user.id);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Profile update error:', profileError);
+        throw profileError;
+      }
 
       // Gerenciar role de admin
       const currentlyAdmin = user.user_roles?.some((role: any) => role.role === 'admin') || false;
@@ -61,7 +66,10 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
           .from('user_roles')
           .insert({ user_id: user.id, role: 'admin' });
         
-        if (addRoleError) throw addRoleError;
+        if (addRoleError) {
+          console.error('Add role error:', addRoleError);
+          throw addRoleError;
+        }
       } else if (!userData.isAdmin && currentlyAdmin) {
         // Remover role de admin
         const { error: removeRoleError } = await supabase
@@ -70,7 +78,10 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
           .eq('user_id', user.id)
           .eq('role', 'admin');
         
-        if (removeRoleError) throw removeRoleError;
+        if (removeRoleError) {
+          console.error('Remove role error:', removeRoleError);
+          throw removeRoleError;
+        }
       }
     },
     onSuccess: () => {
@@ -83,6 +94,7 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
       onUserUpdated?.();
     },
     onError: (error: any) => {
+      console.error('Update user error:', error);
       toast({
         title: 'Erro',
         description: error.message || 'Erro ao atualizar usuário',
@@ -90,6 +102,12 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
       });
     }
   });
+
+  const handleSubscriptionStatusChange = (value: string) => {
+    setSubscriptionStatus(value);
+    // Automaticamente marcar o admin override quando o status for alterado
+    setAdminOverride(true);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,6 +119,15 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
       });
       return;
     }
+
+    console.log('Submitting form with:', {
+      email,
+      fullName,
+      whatsapp,
+      subscriptionStatus,
+      adminOverride,
+      isAdmin
+    });
 
     updateUserMutation.mutate({
       email,
@@ -158,7 +185,7 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
 
           <div>
             <Label htmlFor="subscriptionStatus">Status da Assinatura</Label>
-            <Select value={subscriptionStatus} onValueChange={setSubscriptionStatus}>
+            <Select value={subscriptionStatus} onValueChange={handleSubscriptionStatusChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o status" />
               </SelectTrigger>
