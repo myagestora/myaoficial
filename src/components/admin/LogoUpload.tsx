@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Upload, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface LogoUploadProps {
   currentLogoUrl: string;
@@ -20,6 +21,7 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
 }) => {
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>(currentLogoUrl || '');
+  const queryClient = useQueryClient();
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -91,6 +93,13 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
       // Salvar automaticamente
       onSave();
 
+      // Invalidar cache para forçar atualização em toda a aplicação
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['system-config'] });
+        queryClient.invalidateQueries({ queryKey: ['system-config-header'] });
+        queryClient.invalidateQueries({ queryKey: ['system-config-sidebar'] });
+      }, 1000);
+
       toast({
         title: 'Sucesso',
         description: 'Logo enviado e salvo com sucesso!',
@@ -114,7 +123,13 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
 
   const handleRemoveLogo = () => {
     setPreviewUrl('');
-    onLogoChange(''); // Passar string vazia em vez de null
+    onLogoChange('');
+    
+    // Invalidar cache imediatamente
+    queryClient.invalidateQueries({ queryKey: ['system-config'] });
+    queryClient.invalidateQueries({ queryKey: ['system-config-header'] });
+    queryClient.invalidateQueries({ queryKey: ['system-config-sidebar'] });
+    
     toast({
       title: 'Logo removido',
       description: 'Logo removido com sucesso. Clique em "Salvar Configurações" para confirmar.',

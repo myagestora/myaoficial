@@ -21,28 +21,6 @@ export const Header = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, isAdmin, signOut } = useAuth();
 
-  // Buscar configurações do sistema para o logo e nome
-  const { data: systemConfig } = useQuery({
-    queryKey: ['system-config-header'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('system_config')
-        .select('*')
-        .in('key', ['app_name', 'app_logo']);
-      
-      if (error) throw error;
-      
-      const configObj: Record<string, string> = {};
-      data.forEach(item => {
-        configObj[item.key] = typeof item.value === 'string' ? 
-          item.value.replace(/^"|"$/g, '') : 
-          JSON.stringify(item.value);
-      });
-      
-      return configObj;
-    }
-  });
-
   // Buscar frase motivacional aleatória
   const { data: motivationalPhrase } = useQuery({
     queryKey: ['motivational-phrase'],
@@ -61,41 +39,14 @@ export const Header = () => {
         return phrases[randomIndex].phrase;
       }
       
-      return 'MYA registra. MYA lembra. MYA cuida! 💰';
+      return 'MYA está aqui para transformar sua vida financeira! 💰';
     }
   });
 
-  const appName = systemConfig?.app_name || 'Controle Financeiro';
-  const appLogo = systemConfig?.app_logo;
-
   return (
     <header className="h-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 flex flex-col">
-      {/* Primeira linha com logo e controles */}
-      <div className="h-12 flex items-center justify-between px-6">
-        <div className="flex items-center space-x-4">
-          {appLogo ? (
-            <div className="flex items-center space-x-3">
-              <img 
-                src={appLogo} 
-                alt={appName}
-                className="h-8 w-auto object-contain"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  target.nextElementSibling?.classList.remove('hidden');
-                }}
-              />
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white hidden">
-                {appName}
-              </h2>
-            </div>
-          ) : (
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {appName}
-            </h2>
-          )}
-        </div>
-
+      {/* Primeira linha com controles */}
+      <div className="h-12 flex items-center justify-end px-6">
         <div className="flex items-center space-x-4">
           {/* Theme Toggle */}
           <Button

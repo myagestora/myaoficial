@@ -27,7 +27,7 @@ const AdminSettings = () => {
       data.forEach(item => {
         configObj[item.key] = typeof item.value === 'string' ? 
           item.value.replace(/^"|"$/g, '') : 
-          JSON.stringify(item.value);
+          JSON.stringify(item.value).replace(/^"|"$/g, '');
       });
       
       setSettings(configObj);
@@ -82,8 +82,11 @@ const AdminSettings = () => {
       }
     },
     onSuccess: () => {
+      // Invalidar todos os caches relacionados às configurações
       queryClient.invalidateQueries({ queryKey: ['system-config'] });
       queryClient.invalidateQueries({ queryKey: ['system-config-header'] });
+      queryClient.invalidateQueries({ queryKey: ['system-config-sidebar'] });
+      
       toast({
         title: 'Sucesso',
         description: 'Configurações atualizadas com sucesso',
@@ -99,7 +102,6 @@ const AdminSettings = () => {
     }
   });
 
-  // Sincronizar settings quando systemConfig muda
   useEffect(() => {
     if (systemConfig) {
       setSettings(systemConfig);

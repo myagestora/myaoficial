@@ -28,47 +28,74 @@ const navigation = [
 export const Sidebar = () => {
   const location = useLocation();
 
-  // Buscar configurações do sistema para logo e nome
+  // Buscar configurações do sistema para logo e nome - com cache mais curto para refletir mudanças
   const { data: systemConfig } = useQuery({
     queryKey: ['system-config-sidebar'],
     queryFn: async () => {
+      console.log('Buscando configurações do sistema...');
       const { data, error } = await supabase
         .from('system_config')
         .select('*')
         .in('key', ['app_name', 'app_logo']);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar configurações:', error);
+        throw error;
+      }
+      
+      console.log('Configurações encontradas:', data);
       
       const configObj: Record<string, string> = {};
       data.forEach(item => {
         configObj[item.key] = typeof item.value === 'string' ? 
           item.value.replace(/^"|"$/g, '') : 
-          JSON.stringify(item.value);
+          JSON.stringify(item.value).replace(/^"|"$/g, '');
       });
       
+      console.log('Configurações processadas:', configObj);
       return configObj;
-    }
+    },
+    staleTime: 30000, // Cache por 30 segundos apenas
+    cacheTime: 60000, // Manter em cache por 1 minuto
   });
 
   const appName = systemConfig?.app_name || 'Controle Financeiro';
   const appLogo = systemConfig?.app_logo;
+
+  console.log('Logo URL no sidebar:', appLogo);
 
   return (
     <div className="flex flex-col w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
       {/* Logo */}
       <div className="flex items-center justify-center h-20 px-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-3">
-          {appLogo ? (
-            <img 
-              src={appLogo} 
-              alt={appName}
-              className="h-8 w-auto object-contain"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                target.nextElementSibling?.classList.remove('hidden');
-              }}
-            />
+          {appLogo && appLogo.trim() !== '' ? (
+            <div className="flex items-center space-x-3">
+              <img 
+                src={appLogo} 
+                alt={appName}
+                className="h-8 w-auto object-contain"
+                onError={(e) => {
+                  console.error('Erro ao carregar logo:', appLogo);
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  // Mostrar fallback
+                  const fallback = target.parentElement?.querySelector('.logo-fallback') as HTMLElement;
+                  if (fallback) {
+                    fallback.style.display = 'flex';
+                  }
+                }}
+                onLoad={() => {
+                  console.log('Logo carregada com sucesso:', appLogo);
+                }}
+              />
+              <div 
+                className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center logo-fallback"
+                style={{ display: 'none' }}
+              >
+                <DollarSign className="w-5 h-5 text-white" />
+              </div>
+            </div>
           ) : (
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <DollarSign className="w-5 h-5 text-white" />
