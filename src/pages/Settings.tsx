@@ -270,7 +270,7 @@ const SettingsPage = () => {
                         className="bg-gray-100 dark:bg-gray-800"
                       />
                       <p className="text-xs text-gray-500">
-                        O email não pode ser alterado por aqui
+                        O email não pode ser alterado
                       </p>
                     </div>
                   </div>
