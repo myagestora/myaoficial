@@ -115,14 +115,15 @@ const AdminSubscriptions = () => {
         const profilesData = subscription.profiles;
         let validProfile: ProfileData | null = null;
         
-        if (profilesData && typeof profilesData === 'object') {
-          // Check if it's not an error object and has the required properties
-          if (!('error' in profilesData) && 
-              'id' in profilesData && 
-              'full_name' in profilesData && 
-              'email' in profilesData) {
-            validProfile = profilesData as ProfileData;
-          }
+        // More explicit null checking to satisfy TypeScript
+        if (profilesData !== null && 
+            profilesData !== undefined && 
+            typeof profilesData === 'object' &&
+            !('error' in profilesData) && 
+            'id' in profilesData && 
+            'full_name' in profilesData && 
+            'email' in profilesData) {
+          validProfile = profilesData as ProfileData;
         }
         
         return {
