@@ -19,13 +19,30 @@ serve(async (req) => {
   );
 
   try {
-    console.log('Webhook recebido do Mercado Pago');
+    console.log('=== WEBHOOK MERCADO PAGO INICIADO ===');
+    console.log('Method:', req.method);
+    console.log('Headers:', Object.fromEntries(req.headers.entries()));
 
     // Obter dados do webhook
     const body = await req.text();
-    const webhookData = JSON.parse(body);
+    console.log('Body recebido:', body);
     
-    console.log('Dados do webhook:', webhookData);
+    let webhookData;
+    try {
+      webhookData = JSON.parse(body);
+    } catch (parseError) {
+      console.error('Erro ao fazer parse do JSON:', parseError);
+      return new Response(JSON.stringify({ 
+        error: 'JSON inválido',
+        received: true,
+        processed: false
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+
+    console.log('Dados do webhook parseados:', JSON.stringify(webhookData, null, 2));
 
     // Buscar configurações do Mercado Pago
     const { data: configData, error: configError } = await supabaseClient
@@ -34,21 +51,32 @@ serve(async (req) => {
       .eq('key', 'mercado_pago_access_token')
       .single();
 
-    if (configError) {
+    if (configError || !configData) {
       console.error('Erro ao buscar configurações:', configError);
-      throw new Error('Configurações do Mercado Pago não encontradas');
+      return new Response(JSON.stringify({ 
+        error: 'Configurações do Mercado Pago não encontradas',
+        received: true,
+        processed: false
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
     }
 
     const accessToken = typeof configData.value === 'string' ? 
       configData.value.replace(/^"|"$/g, '') : 
       JSON.stringify(configData.value).replace(/^"|"$/g, '');
 
-    console.log('Token obtido com sucesso');
+    console.log('Token configurado:', accessToken ? 'SIM' : 'NÃO');
 
     // Verificar se é um evento de pagamento
     const isPaymentEvent = webhookData.type === 'payment' || 
                           webhookData.action === 'payment.updated' ||
                           webhookData.action === 'payment.created';
+
+    console.log('É evento de pagamento?', isPaymentEvent);
+    console.log('Tipo do evento:', webhookData.type);
+    console.log('Ação do evento:', webhookData.action);
 
     if (isPaymentEvent) {
       const paymentId = webhookData.data?.id || webhookData.id;
@@ -65,7 +93,8 @@ serve(async (req) => {
         });
       }
 
-      console.log('Processando pagamento ID:', paymentId);
+      console.log('=== PROCESSANDO PAGAMENTO ===');
+      console.log('Payment ID:', paymentId);
       
       // Buscar detalhes do pagamento no Mercado Pago
       const paymentResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
@@ -77,50 +106,91 @@ serve(async (req) => {
       if (!paymentResponse.ok) {
         const errorText = await paymentResponse.text();
         console.error('Erro ao buscar pagamento no Mercado Pago:', paymentResponse.status, errorText);
-        throw new Error(`Erro ${paymentResponse.status} ao buscar pagamento no Mercado Pago`);
+        return new Response(JSON.stringify({ 
+          error: `Erro ${paymentResponse.status} ao buscar pagamento no Mercado Pago`,
+          received: true,
+          processed: false
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500,
+        });
       }
 
       const paymentData = await paymentResponse.json();
-      console.log('Dados do pagamento do MP:', paymentData);
+      console.log('=== DADOS DO PAGAMENTO MP ===');
+      console.log('Status:', paymentData.status);
+      console.log('ID:', paymentData.id);
+      console.log('External Reference:', paymentData.external_reference);
 
-      // Buscar o pagamento no banco usando o ID do Mercado Pago
+      // Buscar o pagamento no banco usando diferentes estratégias
       let paymentRecord = null;
       
-      // Primeiro, tentar buscar pelo payment_id
-      const { data: paymentByMpId } = await supabaseClient
+      console.log('=== BUSCANDO PAGAMENTO NO BANCO ===');
+      
+      // Estratégia 1: Buscar pelo payment_id do Mercado Pago
+      const { data: paymentByMpId, error: errorByMpId } = await supabaseClient
         .from('payments')
         .select('*')
         .eq('mercado_pago_payment_id', paymentData.id.toString())
         .maybeSingle();
 
-      if (paymentByMpId) {
+      if (errorByMpId) {
+        console.error('Erro ao buscar por MP ID:', errorByMpId);
+      } else if (paymentByMpId) {
+        console.log('Pagamento encontrado por MP ID:', paymentByMpId.id);
         paymentRecord = paymentByMpId;
-      } else if (paymentData.external_reference) {
-        // Se não encontrou pelo payment_id, tentar buscar pela external_reference
-        console.log('Buscando por external_reference:', paymentData.external_reference);
+      }
+
+      // Estratégia 2: Se não encontrou, buscar pela external_reference
+      if (!paymentRecord && paymentData.external_reference) {
+        console.log('Tentando buscar por external_reference:', paymentData.external_reference);
         
-        const { data: paymentByRef } = await supabaseClient
+        const { data: paymentByRef, error: errorByRef } = await supabaseClient
           .from('payments')
           .select('*')
           .eq('mercado_pago_preference_id', paymentData.external_reference)
           .maybeSingle();
 
-        paymentRecord = paymentByRef;
+        if (errorByRef) {
+          console.error('Erro ao buscar por external_reference:', errorByRef);
+        } else if (paymentByRef) {
+          console.log('Pagamento encontrado por external_reference:', paymentByRef.id);
+          paymentRecord = paymentByRef;
+        }
       }
 
       if (!paymentRecord) {
-        console.error('Pagamento não encontrado no banco de dados para payment_id:', paymentId);
+        console.error('=== PAGAMENTO NÃO ENCONTRADO ===');
+        console.error('Buscado por payment_id:', paymentData.id);
+        console.error('Buscado por external_reference:', paymentData.external_reference);
+        
+        // Listar todos os pagamentos para debug
+        const { data: allPayments } = await supabaseClient
+          .from('payments')
+          .select('id, mercado_pago_payment_id, mercado_pago_preference_id, status')
+          .limit(10);
+        
+        console.log('Últimos pagamentos no banco:', allPayments);
+        
         return new Response(JSON.stringify({ 
           error: `Pagamento não encontrado - payment_id: ${paymentId}`,
           received: true,
-          processed: false
+          processed: false,
+          debug: {
+            searched_payment_id: paymentData.id,
+            searched_external_reference: paymentData.external_reference,
+            recent_payments: allPayments
+          }
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 404,
         });
       }
 
-      console.log('Registro de pagamento encontrado:', paymentRecord);
+      console.log('=== PAGAMENTO ENCONTRADO ===');
+      console.log('Record ID:', paymentRecord.id);
+      console.log('User ID:', paymentRecord.user_id);
+      console.log('Plan ID:', paymentRecord.plan_id);
 
       // Determinar o novo status
       let newStatus = 'pending';
@@ -131,6 +201,9 @@ serve(async (req) => {
       } else if (paymentData.status === 'cancelled') {
         newStatus = 'cancelled';
       }
+
+      console.log('=== ATUALIZANDO PAGAMENTO ===');
+      console.log('Novo status:', newStatus);
 
       // Atualizar status do pagamento no banco
       const { error: updateError } = await supabaseClient
@@ -145,14 +218,23 @@ serve(async (req) => {
 
       if (updateError) {
         console.error('Erro ao atualizar pagamento:', updateError);
-        throw updateError;
+        return new Response(JSON.stringify({ 
+          error: 'Erro ao atualizar pagamento',
+          received: true,
+          processed: false
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500,
+        });
       }
 
-      console.log('Pagamento atualizado com sucesso para status:', newStatus);
+      console.log('Pagamento atualizado com sucesso');
 
       // Se o pagamento foi aprovado, ativar assinatura
       if (paymentData.status === 'approved') {
-        console.log('Pagamento aprovado, ativando assinatura para usuário:', paymentRecord.user_id);
+        console.log('=== ATIVANDO ASSINATURA ===');
+        console.log('User ID:', paymentRecord.user_id);
+        console.log('Plan ID:', paymentRecord.plan_id);
         
         // Calcular datas do período
         const currentDate = new Date();
@@ -161,14 +243,20 @@ serve(async (req) => {
         periodEnd.setMonth(periodEnd.getMonth() + 1);
 
         // Verificar se já existe uma assinatura para este usuário e plano
-        const { data: existingSubscription } = await supabaseClient
+        const { data: existingSubscription, error: subError } = await supabaseClient
           .from('user_subscriptions')
           .select('*')
           .eq('user_id', paymentRecord.user_id)
           .eq('plan_id', paymentRecord.plan_id)
           .maybeSingle();
 
+        if (subError) {
+          console.error('Erro ao buscar assinatura existente:', subError);
+        }
+
         if (existingSubscription) {
+          console.log('Atualizando assinatura existente:', existingSubscription.id);
+          
           // Atualizar assinatura existente
           const { error: subscriptionError } = await supabaseClient
             .from('user_subscriptions')
@@ -182,11 +270,12 @@ serve(async (req) => {
 
           if (subscriptionError) {
             console.error('Erro ao atualizar assinatura:', subscriptionError);
-            throw subscriptionError;
+          } else {
+            console.log('Assinatura atualizada com sucesso');
           }
-          
-          console.log('Assinatura atualizada com sucesso');
         } else {
+          console.log('Criando nova assinatura');
+          
           // Criar nova assinatura
           const { error: subscriptionError } = await supabaseClient
             .from('user_subscriptions')
@@ -202,13 +291,13 @@ serve(async (req) => {
 
           if (subscriptionError) {
             console.error('Erro ao criar assinatura:', subscriptionError);
-            throw subscriptionError;
+          } else {
+            console.log('Assinatura criada com sucesso');
           }
-          
-          console.log('Assinatura criada com sucesso');
         }
 
         // Atualizar o status da assinatura no perfil do usuário
+        console.log('=== ATUALIZANDO PERFIL ===');
         const { error: profileError } = await supabaseClient
           .from('profiles')
           .update({
@@ -219,29 +308,37 @@ serve(async (req) => {
 
         if (profileError) {
           console.error('Erro ao atualizar perfil:', profileError);
-          // Não falhar o webhook por erro no perfil
         } else {
-          console.log('Perfil atualizado com sucesso para usuário:', paymentRecord.user_id);
+          console.log('Perfil atualizado com sucesso');
         }
       }
     } else {
-      console.log('Evento não é de pagamento, ignorando:', webhookData.type || webhookData.action);
+      console.log('=== EVENTO IGNORADO ===');
+      console.log('Tipo:', webhookData.type);
+      console.log('Ação:', webhookData.action);
     }
 
+    console.log('=== WEBHOOK PROCESSADO COM SUCESSO ===');
+    
     return new Response(JSON.stringify({ 
       received: true,
-      processed: true 
+      processed: true,
+      timestamp: new Date().toISOString()
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
 
   } catch (error) {
-    console.error('Erro no webhook:', error);
+    console.error('=== ERRO NO WEBHOOK ===');
+    console.error('Erro:', error);
+    console.error('Stack:', error.stack);
+    
     return new Response(JSON.stringify({ 
       error: error instanceof Error ? error.message : 'Erro interno do servidor',
       received: true,
-      processed: false
+      processed: false,
+      timestamp: new Date().toISOString()
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
