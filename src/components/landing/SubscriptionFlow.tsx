@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
@@ -91,7 +92,7 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
     mercadoPagoConfig?.mercado_pago_access_token
   );
 
-  // Flow steps para usuários não logados ou seleção de plano
+  // Flow steps
   if (currentStep === 'planSelection') {
     return (
       <PlanSelectionStep
@@ -135,8 +136,7 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
     );
   }
 
-  // Se usuário está logado e tem plano selecionado, mostrar checkout transparente
-  if ((user || currentStep === 'checkout') && selectedPlan) {
+  if (currentStep === 'checkout' && selectedPlan) {
     return (
       <CheckoutStep
         selectedPlan={selectedPlan}

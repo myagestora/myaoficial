@@ -19,11 +19,11 @@ export const useSubscriptionFlow = (
   initialSelectedPlan?: SubscriptionPlan
 ) => {
   const getInitialStep = (): FlowStep => {
-    if (user && initialSelectedPlan) {
-      return 'checkout';
+    if (initialSelectedPlan && !user) {
+      return 'auth';
     }
-    if (user && !initialSelectedPlan) {
-      return 'planSelection';
+    if (initialSelectedPlan && user) {
+      return 'checkout';
     }
     return 'planSelection';
   };
