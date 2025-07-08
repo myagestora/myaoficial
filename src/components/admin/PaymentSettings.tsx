@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { CreditCard, DollarSign, Key, Globe, Copy } from 'lucide-react';
+import { CreditCard, DollarSign, Key, Globe, Copy, Shield } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface PaymentSettingsProps {
@@ -98,6 +98,23 @@ export const PaymentSettings = ({ settings, onInputChange, onSave, isLoading }: 
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="mercado_pago_webhook_secret" className="flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Assinatura Secreta do Webhook
+              </Label>
+              <Input
+                id="mercado_pago_webhook_secret"
+                value={settings.mercado_pago_webhook_secret || ''}
+                onChange={(e) => onInputChange('mercado_pago_webhook_secret', e.target.value)}
+                placeholder="3e66c81d067ec44c95311a0d73dd35efd098dd8d52be5d037aaa6f571527cb6d"
+                type="password"
+              />
+              <p className="text-xs text-gray-500">
+                Chave secreta fornecida pelo Mercado Pago para validar webhooks
+              </p>
+            </div>
+
+            <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Globe className="h-4 w-4" />
                 URL do Webhook (Gerada automaticamente)
@@ -133,8 +150,9 @@ export const PaymentSettings = ({ settings, onInputChange, onSave, isLoading }: 
               <li>2. Vá em "Suas integrações" → "Credenciais"</li>
               <li>3. Copie a Public Key e o Access Token</li>
               <li>4. Configure o webhook usando a URL gerada acima</li>
-              <li>5. Selecione os eventos: payment.created, payment.updated</li>
-              <li>6. Teste os pagamentos no ambiente de sandbox primeiro</li>
+              <li>5. Copie a assinatura secreta do webhook</li>
+              <li>6. Selecione os eventos: payment.created, payment.updated</li>
+              <li>7. Teste os pagamentos no ambiente de sandbox primeiro</li>
             </ol>
           </div>
 
@@ -150,6 +168,7 @@ export const PaymentSettings = ({ settings, onInputChange, onSave, isLoading }: 
                 <li>payment.updated</li>
                 <li>merchant_order.updated</li>
               </ul>
+              <p><strong>Importante:</strong> Não esqueça de configurar a assinatura secreta para validar a autenticidade dos webhooks!</p>
             </div>
           </div>
 
