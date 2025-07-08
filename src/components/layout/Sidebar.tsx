@@ -56,7 +56,7 @@ export const Sidebar = () => {
       return configObj;
     },
     staleTime: 30000, // Cache por 30 segundos apenas
-    cacheTime: 60000, // Manter em cache por 1 minuto
+    gcTime: 60000, // Manter em cache por 1 minuto (nova nomenclatura)
   });
 
   const appName = systemConfig?.app_name || 'Controle Financeiro';
