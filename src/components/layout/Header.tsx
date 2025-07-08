@@ -13,7 +13,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
-  const { user, signOut, userRole } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -57,7 +57,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
         <InstallPWAButton />
         <NotificationBell />
         
-        {userRole === 'admin' && (
+        {isAdmin && (
           <Link to="/admin/settings">
             <Button variant="ghost" size="sm">
               <Settings className="h-4 w-4" />
