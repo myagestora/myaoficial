@@ -86,6 +86,28 @@ const AdminCategories = () => {
     createCategoryMutation.mutate(newCategory);
   };
 
+  const getTypeBadge = (type: string) => {
+    if (type === 'income') {
+      return (
+        <Badge 
+          variant="outline" 
+          className="border-green-500 text-green-700 bg-green-50"
+        >
+          Receita
+        </Badge>
+      );
+    } else {
+      return (
+        <Badge 
+          variant="outline" 
+          className="border-red-400 text-red-600 bg-red-50"
+        >
+          Despesa
+        </Badge>
+      );
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -200,9 +222,7 @@ const AdminCategories = () => {
                     <TableRow key={category.id}>
                       <TableCell className="font-medium">{category.name}</TableCell>
                       <TableCell>
-                        <Badge variant={category.type === 'income' ? 'default' : 'secondary'}>
-                          {category.type === 'income' ? 'Receita' : 'Despesa'}
-                        </Badge>
+                        {getTypeBadge(category.type)}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -252,9 +272,7 @@ const AdminCategories = () => {
                     <TableRow key={category.id}>
                       <TableCell className="font-medium">{category.name}</TableCell>
                       <TableCell>
-                        <Badge variant={category.type === 'income' ? 'default' : 'secondary'}>
-                          {category.type === 'income' ? 'Receita' : 'Despesa'}
-                        </Badge>
+                        {getTypeBadge(category.type)}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
