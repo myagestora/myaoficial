@@ -9,31 +9,23 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
+
 export const Header = () => {
-  const {
-    theme,
-    toggleTheme
-  } = useTheme();
-  const {
-    user,
-    isAdmin,
-    signOut
-  } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const { user, isAdmin, signOut } = useAuth();
 
   // Buscar frase motivacional aleatória
-  const {
-    data: motivationalPhrase
-  } = useQuery({
+  const { data: motivationalPhrase } = useQuery({
     queryKey: ['motivational-phrase'],
     queryFn: async () => {
-      const {
-        data,
-        error
-      } = await supabase.from('motivational_phrases').select('phrase').eq('is_active', true);
+      const { data, error } = await supabase
+        .from('motivational_phrases')
+        .select('phrase')
+        .eq('is_active', true);
+      
       if (error) throw error;
-      const phrases = data as Array<{
-        phrase: string;
-      }>;
+      
+      const phrases = data as Array<{ phrase: string; }>;
       if (phrases.length > 0) {
         const randomIndex = Math.floor(Math.random() * phrases.length);
         return phrases[randomIndex].phrase;
@@ -43,15 +35,15 @@ export const Header = () => {
   });
 
   // Buscar cor primária do sistema - corrigindo a busca
-  const {
-    data: primaryColor
-  } = useQuery({
+  const { data: primaryColor } = useQuery({
     queryKey: ['system-config-header'],
     queryFn: async () => {
-      const {
-        data,
-        error
-      } = await supabase.from('system_config').select('value').eq('key', 'primary_color').maybeSingle();
+      const { data, error } = await supabase
+        .from('system_config')
+        .select('value')
+        .eq('key', 'primary_color')
+        .maybeSingle();
+      
       if (error) throw error;
 
       // Extrair o valor corretamente do JSON
@@ -62,11 +54,14 @@ export const Header = () => {
       return JSON.stringify(colorValue).replace(/^"|"$/g, '') || '#3B82F6';
     }
   });
-  return <header className="h-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 flex flex-col">
+
+  return (
+    <header className="h-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 flex flex-col">
       {/* Primeira linha com controles */}
-      <div style={{
-      backgroundColor: primaryColor || '#3B82F6'
-    }} className="h-12 flex items-center justify-end px-6 bg-[#b998f3]">
+      <div 
+        style={{ backgroundColor: primaryColor || '#3B82F6' }} 
+        className="h-12 flex items-center justify-end px-6 bg-[#b998f3]"
+      >
         <div className="flex items-center space-x-4">
           {/* Theme Toggle */}
           <Button variant="ghost" size="sm" onClick={toggleTheme} className="h-9 w-9 p-0 text-white hover:bg-white/20">
@@ -98,15 +93,14 @@ export const Header = () => {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                <span>Perfil</span>
+              <DropdownMenuItem asChild>
+                <Link to="/settings">
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Configurações</span>
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Configurações</span>
-              </DropdownMenuItem>
-              {isAdmin && <>
+              {isAdmin && (
+                <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link to="/admin">
@@ -114,7 +108,8 @@ export const Header = () => {
                       <span>Painel Admin</span>
                     </Link>
                   </DropdownMenuItem>
-                </>}
+                </>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={signOut}>
                 <LogOut className="mr-2 h-4 w-4" />
@@ -131,5 +126,6 @@ export const Header = () => {
           {motivationalPhrase}
         </p>
       </div>
-    </header>;
+    </header>
+  );
 };
