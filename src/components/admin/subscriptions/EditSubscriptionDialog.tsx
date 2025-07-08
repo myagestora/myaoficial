@@ -8,8 +8,34 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+interface ProfileData {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+}
+
+interface SubscriptionData {
+  id: string;
+  user_id: string;
+  plan_id: string;
+  status: string;
+  current_period_start: string | null;
+  current_period_end: string | null;
+  created_at: string;
+  updated_at: string;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  subscription_plans: {
+    name: string;
+    description: string | null;
+    price_monthly: number | null;
+    price_yearly: number | null;
+  } | null;
+  profiles: ProfileData | null;
+}
+
 interface EditSubscriptionDialogProps {
-  subscription: any;
+  subscription: SubscriptionData | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -39,7 +65,7 @@ export const EditSubscriptionDialog = ({ subscription, open, onOpenChange }: Edi
       const { error } = await supabase
         .from('user_subscriptions')
         .update(updates)
-        .eq('id', subscription.id);
+        .eq('id', subscription?.id);
       
       if (error) throw error;
     },
@@ -61,6 +87,8 @@ export const EditSubscriptionDialog = ({ subscription, open, onOpenChange }: Edi
   });
 
   const handleSave = () => {
+    if (!subscription) return;
+    
     updateMutation.mutate({
       status,
       plan_id: planId,

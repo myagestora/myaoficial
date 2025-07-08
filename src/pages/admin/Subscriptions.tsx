@@ -13,9 +13,35 @@ import { SubscriptionDetailsDialog } from '@/components/admin/subscriptions/Subs
 import { EditSubscriptionDialog } from '@/components/admin/subscriptions/EditSubscriptionDialog';
 import { SubscriptionActionsDropdown } from '@/components/admin/subscriptions/SubscriptionActionsDropdown';
 
+interface ProfileData {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+}
+
+interface SubscriptionWithProfile {
+  id: string;
+  user_id: string;
+  plan_id: string;
+  status: string;
+  current_period_start: string | null;
+  current_period_end: string | null;
+  created_at: string;
+  updated_at: string;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  subscription_plans: {
+    name: string;
+    description: string | null;
+    price_monthly: number | null;
+    price_yearly: number | null;
+  } | null;
+  profiles: ProfileData | null;
+}
+
 const AdminSubscriptions = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSubscription, setSelectedSubscription] = useState<any>(null);
+  const [selectedSubscription, setSelectedSubscription] = useState<SubscriptionWithProfile | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const { toast } = useToast();
@@ -23,7 +49,7 @@ const AdminSubscriptions = () => {
 
   const { data: subscriptions, isLoading } = useQuery({
     queryKey: ['user-subscriptions'],
-    queryFn: async () => {
+    queryFn: async (): Promise<SubscriptionWithProfile[]> => {
       const { data, error } = await supabase
         .from('user_subscriptions')
         .select(`
@@ -67,15 +93,15 @@ const AdminSubscriptions = () => {
         
         if (profilesError) throw profilesError;
         
-        const combinedData = subscriptionsData?.map(subscription => ({
+        const combinedData: SubscriptionWithProfile[] = subscriptionsData?.map(subscription => ({
           ...subscription,
-          profiles: profilesData?.find(profile => profile.id === subscription.user_id)
-        }));
+          profiles: profilesData?.find(profile => profile.id === subscription.user_id) || null
+        })) || [];
         
         return combinedData;
       }
       
-      return data;
+      return data as SubscriptionWithProfile[];
     }
   });
 
@@ -145,23 +171,23 @@ const AdminSubscriptions = () => {
     );
   });
 
-  const handleView = (subscription: any) => {
+  const handleView = (subscription: SubscriptionWithProfile) => {
     setSelectedSubscription(subscription);
     setDetailsOpen(true);
   };
 
-  const handleEdit = (subscription: any) => {
+  const handleEdit = (subscription: SubscriptionWithProfile) => {
     setSelectedSubscription(subscription);
     setEditOpen(true);
   };
 
-  const handleCancel = (subscription: any) => {
+  const handleCancel = (subscription: SubscriptionWithProfile) => {
     if (confirm('Tem certeza que deseja cancelar esta assinatura?')) {
       cancelMutation.mutate(subscription.id);
     }
   };
 
-  const handleReactivate = (subscription: any) => {
+  const handleReactivate = (subscription: SubscriptionWithProfile) => {
     if (confirm('Tem certeza que deseja reativar esta assinatura?')) {
       reactivateMutation.mutate(subscription.id);
     }
