@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Moon, Sun, User, LogOut, Settings, Shield } from 'lucide-react';
-import { useTheme } from '@/hooks/useTheme';
+import { useTheme } from '@/hooks/useTheme.tsx';
 import { useAuth } from '@/hooks/useAuth';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
