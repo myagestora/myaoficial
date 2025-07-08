@@ -10,6 +10,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { AddUserDialog } from '@/components/admin/AddUserDialog';
+import { EditUserDialog } from '@/components/admin/EditUserDialog';
 
 const AdminUsers = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -212,6 +213,8 @@ const AdminUsers = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
+                          <EditUserDialog user={user} />
+                          
                           <Button
                             variant="ghost"
                             size="sm"
