@@ -48,7 +48,7 @@ const AdminSubscriptions = () => {
 
   const { data: subscriptions, isLoading } = useQuery({
     queryKey: ['user-subscriptions'],
-    queryFn: async () => {
+    queryFn: async (): Promise<SubscriptionWithProfile[]> => {
       const { data, error } = await supabase
         .from('user_subscriptions')
         .select(`
