@@ -80,10 +80,12 @@ export const useSubscriptions = () => {
             'full_name' in profilesData && 
             'email' in profilesData &&
             !('error' in profilesData)) {
+          // Type assertion after we've verified the structure
+          const profile = profilesData as { id: string; full_name: string | null; email: string | null };
           validProfile = {
-            id: profilesData.id as string,
-            full_name: profilesData.full_name as string | null,
-            email: profilesData.email as string | null
+            id: profile.id,
+            full_name: profile.full_name,
+            email: profile.email
           };
         }
         
