@@ -1,6 +1,6 @@
-
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface TransactionData {
   date: string;
@@ -65,17 +65,46 @@ export const exportToCSV = (data: ReportData) => {
   }
 };
 
-export const exportToPDF = (data: ReportData) => {
+export const exportToPDF = async (data: ReportData) => {
+  // Buscar logo e nome da aplicação
+  let logoUrl = '';
+  let appName = 'MYA Gestora';
+  
+  try {
+    const { data: systemConfig, error } = await supabase
+      .from('system_config')
+      .select('*')
+      .in('key', ['app_logo', 'app_name']);
+    
+    if (!error && systemConfig) {
+      const configObj: Record<string, string> = {};
+      systemConfig.forEach(item => {
+        configObj[item.key] = typeof item.value === 'string' ? 
+          item.value.replace(/^"|"$/g, '') : 
+          JSON.stringify(item.value).replace(/^"|"$/g, '');
+      });
+      
+      logoUrl = configObj.app_logo || '';
+      appName = configObj.app_name || 'MYA Gestora';
+    }
+  } catch (error) {
+    console.error('Erro ao buscar configurações do sistema:', error);
+  }
+
   // Criar conteúdo HTML para o PDF
   const htmlContent = `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="utf-8">
-      <title>Relatório Financeiro</title>
+      <title>Relatório Financeiro - ${appName}</title>
       <style>
         body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
         .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+        .logo { margin-bottom: 15px; }
+        .logo img { max-height: 80px; max-width: 200px; object-fit: contain; }
+        .app-name { font-size: 24px; font-weight: bold; margin-bottom: 10px; color: #333; }
+        .report-title { font-size: 20px; margin-bottom: 10px; }
         .summary { margin: 20px 0; padding: 15px; background-color: #f5f5f5; border-radius: 5px; }
         .summary-item { display: flex; justify-content: space-between; margin: 10px 0; }
         .summary-item.total { font-weight: bold; border-top: 1px solid #ccc; padding-top: 10px; }
@@ -87,11 +116,18 @@ export const exportToPDF = (data: ReportData) => {
         .positive { color: #10b981; font-weight: bold; }
         .negative { color: #ef4444; font-weight: bold; }
         .period { text-align: center; margin: 20px 0; font-style: italic; }
+        .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
       </style>
     </head>
     <body>
       <div class="header">
-        <h1>Relatório Financeiro</h1>
+        ${logoUrl ? `
+          <div class="logo">
+            <img src="${logoUrl}" alt="${appName} Logo" />
+          </div>
+        ` : ''}
+        <div class="app-name">${appName}</div>
+        <div class="report-title">Relatório Financeiro</div>
         <div class="period">Período: ${data.dateRange.from} a ${data.dateRange.to}</div>
       </div>
       
@@ -141,8 +177,8 @@ export const exportToPDF = (data: ReportData) => {
         </tbody>
       </table>
       
-      <div style="margin-top: 30px; text-align: center; font-size: 12px; color: #666;">
-        Relatório gerado em ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+      <div class="footer">
+        Relatório gerado em ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })} | ${appName}
       </div>
     </body>
     </html>

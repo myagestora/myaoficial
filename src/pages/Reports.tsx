@@ -129,7 +129,7 @@ const Reports = () => {
     toast.success('Relatório CSV exportado com sucesso!');
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (!transactionData || !dateRange?.from || !dateRange?.to) {
       toast.error('Dados não disponíveis para exportação');
       return;
@@ -147,8 +147,13 @@ const Reports = () => {
       }
     };
 
-    exportToPDF(reportData);
-    toast.success('Relatório PDF gerado com sucesso!');
+    try {
+      await exportToPDF(reportData);
+      toast.success('Relatório PDF gerado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar o relatório PDF');
+    }
   };
 
   if (isLoading) {
