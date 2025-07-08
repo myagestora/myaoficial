@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -70,8 +69,8 @@ export const GoalForm = ({ isOpen, onClose, goal, onSubmit }: GoalFormProps) => 
       const { data, error } = await supabase
         .from('categories')
         .select('*')
-        .eq('user_id', user.id)
         .eq('type', 'expense')
+        .or(`user_id.eq.${user.id},is_default.eq.true`)
         .order('name');
 
       if (error) {
@@ -81,7 +80,7 @@ export const GoalForm = ({ isOpen, onClose, goal, onSubmit }: GoalFormProps) => 
 
       return data || [];
     },
-    enabled: !!user?.id && goalType === 'monthly_budget'
+    enabled: !!user?.id
   });
 
   useEffect(() => {
@@ -236,7 +235,13 @@ export const GoalForm = ({ isOpen, onClose, goal, onSubmit }: GoalFormProps) => 
                   <SelectContent>
                     {categories?.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
-                        {category.name}
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: category.color }}
+                          />
+                          {category.name}
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
