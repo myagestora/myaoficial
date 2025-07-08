@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, AlertTriangle } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -36,6 +35,19 @@ export const SubscriptionPlansManager = () => {
       return data;
     }
   });
+
+  // Check if a plan has active subscriptions
+  const checkPlanHasSubscriptions = async (planId: string) => {
+    const { data, error } = await supabase
+      .from('user_subscriptions')
+      .select('id')
+      .eq('plan_id', planId)
+      .eq('status', 'active')
+      .limit(1);
+    
+    if (error) throw error;
+    return data && data.length > 0;
+  };
 
   // Plan management mutations
   const createPlanMutation = useMutation({
@@ -89,18 +101,39 @@ export const SubscriptionPlansManager = () => {
 
   const deletePlanMutation = useMutation({
     mutationFn: async (planId: string) => {
+      // First check if plan has active subscriptions
+      const hasSubscriptions = await checkPlanHasSubscriptions(planId);
+      
+      if (hasSubscriptions) {
+        throw new Error('Este plano não pode ser excluído pois possui assinaturas ativas. Desative o plano ao invés de excluí-lo.');
+      }
+
       const { error } = await supabase
         .from('subscription_plans')
         .delete()
         .eq('id', planId);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao deletar plano:', error);
+        if (error.code === '23503') {
+          throw new Error('Este plano não pode ser excluído pois possui assinaturas vinculadas. Desative o plano ao invés de excluí-lo.');
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscription-plans'] });
       toast({
         title: 'Sucesso',
         description: 'Plano excluído com sucesso',
+      });
+    },
+    onError: (error: any) => {
+      console.error('Erro na exclusão:', error);
+      toast({
+        title: 'Erro ao excluir plano',
+        description: error.message || 'Não foi possível excluir o plano',
+        variant: 'destructive',
       });
     }
   });
@@ -123,7 +156,6 @@ export const SubscriptionPlansManager = () => {
     }
   });
 
-  // Plan management functions
   const startEditingPlan = (plan: any) => {
     setEditingPlan(plan.id);
     
@@ -262,6 +294,22 @@ export const SubscriptionPlansManager = () => {
           </div>
         )}
 
+        <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+            <div>
+              <h4 className="font-medium text-amber-800 dark:text-amber-200">
+                ⚠️ Importante sobre exclusão de planos:
+              </h4>
+              <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                Planos que possuem assinaturas ativas não podem ser excluídos. 
+                Nestes casos, recomendamos <strong>desativar</strong> o plano ao invés de excluí-lo.
+                Isso mantém o histórico de assinaturas intacto.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <Table>
           <TableHeader>
             <TableRow>
@@ -327,7 +375,11 @@ export const SubscriptionPlansManager = () => {
                           <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
                           <AlertDialogDescription>
                             Tem certeza que deseja excluir o plano "{plan.name}"? 
-                            Esta ação não pode ser desfeita e pode afetar usuários com assinaturas ativas.
+                            <br /><br />
+                            <strong>Atenção:</strong> Se este plano possuir assinaturas ativas, 
+                            a exclusão não será possível. Neste caso, recomendamos desativar o plano.
+                            <br /><br />
+                            Esta ação não pode ser desfeita.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
