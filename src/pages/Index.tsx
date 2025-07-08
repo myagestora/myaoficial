@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { SEOHead } from '@/components/SEOHead';
 import { 
   CheckCircle, 
   DollarSign, 
@@ -146,6 +147,8 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
+      <SEOHead />
+      
       {/* Header - Modern Floating */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/20 dark:border-gray-700/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -303,7 +306,7 @@ const Index = () => {
             
             <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center">
               <Shield className="w-4 h-4 mr-2" />
-              Sem cartão de crédito • Cancele quando quiser • Suporte 24/7
+              Cancele quando quiser • Suporte 24/7
             </p>
           </div>
         </div>
@@ -702,7 +705,7 @@ const Index = () => {
               </div>
             </div>
             
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto justify-center">
               {subscriptionPlans.map((plan, index) => {
                 const features = Array.isArray(plan.features) 
                   ? plan.features 
@@ -875,18 +878,10 @@ const Index = () => {
                   size="lg" 
                   className="bg-white hover:bg-gray-100 text-gray-900 text-xl px-12 py-6 font-bold shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105"
                 >
-                  🚀 Começar Agora - É 100% Grátis
+                  🚀 Começar Agora
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="border-2 border-white text-white hover:bg-white hover:text-gray-900 text-xl px-12 py-6 font-bold transition-all duration-300 transform hover:scale-105"
-              >
-                <MessageCircle className="mr-3 w-5 h-5" />
-                Falar com Especialista
-              </Button>
             </div>
             
             {/* Trust Indicators */}
