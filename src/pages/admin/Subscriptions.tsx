@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +12,7 @@ import { toast } from '@/hooks/use-toast';
 
 const AdminSubscriptions = () => {
   const [isCreating, setIsCreating] = useState(false);
+  const [editingPlan, setEditingPlan] = useState(null);
   const [newPlan, setNewPlan] = useState({
     name: '',
     description: '',
@@ -115,6 +115,31 @@ const AdminSubscriptions = () => {
     }
   });
 
+  const updatePlanMutation = useMutation({
+    mutationFn: async ({ id, planData }: { id: string; planData: any }) => {
+      const { error } = await supabase
+        .from('subscription_plans')
+        .update({
+          ...planData,
+          price_monthly: parseFloat(planData.price_monthly) || null,
+          price_yearly: parseFloat(planData.price_yearly) || null,
+          features: JSON.stringify(planData.features.filter((f: string) => f.trim()))
+        })
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscription-plans'] });
+      setEditingPlan(null);
+      setNewPlan({ name: '', description: '', price_monthly: '', price_yearly: '', features: [''] });
+      toast({
+        title: 'Sucesso',
+        description: 'Plano atualizado com sucesso',
+      });
+    }
+  });
+
   const togglePlanStatus = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
       const { error } = await supabase
@@ -132,6 +157,22 @@ const AdminSubscriptions = () => {
       });
     }
   });
+
+  const startEditing = (plan: any) => {
+    setEditingPlan(plan.id);
+    setNewPlan({
+      name: plan.name,
+      description: plan.description || '',
+      price_monthly: plan.price_monthly?.toString() || '',
+      price_yearly: plan.price_yearly?.toString() || '',
+      features: plan.features ? JSON.parse(plan.features) : ['']
+    });
+  };
+
+  const cancelEditing = () => {
+    setEditingPlan(null);
+    setNewPlan({ name: '', description: '', price_monthly: '', price_yearly: '', features: [''] });
+  };
 
   const addFeature = () => {
     setNewPlan(prev => ({
@@ -171,15 +212,17 @@ const AdminSubscriptions = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Planos de Assinatura</CardTitle>
-              <Button onClick={() => setIsCreating(true)}>
+              <Button onClick={() => setIsCreating(true)} disabled={editingPlan}>
                 <Plus className="mr-2 h-4 w-4" />
                 Novo Plano
               </Button>
             </CardHeader>
             <CardContent>
-              {isCreating && (
+              {(isCreating || editingPlan) && (
                 <div className="mb-6 p-4 border rounded-lg space-y-4">
-                  <h3 className="font-semibold">Criar Novo Plano</h3>
+                  <h3 className="font-semibold">
+                    {editingPlan ? 'Editar Plano' : 'Criar Novo Plano'}
+                  </h3>
                   <div className="grid grid-cols-2 gap-4">
                     <Input
                       placeholder="Nome do plano"
@@ -232,10 +275,21 @@ const AdminSubscriptions = () => {
                   </div>
 
                   <div className="flex gap-2">
-                    <Button onClick={() => createPlanMutation.mutate(newPlan)}>
-                      Criar Plano
+                    <Button 
+                      onClick={() => {
+                        if (editingPlan) {
+                          updatePlanMutation.mutate({ id: editingPlan, planData: newPlan });
+                        } else {
+                          createPlanMutation.mutate(newPlan);
+                        }
+                      }}
+                    >
+                      {editingPlan ? 'Atualizar Plano' : 'Criar Plano'}
                     </Button>
-                    <Button variant="outline" onClick={() => setIsCreating(false)}>
+                    <Button 
+                      variant="outline" 
+                      onClick={editingPlan ? cancelEditing : () => setIsCreating(false)}
+                    >
                       Cancelar
                     </Button>
                   </div>
@@ -284,7 +338,12 @@ const AdminSubscriptions = () => {
                           >
                             {plan.is_active ? 'Desativar' : 'Ativar'}
                           </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => startEditing(plan)}
+                            disabled={isCreating || editingPlan}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
                         </div>
