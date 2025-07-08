@@ -132,52 +132,18 @@ export const SEOSettings: React.FC<SEOSettingsProps> = ({ settings, onInputChang
 
       <Card>
         <CardHeader>
-          <CardTitle>Twitter Card</CardTitle>
+          <CardTitle>Facebook Pixel</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="twitter_card">Tipo de Card</Label>
-            <select 
-              id="twitter_card"
-              className="w-full p-2 border rounded-md"
-              value={settings.twitter_card || 'summary_large_image'}
-              onChange={(e) => onInputChange('twitter_card', e.target.value)}
-            >
-              <option value="summary">Summary</option>
-              <option value="summary_large_image">Summary Large Image</option>
-              <option value="app">App</option>
-              <option value="player">Player</option>
-            </select>
-          </div>
-
-          <div>
-            <Label htmlFor="twitter_site">@usuário do Twitter</Label>
+            <Label htmlFor="facebook_pixel">ID do Facebook Pixel</Label>
             <Input
-              id="twitter_site"
-              value={settings.twitter_site || ''}
-              onChange={(e) => onInputChange('twitter_site', e.target.value)}
-              placeholder="@meusite"
+              id="facebook_pixel"
+              value={settings.facebook_pixel || ''}
+              onChange={(e) => onInputChange('facebook_pixel', e.target.value)}
+              placeholder="123456789012345"
             />
-          </div>
-
-          <div>
-            <Label htmlFor="twitter_creator">@criador do Twitter</Label>
-            <Input
-              id="twitter_creator"
-              value={settings.twitter_creator || ''}
-              onChange={(e) => onInputChange('twitter_creator', e.target.value)}
-              placeholder="@criador"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="twitter_image">URL da Imagem do Twitter</Label>
-            <Input
-              id="twitter_image"
-              value={settings.twitter_image || ''}
-              onChange={(e) => onInputChange('twitter_image', e.target.value)}
-              placeholder="https://exemplo.com/imagem-twitter.jpg"
-            />
+            <p className="text-xs text-gray-500 mt-1">O ID numérico do seu Facebook Pixel</p>
           </div>
         </CardContent>
       </Card>
@@ -246,6 +212,37 @@ export const SEOSettings: React.FC<SEOSettingsProps> = ({ settings, onInputChang
               onChange={(e) => onInputChange('google_analytics', e.target.value)}
               placeholder="G-XXXXXXXXXX ou UA-XXXXXXXXX"
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Scripts Personalizados</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="custom_head_scripts">Scripts no HEAD</Label>
+            <Textarea
+              id="custom_head_scripts"
+              value={settings.custom_head_scripts || ''}
+              onChange={(e) => onInputChange('custom_head_scripts', e.target.value)}
+              placeholder="<script>console.log('Hello World');</script>"
+              rows={5}
+            />
+            <p className="text-xs text-gray-500 mt-1">Códigos que serão inseridos no &lt;head&gt; da página</p>
+          </div>
+
+          <div>
+            <Label htmlFor="custom_body_scripts">Scripts no BODY</Label>
+            <Textarea
+              id="custom_body_scripts"
+              value={settings.custom_body_scripts || ''}
+              onChange={(e) => onInputChange('custom_body_scripts', e.target.value)}
+              placeholder="<script>console.log('Body loaded');</script>"
+              rows={5}
+            />
+            <p className="text-xs text-gray-500 mt-1">Códigos que serão inseridos no final do &lt;body&gt;</p>
           </div>
         </CardContent>
       </Card>

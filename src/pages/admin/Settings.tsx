@@ -89,6 +89,7 @@ const AdminSettings = () => {
       queryClient.invalidateQueries({ queryKey: ['system-config'] });
       queryClient.invalidateQueries({ queryKey: ['system-config-header'] });
       queryClient.invalidateQueries({ queryKey: ['system-config-sidebar'] });
+      queryClient.invalidateQueries({ queryKey: ['seo-config'] });
       
       toast({
         title: 'Sucesso',
