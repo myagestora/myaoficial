@@ -28,6 +28,7 @@ export const SubscriptionFlow = ({ onClose, selectedPlan }: SubscriptionFlowProp
   const [whatsapp, setWhatsapp] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(true);
+  const [showPlans, setShowPlans] = useState(!selectedPlan);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,18 +139,11 @@ export const SubscriptionFlow = ({ onClose, selectedPlan }: SubscriptionFlowProp
               <p className="text-sm text-blue-700 dark:text-blue-300">
                 {selectedPlan.description}
               </p>
-              <div className="mt-2">
-                {selectedPlan.price_monthly && (
-                  <p className="text-lg font-bold text-blue-900 dark:text-blue-100">
-                    R$ {selectedPlan.price_monthly}/mês
-                  </p>
-                )}
-                {selectedPlan.price_yearly && (
-                  <p className="text-sm text-blue-700 dark:text-blue-300">
-                    ou R$ {selectedPlan.price_yearly}/ano
-                  </p>
-                )}
-              </div>
+              {selectedPlan.price_monthly && (
+                <p className="text-lg font-bold text-blue-900 dark:text-blue-100 mt-2">
+                  R$ {selectedPlan.price_monthly}/mês
+                </p>
+              )}
             </div>
           )}
 
