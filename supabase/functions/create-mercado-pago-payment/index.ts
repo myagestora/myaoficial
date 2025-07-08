@@ -14,13 +14,26 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Function started - create-mercado-pago-payment')
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
     )
 
     // Get the authorization header
-    const authHeader = req.headers.get('Authorization')!
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      console.error('No authorization header provided')
+      return new Response(
+        JSON.stringify({ error: 'Authorization header required' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
     const token = authHeader.replace('Bearer ', '')
     
     // Get user from token
@@ -37,9 +50,12 @@ serve(async (req) => {
       )
     }
 
-    const { planId, frequency, paymentMethod, cardData } = await req.json()
+    console.log('User authenticated:', user.id)
 
-    console.log('Processando pagamento:', { planId, frequency, paymentMethod, userId: user.id })
+    const requestBody = await req.json()
+    const { planId, frequency, paymentMethod, cardData } = requestBody
+
+    console.log('Processing payment:', { planId, frequency, paymentMethod, userId: user.id })
 
     // Get plan details
     const { data: plan, error: planError } = await supabaseClient
@@ -49,7 +65,7 @@ serve(async (req) => {
       .single()
 
     if (planError || !plan) {
-      console.error('Erro ao buscar plano:', planError)
+      console.error('Error fetching plan:', planError)
       return new Response(
         JSON.stringify({ error: 'Plano não encontrado' }),
         { 
@@ -59,6 +75,8 @@ serve(async (req) => {
       )
     }
 
+    console.log('Plan found:', plan.name)
+
     // Get Mercado Pago configuration
     const { data: configData, error: configError } = await supabaseClient
       .from('system_config')
@@ -66,7 +84,7 @@ serve(async (req) => {
       .in('key', ['mercado_pago_access_token', 'mercado_pago_enabled'])
 
     if (configError) {
-      console.error('Erro ao buscar configuração:', configError)
+      console.error('Error fetching config:', configError)
       return new Response(
         JSON.stringify({ error: 'Erro de configuração' }),
         { 
@@ -87,7 +105,7 @@ serve(async (req) => {
     const isEnabled = config.mercado_pago_enabled
 
     if (!accessToken || isEnabled !== 'true') {
-      console.error('Mercado Pago não configurado')
+      console.error('Mercado Pago not configured properly')
       return new Response(
         JSON.stringify({ error: 'Mercado Pago não está habilitado' }),
         { 
@@ -97,7 +115,20 @@ serve(async (req) => {
       )
     }
 
+    console.log('Mercado Pago config validated')
+
     const amount = frequency === 'monthly' ? plan.price_monthly : plan.price_yearly
+
+    if (!amount) {
+      console.error('Invalid amount for plan:', plan.id)
+      return new Response(
+        JSON.stringify({ error: 'Preço do plano não encontrado' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
 
     // Get user profile
     const { data: profile, error: profileError } = await supabaseClient
@@ -107,7 +138,7 @@ serve(async (req) => {
       .single()
 
     if (profileError) {
-      console.error('Erro ao buscar perfil:', profileError)
+      console.error('Error fetching profile:', profileError)
       return new Response(
         JSON.stringify({ error: 'Perfil não encontrado' }),
         { 
@@ -116,6 +147,8 @@ serve(async (req) => {
         }
       )
     }
+
+    console.log('Profile found for user:', user.id)
 
     let paymentData: any = {
       transaction_amount: amount,
@@ -134,6 +167,7 @@ serve(async (req) => {
 
     if (paymentMethod === 'pix') {
       paymentData.payment_method_id = 'pix'
+      console.log('Setting up PIX payment')
     } else if (paymentMethod === 'credit_card' && cardData) {
       // Validate card data
       if (!cardData.cardNumber || !cardData.cardholderName || !cardData.expirationMonth || 
@@ -147,6 +181,7 @@ serve(async (req) => {
         )
       }
 
+      console.log('Setting up credit card payment')
       paymentData.payment_method_id = 'master' // Will be determined by card number
       paymentData.token = null // Will be created by card data
       paymentData.card = {
@@ -159,7 +194,7 @@ serve(async (req) => {
       paymentData.payer.identification.number = cardData.cpf
     }
 
-    console.log('Enviando dados para Mercado Pago:', JSON.stringify(paymentData, null, 2))
+    console.log('Sending payment data to Mercado Pago')
 
     // Create payment with Mercado Pago
     const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
@@ -172,14 +207,15 @@ serve(async (req) => {
     })
 
     const mpResult = await mpResponse.json()
-    console.log('Resposta do Mercado Pago:', JSON.stringify(mpResult, null, 2))
+    console.log('Mercado Pago response status:', mpResponse.status)
+    console.log('Mercado Pago response:', mpResult)
 
     if (!mpResponse.ok) {
-      console.error('Erro da API do Mercado Pago:', mpResult)
+      console.error('Mercado Pago API error:', mpResult)
       return new Response(
         JSON.stringify({ 
           error: 'Erro ao processar pagamento',
-          details: mpResult.message || 'Erro desconhecido'
+          details: mpResult.message || mpResult.error || 'Erro desconhecido'
         }),
         { 
           status: 400, 
@@ -187,6 +223,8 @@ serve(async (req) => {
         }
       )
     }
+
+    console.log('Payment created successfully with ID:', mpResult.id)
 
     // Store payment in database
     const { error: paymentError } = await supabaseClient
@@ -202,11 +240,11 @@ serve(async (req) => {
       })
 
     if (paymentError) {
-      console.error('Erro ao salvar pagamento:', paymentError)
+      console.error('Error saving payment to database:', paymentError)
     }
 
     // Return payment result
-    let response = {
+    let response: any = {
       status: mpResult.status,
       status_detail: mpResult.status_detail,
       id: mpResult.id
@@ -214,18 +252,16 @@ serve(async (req) => {
 
     // For PIX payments, include QR code data
     if (paymentMethod === 'pix' && mpResult.point_of_interaction?.transaction_data) {
-      response = {
-        ...response,
-        pix_data: {
-          qr_code: mpResult.point_of_interaction.transaction_data.qr_code,
-          qr_code_base64: mpResult.point_of_interaction.transaction_data.qr_code_base64
-        }
+      response.pix_data = {
+        qr_code: mpResult.point_of_interaction.transaction_data.qr_code,
+        qr_code_base64: mpResult.point_of_interaction.transaction_data.qr_code_base64
       }
+      console.log('PIX QR code generated successfully')
     }
 
     // If payment is approved, activate subscription
     if (mpResult.status === 'approved') {
-      console.log('Pagamento aprovado, ativando assinatura...')
+      console.log('Payment approved, activating subscription...')
       
       const subscriptionEndDate = new Date()
       if (frequency === 'monthly') {
@@ -245,7 +281,9 @@ serve(async (req) => {
         })
 
       if (subscriptionError) {
-        console.error('Erro ao criar assinatura:', subscriptionError)
+        console.error('Error creating subscription:', subscriptionError)
+      } else {
+        console.log('Subscription created successfully')
       }
     }
 
@@ -258,9 +296,12 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Erro geral:', error)
+    console.error('General error:', error)
     return new Response(
-      JSON.stringify({ error: 'Erro interno do servidor' }),
+      JSON.stringify({ 
+        error: 'Erro interno do servidor',
+        details: error.message || 'Unknown error'
+      }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
