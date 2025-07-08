@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Check, Star, DollarSign } from 'lucide-react';
@@ -70,11 +71,35 @@ const Index = () => {
         .order('price_monthly', { ascending: true });
       
       if (error) throw error;
-      return data?.map(plan => ({
-        ...plan,
-        features: Array.isArray(plan.features) ? plan.features : 
-                  (plan.features ? JSON.parse(plan.features as string) : [])
-      }));
+      
+      return data?.map(plan => {
+        // Ensure features is always an array
+        let featuresArray = [];
+        if (plan.features) {
+          try {
+            // If features is a string, try to parse it
+            if (typeof plan.features === 'string') {
+              featuresArray = JSON.parse(plan.features);
+            } 
+            // If features is already an array, use it
+            else if (Array.isArray(plan.features)) {
+              featuresArray = plan.features;
+            }
+            // If features is an object but not an array, convert it
+            else if (typeof plan.features === 'object') {
+              featuresArray = Object.values(plan.features);
+            }
+          } catch (e) {
+            console.error('Error parsing features:', e);
+            featuresArray = []; // Fallback to empty array if parsing fails
+          }
+        }
+        
+        return {
+          ...plan,
+          features: featuresArray
+        };
+      }) || [];
     }
   });
 
@@ -270,63 +295,60 @@ const Index = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {plans?.map((plan) => {
-                const features = plan.features || [];
-                return (
-                  <div key={plan.id} className="relative bg-gray-50 dark:bg-gray-700 rounded-2xl p-8 shadow-sm hover:shadow-lg transition-shadow">
-                    <div className="text-center mb-8">
-                      <div className="flex items-center justify-center gap-2 mb-4">
-                        <Star className="h-6 w-6 text-yellow-500" />
-                        <h4 className="text-2xl font-bold text-gray-900 dark:text-white">
-                          {plan.name}
-                        </h4>
-                      </div>
-                      
-                      {plan.description && (
-                        <p className="text-gray-600 dark:text-gray-400 mb-6">
-                          {plan.description}
-                        </p>
-                      )}
-
-                      {plan.price_monthly && (
-                        <div className="mb-6">
-                          <div className="text-4xl font-bold text-gray-900 dark:text-white">
-                            R$ {plan.price_monthly}
-                            <span className="text-lg font-normal text-gray-600 dark:text-gray-400">
-                              /mês
-                            </span>
-                          </div>
-                          {plan.price_yearly && (
-                            <div className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                              ou R$ {plan.price_yearly}/ano (economize{' '}
-                              {Math.round(((plan.price_monthly * 12 - plan.price_yearly) / (plan.price_monthly * 12)) * 100)}%)
-                            </div>
-                          )}
-                        </div>
-                      )}
+              {plans?.map((plan) => (
+                <div key={plan.id} className="relative bg-gray-50 dark:bg-gray-700 rounded-2xl p-8 shadow-sm hover:shadow-lg transition-shadow">
+                  <div className="text-center mb-8">
+                    <div className="flex items-center justify-center gap-2 mb-4">
+                      <Star className="h-6 w-6 text-yellow-500" />
+                      <h4 className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {plan.name}
+                      </h4>
                     </div>
-
-                    {features.length > 0 && (
-                      <div className="space-y-4 mb-8">
-                        {features.map((feature: string, index: number) => (
-                          <div key={index} className="flex items-center gap-3">
-                            <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
-                            <span className="text-gray-700 dark:text-gray-300">{feature}</span>
-                          </div>
-                        ))}
-                      </div>
+                    
+                    {plan.description && (
+                      <p className="text-gray-600 dark:text-gray-400 mb-6">
+                        {plan.description}
+                      </p>
                     )}
 
-                    <Button
-                      onClick={() => handlePlanSelect(plan)}
-                      className="w-full py-3 text-lg font-semibold"
-                      size="lg"
-                    >
-                      Escolher Plano
-                    </Button>
+                    {plan.price_monthly && (
+                      <div className="mb-6">
+                        <div className="text-4xl font-bold text-gray-900 dark:text-white">
+                          R$ {plan.price_monthly}
+                          <span className="text-lg font-normal text-gray-600 dark:text-gray-400">
+                            /mês
+                          </span>
+                        </div>
+                        {plan.price_yearly && (
+                          <div className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                            ou R$ {plan.price_yearly}/ano (economize{' '}
+                            {Math.round(((plan.price_monthly * 12 - plan.price_yearly) / (plan.price_monthly * 12)) * 100)}%)
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                );
-              })}
+
+                  {plan.features && Array.isArray(plan.features) && plan.features.length > 0 && (
+                    <div className="space-y-4 mb-8">
+                      {plan.features.map((feature: string, index: number) => (
+                        <div key={index} className="flex items-center gap-3">
+                          <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
+                          <span className="text-gray-700 dark:text-gray-300">{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <Button
+                    onClick={() => handlePlanSelect(plan)}
+                    className="w-full py-3 text-lg font-semibold"
+                    size="lg"
+                  >
+                    Escolher Plano
+                  </Button>
+                </div>
+              ))}
             </div>
           )}
         </div>
