@@ -23,6 +23,60 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
   const [previewUrl, setPreviewUrl] = useState<string>(currentLogoUrl || '');
   const queryClient = useQueryClient();
 
+  const saveLogoToDatabase = async (logoUrl: string) => {
+    console.log('Salvando logo no banco:', logoUrl);
+    
+    try {
+      // Primeiro verifica se o registro já existe
+      const { data: existing } = await supabase
+        .from('system_config')
+        .select('id')
+        .eq('key', 'app_logo')
+        .maybeSingle();
+
+      if (existing) {
+        // Se existe, faz UPDATE
+        const { error } = await supabase
+          .from('system_config')
+          .update({
+            value: JSON.stringify(logoUrl),
+            updated_at: new Date().toISOString()
+          })
+          .eq('key', 'app_logo');
+        
+        if (error) {
+          console.error('Erro ao atualizar logo:', error);
+          throw error;
+        }
+      } else {
+        // Se não existe, faz INSERT
+        const { error } = await supabase
+          .from('system_config')
+          .insert({
+            key: 'app_logo',
+            value: JSON.stringify(logoUrl),
+            updated_at: new Date().toISOString()
+          });
+        
+        if (error) {
+          console.error('Erro ao inserir logo:', error);
+          throw error;
+        }
+      }
+
+      console.log('Logo salva no banco com sucesso!');
+      
+      // Invalidar cache para forçar atualização em toda a aplicação
+      queryClient.invalidateQueries({ queryKey: ['system-config'] });
+      queryClient.invalidateQueries({ queryKey: ['system-config-header'] });
+      queryClient.invalidateQueries({ queryKey: ['system-config-sidebar'] });
+
+    } catch (error) {
+      console.error('Erro ao salvar logo no banco:', error);
+      throw error;
+    }
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -90,15 +144,8 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
       setPreviewUrl(publicUrl);
       onLogoChange(publicUrl);
 
-      // Salvar automaticamente
-      onSave();
-
-      // Invalidar cache para forçar atualização em toda a aplicação
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['system-config'] });
-        queryClient.invalidateQueries({ queryKey: ['system-config-header'] });
-        queryClient.invalidateQueries({ queryKey: ['system-config-sidebar'] });
-      }, 1000);
+      // **IMPORTANTE: Salvar automaticamente no banco de dados**
+      await saveLogoToDatabase(publicUrl);
 
       toast({
         title: 'Sucesso',
@@ -106,7 +153,7 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
       });
 
     } catch (error) {
-      console.error('Erro no upload:', error);
+      console.error('Erro no upload/salvamento:', error);
       // Reverter o preview em caso de erro
       setPreviewUrl(currentLogoUrl || '');
       toast({
@@ -121,19 +168,26 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({
     }
   };
 
-  const handleRemoveLogo = () => {
-    setPreviewUrl('');
-    onLogoChange('');
-    
-    // Invalidar cache imediatamente
-    queryClient.invalidateQueries({ queryKey: ['system-config'] });
-    queryClient.invalidateQueries({ queryKey: ['system-config-header'] });
-    queryClient.invalidateQueries({ queryKey: ['system-config-sidebar'] });
-    
-    toast({
-      title: 'Logo removido',
-      description: 'Logo removido com sucesso. Clique em "Salvar Configurações" para confirmar.',
-    });
+  const handleRemoveLogo = async () => {
+    try {
+      setPreviewUrl('');
+      onLogoChange('');
+      
+      // Salvar vazio no banco
+      await saveLogoToDatabase('');
+      
+      toast({
+        title: 'Logo removido',
+        description: 'Logo removido com sucesso!',
+      });
+    } catch (error) {
+      console.error('Erro ao remover logo:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao remover logo.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
