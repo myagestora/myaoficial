@@ -23,7 +23,7 @@ interface HeaderProps {
 }
 
 export const Header = ({ onMenuClick, disableNavigation = false }: HeaderProps) => {
-  const { user, signOut, hasRole } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const { profile } = useProfile();
   const navigate = useNavigate();
 
@@ -57,8 +57,6 @@ export const Header = ({ onMenuClick, disableNavigation = false }: HeaderProps) 
     navigate('/login');
   };
 
-  const isAdmin = hasRole('admin');
-
   return (
     <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
       <div className="flex items-center justify-between">
@@ -86,7 +84,7 @@ export const Header = ({ onMenuClick, disableNavigation = false }: HeaderProps) 
         </div>
 
         <div className="flex items-center gap-3">
-          <NotificationBell disabled={disableNavigation && !hasSubscription} />
+          <NotificationBell />
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

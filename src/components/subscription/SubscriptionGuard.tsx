@@ -19,7 +19,7 @@ export const SubscriptionGuard = ({ children }: SubscriptionGuardProps) => {
       if (!user?.id) return { hasActiveSubscription: false };
       
       // Verificar se existe assinatura ativa
-      const { data: subscription, error: subError } = await subabase
+      const { data: subscription, error: subError } = await supabase
         .from('user_subscriptions')
         .select('id, status')
         .eq('user_id', user.id)
@@ -51,13 +51,9 @@ export const SubscriptionGuard = ({ children }: SubscriptionGuardProps) => {
     return null;
   }
 
-  // Se não tem assinatura ativa, mostra a página de assinatura necessária dentro do layout
+  // Se não tem assinatura ativa, mostra a página de assinatura necessária
   if (userAccess && !userAccess.hasActiveSubscription) {
-    return (
-      <AppLayout>
-        <SubscriptionRequiredPage />
-      </AppLayout>
-    );
+    return <SubscriptionRequiredPage />;
   }
 
   // Se tem assinatura ativa, permite acesso completo

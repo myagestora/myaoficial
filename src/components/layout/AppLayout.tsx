@@ -7,7 +7,11 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
-export const AppLayout = () => {
+interface AppLayoutProps {
+  children?: React.ReactNode;
+}
+
+export const AppLayout = ({ children }: AppLayoutProps) => {
   const { user } = useAuth();
 
   // Verificar se tem assinatura ativa
@@ -41,7 +45,7 @@ export const AppLayout = () => {
       <div className="flex-1 lg:ml-64">
         <Header disableNavigation={disableNavigation} />
         <main className="flex-1 overflow-auto">
-          <Outlet />
+          {children || <Outlet />}
         </main>
       </div>
     </div>
