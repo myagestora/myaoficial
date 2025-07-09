@@ -72,13 +72,24 @@ export const GoalsSection: React.FC<GoalsSectionProps> = ({ dateRange }) => {
 
             const spentAmount = transactions?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
             const targetAmount = Number(goal.target_amount || 0);
-            const remainingAmount = Math.max(0, targetAmount - spentAmount);
             const usagePercentage = targetAmount > 0 ? (spentAmount / targetAmount) * 100 : 0;
+            
+            // Calcular valores para exibição
+            let remainingAmount: number;
+            let exceededAmount: number = 0;
+            
+            if (spentAmount <= targetAmount) {
+              remainingAmount = targetAmount - spentAmount;
+            } else {
+              remainingAmount = 0;
+              exceededAmount = spentAmount - targetAmount;
+            }
             
             return {
               ...goal,
               spentAmount,
               remainingAmount,
+              exceededAmount,
               usagePercentage,
               status: spentAmount <= targetAmount ? 'on_track' : 'exceeded',
               monthName: new Date(goalYear, goalMonth - 1, 1).toLocaleDateString('pt-BR', { 
@@ -214,9 +225,14 @@ export const GoalsSection: React.FC<GoalsSectionProps> = ({ dateRange }) => {
                     <p className="font-medium">R$ {goal.spentAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Restante</p>
-                    <p className={`font-medium ${goal.remainingAmount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      R$ {goal.remainingAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    <p className="text-muted-foreground">
+                      {goal.status === 'exceeded' ? 'Ultrapassou' : 'Restante'}
+                    </p>
+                    <p className={`font-medium ${goal.status === 'exceeded' ? 'text-red-600' : 'text-green-600'}`}>
+                      R$ {goal.status === 'exceeded' ? 
+                        goal.exceededAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) :
+                        goal.remainingAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+                      }
                     </p>
                   </div>
                 </div>
@@ -239,14 +255,14 @@ export const GoalsSection: React.FC<GoalsSectionProps> = ({ dateRange }) => {
                   </div>
                 </div>
 
-                {goal.spentAmount <= Number(goal.target_amount) ? (
+                {goal.status === 'on_track' ? (
                   <p className="text-sm text-green-600 bg-green-50 p-2 rounded">
                     ✅ Parabéns! Você está dentro do orçamento previsto. 
                     Economizou R$ {goal.remainingAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}.
                   </p>
                 ) : (
                   <p className="text-sm text-red-600 bg-red-50 p-2 rounded">
-                    ⚠️ Atenção! Você ultrapassou o orçamento em R$ {Math.abs(goal.remainingAmount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}.
+                    ⚠️ Atenção! Você ultrapassou o orçamento em R$ {goal.exceededAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}.
                   </p>
                 )}
               </>
