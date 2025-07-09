@@ -29,21 +29,30 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createSupabaseClient();
-
-    // Autenticar usuário
-    const authHeader = req.headers.get('Authorization');
-    console.log('Auth header presente:', !!authHeader);
-    
-    const user = await authenticateUser(supabaseClient, authHeader);
-    console.log('Usuário autenticado:', user.id);
-
-    // Parse do corpo da requisição
+    // Parse do corpo da requisição primeiro para ter todos os dados
     let requestBody: PaymentRequest;
     try {
       const bodyText = await req.text();
       console.log('Request body raw:', bodyText);
+      
+      if (!bodyText || bodyText.trim() === '') {
+        console.error('Request body está vazio');
+        return new Response(JSON.stringify({ 
+          error: 'Corpo da requisição está vazio',
+          details: 'Nenhum dado foi enviado na requisição'
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
+      
       requestBody = JSON.parse(bodyText);
+      console.log('Request body parsed:', {
+        planId: requestBody.planId,
+        frequency: requestBody.frequency,
+        paymentMethod: requestBody.paymentMethod,
+        hasCardData: !!requestBody.cardData
+      });
     } catch (parseError) {
       console.error('Erro ao fazer parse do JSON:', parseError);
       return new Response(JSON.stringify({ 
@@ -57,14 +66,7 @@ serve(async (req) => {
 
     const { planId, frequency, paymentMethod, cardData } = requestBody;
     
-    console.log('Dados da requisição:', {
-      planId,
-      frequency,
-      paymentMethod,
-      hasCardData: !!cardData,
-      cardDataKeys: cardData ? Object.keys(cardData) : []
-    });
-    
+    // Validação de parâmetros obrigatórios
     if (!planId || !frequency || !paymentMethod) {
       console.error('Parâmetros obrigatórios faltando:', { planId, frequency, paymentMethod });
       return new Response(JSON.stringify({ 
@@ -74,6 +76,26 @@ serve(async (req) => {
         status: 400,
       });
     }
+
+    const supabaseClient = createSupabaseClient();
+
+    // Autenticar usuário
+    const authHeader = req.headers.get('Authorization');
+    console.log('Auth header presente:', !!authHeader);
+    
+    if (!authHeader) {
+      console.error('Header de autorização não fornecido');
+      return new Response(JSON.stringify({ 
+        error: 'Token de autorização necessário',
+        details: 'Header Authorization não encontrado'
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+    
+    const user = await authenticateUser(supabaseClient, authHeader);
+    console.log('Usuário autenticado:', user.id);
 
     // Validar dados do cartão se necessário
     if (paymentMethod === 'credit_card') {
@@ -88,6 +110,8 @@ serve(async (req) => {
       }
 
       console.log('Validando dados do cartão...');
+      console.log('Card data keys:', Object.keys(cardData));
+      
       const validation = validateCardData(cardData);
       if (!validation.isValid) {
         console.error('Dados do cartão inválidos:', validation.error);
@@ -110,6 +134,17 @@ serve(async (req) => {
     console.log('Buscando token do Mercado Pago...');
     const accessToken = await getMercadoPagoToken(supabaseClient);
     console.log('Token do MP obtido:', accessToken ? 'Sim' : 'Não');
+
+    if (!accessToken) {
+      console.error('Token do Mercado Pago não configurado');
+      return new Response(JSON.stringify({ 
+        error: 'Sistema de pagamento não configurado',
+        details: 'Token do Mercado Pago não encontrado'
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
 
     // Determinar valor baseado na frequência
     const amount = frequency === 'monthly' ? planData.price_monthly : planData.price_yearly;
@@ -146,6 +181,18 @@ serve(async (req) => {
       paymentMethod,
       cardData
     );
+
+    console.log('=== DADOS DO PAGAMENTO CONSTRUÍDOS ===');
+    console.log('Payment data (sem dados sensíveis):', {
+      transaction_amount: paymentData.transaction_amount,
+      description: paymentData.description,
+      payment_method_id: paymentData.payment_method_id,
+      has_card_data: !!paymentData.card,
+      has_payer_identification: !!paymentData.payer.identification,
+      installments: paymentData.installments,
+      payer_email: paymentData.payer.email,
+      payer_first_name: paymentData.payer.first_name
+    });
 
     console.log('Enviando pagamento para o Mercado Pago...');
 
@@ -222,8 +269,8 @@ serve(async (req) => {
       return new Response(JSON.stringify({ 
         error: `Erro no Mercado Pago: ${mpError.message}`,
         details: (mpError as any).details || mpError.message,
-        status: (mpError as any).status || 'unknown',
-        statusText: (mpError as any).statusText || 'unknown'
+        mp_status: (mpError as any).status || 'unknown',
+        mp_statusText: (mpError as any).statusText || 'unknown'
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 422,
@@ -240,7 +287,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       error: 'Erro interno do servidor: ' + (error.message || 'Erro desconhecido'),
       details: error.message,
-      stack: error.stack
+      stack: error.stack?.split('\n').slice(0, 5).join('\n') // Limitar stack trace
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
