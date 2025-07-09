@@ -48,6 +48,7 @@ export const DatePickerWithRange = ({ date, onDateChange }: DatePickerWithRangeP
           selected={date}
           onSelect={onDateChange}
           numberOfMonths={2}
+          locale={ptBR}
           className="pointer-events-auto"
         />
       </PopoverContent>
