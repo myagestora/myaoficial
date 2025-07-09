@@ -5,6 +5,7 @@ import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { useQuery } from '@tanstack/react-query';
+import { checkWhatsappExists } from '@/utils/whatsappValidation';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -83,6 +84,19 @@ const Login = () => {
         // Cadastro de novo usuário
         console.log('📝 Tentando cadastrar usuário:', email);
         
+        // Validar se WhatsApp já existe antes de tentar criar conta
+        if (whatsapp && whatsapp.trim() !== '') {
+          const whatsappExists = await checkWhatsappExists(whatsapp.trim());
+          if (whatsappExists) {
+            toast({
+              title: 'WhatsApp já cadastrado',
+              description: 'Este número de WhatsApp já está sendo usado por outro usuário.',
+              variant: 'destructive',
+            });
+            return;
+          }
+        }
+        
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -90,7 +104,7 @@ const Login = () => {
             emailRedirectTo: `${window.location.origin}/dashboard`,
             data: {
               full_name: fullName,
-              whatsapp: whatsapp
+              whatsapp: whatsapp.trim() || null
             }
           }
         });
@@ -99,9 +113,9 @@ const Login = () => {
           console.error('❌ Erro no cadastro:', error);
           toast({
             title: 'Erro no Cadastro',
-            description: error.message === 'Já existe um usuário com esse telefone ou email.' 
+            description: error.message === 'User already registered' 
               ? 'Já existe um usuário cadastrado com este email.'
-              : error.message,
+              : 'Erro ao criar conta. Verifique os dados e tente novamente.',
             variant: 'destructive',
           });
           return;

@@ -8,7 +8,6 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { DollarSign, ArrowLeft, Mail, Lock, User, Phone } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { checkWhatsappExists } from '@/utils/whatsappValidation';
 
 interface SubscriptionPlan {
   id: string;
@@ -56,9 +55,6 @@ export const AuthStep: React.FC<AuthStepProps> = ({
   onBack,
   onClose
 }) => {
-  const [whatsappError, setWhatsappError] = useState('');
-  const [validatingWhatsapp, setValidatingWhatsapp] = useState(false);
-
   // Buscar configurações do sistema para logo e nome
   const { data: systemConfig } = useQuery({
     queryKey: ['system-config-auth-step'],
@@ -95,36 +91,8 @@ export const AuthStep: React.FC<AuthStepProps> = ({
   const appName = systemConfig?.app_name || 'MYA Gestora';
   const appLogo = systemConfig?.app_logo;
 
-  const handleWhatsappChange = async (value: string) => {
-    const cleanValue = value?.trim() || '';
-    setWhatsapp(cleanValue);
-    setWhatsappError('');
-    
-    // Validar apenas se o valor não estiver vazio
-    if (isSignUp && cleanValue && cleanValue.length > 0) {
-      setValidatingWhatsapp(true);
-      try {
-        const exists = await checkWhatsappExists(cleanValue);
-        if (exists) {
-          setWhatsappError('Este número de WhatsApp já está sendo usado por outro usuário.');
-        }
-      } catch (error) {
-        console.error('Erro ao validar WhatsApp:', error);
-      } finally {
-        setValidatingWhatsapp(false);
-      }
-    }
-  };
-
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Verificar se há erro de WhatsApp antes de submeter
-    if (isSignUp && whatsappError) {
-      return;
-    }
-    
-    onSubmit(e);
+  const handleWhatsappChange = (value: string) => {
+    setWhatsapp(value || '');
   };
 
   const price = frequency === 'monthly' ? selectedPlan.price_monthly : selectedPlan.price_yearly;
@@ -195,7 +163,7 @@ export const AuthStep: React.FC<AuthStepProps> = ({
         </CardHeader>
 
         <CardContent className="space-y-6">
-          <form onSubmit={handleFormSubmit} className="space-y-4">
+          <form onSubmit={onSubmit} className="space-y-4">
             {/* Nome completo - apenas no cadastro */}
             {isSignUp && (
               <div className="space-y-2">
@@ -232,11 +200,11 @@ export const AuthStep: React.FC<AuthStepProps> = ({
               </div>
             </div>
             
-            {/* WhatsApp - apenas no cadastro */}
+            {/* WhatsApp - apenas no cadastro e obrigatório */}
             {isSignUp && (
               <div className="space-y-2">
                 <Label htmlFor="whatsapp" className="text-sm font-medium">
-                  WhatsApp <span className="text-gray-400">(opcional)</span>
+                  WhatsApp
                 </Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 z-10" />
@@ -245,14 +213,9 @@ export const AuthStep: React.FC<AuthStepProps> = ({
                     value={whatsapp}
                     onChange={handleWhatsappChange}
                     className="pl-10"
+                    required
                   />
                 </div>
-                {validatingWhatsapp && (
-                  <p className="text-sm text-gray-500">Verificando disponibilidade...</p>
-                )}
-                {whatsappError && (
-                  <p className="text-sm text-red-500">{whatsappError}</p>
-                )}
               </div>
             )}
             
@@ -277,7 +240,7 @@ export const AuthStep: React.FC<AuthStepProps> = ({
             <Button 
               type="submit" 
               className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium" 
-              disabled={loading || validatingWhatsapp || (isSignUp && !!whatsappError)}
+              disabled={loading}
             >
               {loading ? (
                 <div className="flex items-center justify-center">

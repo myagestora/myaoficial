@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { checkWhatsappExists } from '@/utils/whatsappValidation';
 
 interface SubscriptionPlan {
   id: string;
@@ -42,6 +43,20 @@ export const useSubscriptionFlow = (
 
     try {
       if (isSignUp) {
+        // Validar se WhatsApp já existe antes de tentar criar conta
+        if (whatsapp && whatsapp.trim() !== '') {
+          const whatsappExists = await checkWhatsappExists(whatsapp.trim());
+          if (whatsappExists) {
+            toast({
+              title: 'WhatsApp já cadastrado',
+              description: 'Este número de WhatsApp já está sendo usado por outro usuário.',
+              variant: 'destructive',
+            });
+            setLoading(false);
+            return;
+          }
+        }
+
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -49,7 +64,7 @@ export const useSubscriptionFlow = (
             emailRedirectTo: `${window.location.origin}/`,
             data: {
               full_name: fullName,
-              whatsapp: whatsapp,
+              whatsapp: whatsapp.trim() || null,
             }
           }
         });
@@ -57,7 +72,9 @@ export const useSubscriptionFlow = (
         if (error) {
           toast({
             title: 'Erro no cadastro',
-            description: error.message,
+            description: error.message === 'User already registered' 
+              ? 'Já existe um usuário cadastrado com este email.'
+              : 'Erro ao criar conta. Verifique os dados e tente novamente.',
             variant: 'destructive',
           });
           return;
@@ -79,7 +96,7 @@ export const useSubscriptionFlow = (
         if (error) {
           toast({
             title: 'Erro no login',
-            description: error.message,
+            description: 'Email ou senha incorretos. Verifique suas credenciais.',
             variant: 'destructive',
           });
           return;
