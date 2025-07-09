@@ -19,38 +19,42 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface HeaderProps {
   onMenuClick?: () => void;
-  disableNavigation?: boolean;
 }
 
-export const Header = ({ onMenuClick, disableNavigation = false }: HeaderProps) => {
+export const Header = ({ onMenuClick }: HeaderProps) => {
   const { user, signOut, isAdmin } = useAuth();
   const { profile } = useProfile();
   const navigate = useNavigate();
 
-  // Verificar se tem assinatura ativa
-  const { data: hasSubscription } = useQuery({
-    queryKey: ['user-active-subscription', user?.id],
+  // Buscar logo do sistema
+  const { data: logoUrl } = useQuery({
+    queryKey: ['system-config-header'],
     queryFn: async () => {
-      if (!user?.id) return false;
-      
-      const { data: subscription } = await supabase
-        .from('user_subscriptions')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .maybeSingle();
-      
-      return !!subscription;
-    },
-    enabled: !!user?.id
-  });
+      try {
+        const { data, error } = await supabase
+          .from('system_config')
+          .select('value')
+          .eq('key', 'app_logo')
+          .maybeSingle();
+        
+        if (error) {
+          console.error('Error fetching logo:', error);
+          return null;
+        }
 
-  const handleNavigation = (path: string) => {
-    if (disableNavigation && !hasSubscription) {
-      return; // Bloqueia navegação se não tem assinatura
-    }
-    navigate(path);
-  };
+        const logoValue = data?.value;
+        if (typeof logoValue === 'string') {
+          return logoValue.replace(/^"|"$/g, '');
+        }
+        return logoValue ? JSON.stringify(logoValue).replace(/^"|"$/g, '') : null;
+      } catch (error) {
+        console.error('Error in logo query:', error);
+        return null;
+      }
+    },
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
 
   const handleSignOut = async () => {
     await signOut();
@@ -66,20 +70,26 @@ export const Header = ({ onMenuClick, disableNavigation = false }: HeaderProps) 
             size="sm"
             onClick={onMenuClick}
             className="lg:hidden"
-            disabled={disableNavigation && !hasSubscription}
           >
             <Menu className="h-5 w-5" />
           </Button>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {logoUrl && (
+              <img 
+                src={logoUrl} 
+                alt="Logo" 
+                className="h-8 w-auto object-contain"
+                onError={(e) => {
+                  console.error('Erro ao carregar logo:', logoUrl);
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                }}
+              />
+            )}
             <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
               Mya Gestora
             </h1>
-            {(!hasSubscription && disableNavigation) && (
-              <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
-                Assinatura Necessária
-              </span>
-            )}
           </div>
         </div>
 
@@ -99,27 +109,18 @@ export const Header = ({ onMenuClick, disableNavigation = false }: HeaderProps) 
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuItem 
-                onClick={() => handleNavigation('/settings')}
-                disabled={disableNavigation && !hasSubscription}
-              >
+              <DropdownMenuItem onClick={() => navigate('/settings')}>
                 <User className="mr-2 h-4 w-4" />
                 <span>Perfil</span>
               </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => handleNavigation('/settings')}
-                disabled={disableNavigation && !hasSubscription}
-              >
+              <DropdownMenuItem onClick={() => navigate('/settings')}>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Configurações</span>
               </DropdownMenuItem>
               {isAdmin && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={() => handleNavigation('/admin')}
-                    disabled={disableNavigation && !hasSubscription}
-                  >
+                  <DropdownMenuItem onClick={() => navigate('/admin')}>
                     <Shield className="mr-2 h-4 w-4" />
                     <span>Admin</span>
                   </DropdownMenuItem>
