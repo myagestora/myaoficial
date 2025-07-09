@@ -1,7 +1,8 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-export const checkWhatsappExists = async (whatsapp: string, currentUserId?: string): Promise<boolean> => {
+export const checkWhatsappExists = async (whatsapp: string): Promise<boolean> => {
+  // Se o WhatsApp estiver vazio ou for null, não validar
   if (!whatsapp || whatsapp.trim() === '') {
     return false;
   }
@@ -10,22 +11,17 @@ export const checkWhatsappExists = async (whatsapp: string, currentUserId?: stri
     const { data, error } = await supabase
       .from('profiles')
       .select('id')
-      .eq('whatsapp', whatsapp)
+      .eq('whatsapp', whatsapp.trim())
       .maybeSingle();
 
     if (error) {
-      console.error('Erro ao verificar WhatsApp:', error);
+      console.error('Error checking WhatsApp:', error);
       return false;
     }
 
-    // Se encontrou um registro e não é o usuário atual, então já existe
-    if (data && data.id !== currentUserId) {
-      return true;
-    }
-
-    return false;
+    return !!data;
   } catch (error) {
-    console.error('Erro na verificação do WhatsApp:', error);
+    console.error('Error in checkWhatsappExists:', error);
     return false;
   }
 };
