@@ -13,6 +13,7 @@ const Login = () => {
   const [whatsapp, setWhatsapp] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isResetPassword, setIsResetPassword] = useState(false);
   const navigate = useNavigate();
 
   // Buscar cor primária do sistema com tratamento de erro melhorado
@@ -52,7 +53,33 @@ const Login = () => {
     setLoading(true);
 
     try {
-      if (isSignUp) {
+      if (isResetPassword) {
+        // Recuperar senha
+        console.log('🔐 Enviando email de recuperação para:', email);
+        
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        
+        if (error) {
+          console.error('❌ Erro ao enviar email de recuperação:', error);
+          toast({
+            title: 'Erro',
+            description: 'Erro ao enviar email de recuperação. Verifique o email informado.',
+            variant: 'destructive',
+          });
+          return;
+        }
+        
+        console.log('✅ Email de recuperação enviado!');
+        toast({
+          title: 'Sucesso',
+          description: 'Email de recuperação enviado! Verifique sua caixa de entrada.',
+        });
+        
+        setIsResetPassword(false);
+        setEmail('');
+      } else if (isSignUp) {
         // Cadastro de novo usuário
         console.log('📝 Tentando cadastrar usuário:', email);
         
@@ -132,10 +159,7 @@ const Login = () => {
   };
 
   return (
-    <div 
-      className="min-h-screen flex items-center justify-center"
-      style={{ backgroundColor: primaryColor || '#3B82F6' }}
-    >
+    <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-300 to-blue-400 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <AuthForm
           email={email}
@@ -149,7 +173,10 @@ const Login = () => {
           loading={loading}
           isSignUp={isSignUp}
           setIsSignUp={setIsSignUp}
+          isResetPassword={isResetPassword}
+          setIsResetPassword={setIsResetPassword}
           onSubmit={handleAuth}
+          onBackToHome={() => navigate('/')}
         />
       </div>
     </div>
