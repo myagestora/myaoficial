@@ -73,7 +73,7 @@ export const Header = ({ onMenuClick, disableNavigation = false }: HeaderProps) 
           
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Mya Finance Manager
+              Mya Gestora
             </h1>
             {(!hasSubscription && disableNavigation) && (
               <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
