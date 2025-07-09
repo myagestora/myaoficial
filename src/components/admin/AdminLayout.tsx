@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -65,7 +66,7 @@ export const AdminLayout = () => {
                 <img 
                   src={appLogo} 
                   alt={appName}
-                  className="h-10 w-auto object-contain"
+                  className="h-12 w-auto object-contain"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';
