@@ -6,7 +6,6 @@ import { SettingsHeader } from '@/components/settings/SettingsHeader';
 import { ProfileTab } from '@/components/settings/ProfileTab';
 import { SecurityTab } from '@/components/settings/SecurityTab';
 import { PreferencesTab } from '@/components/settings/PreferencesTab';
-import { AccountStatusCard } from '@/components/settings/AccountStatusCard';
 import { useProfile } from '@/hooks/useProfile';
 import { usePasswordChange } from '@/hooks/usePasswordChange';
 import { usePreferences } from '@/hooks/usePreferences';
@@ -101,11 +100,6 @@ const SettingsPage = () => {
           description="Gerencie suas informações pessoais e preferências da conta" 
         />
 
-        {/* Card de status da conta desativada */}
-        <div className="mb-6">
-          <AccountStatusCard accountActive={accountStatus?.accountActive ?? true} />
-        </div>
-
         <Tabs defaultValue="profile" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="profile" className="flex items-center gap-2">
@@ -128,6 +122,7 @@ const SettingsPage = () => {
               profile={profile}
               whatsappValue={whatsappValue}
               loading={updateProfileMutation.isPending}
+              accountActive={accountStatus?.accountActive ?? true}
               onWhatsappChange={setWhatsappValue}
               onSubmit={handleUpdateProfile}
             />

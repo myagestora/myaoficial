@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { Info } from 'lucide-react';
-import { DeactivateAccountSection } from './DeactivateAccountSection';
+import { AccountStatusCard } from './AccountStatusCard';
 
 interface Profile {
   id: string;
@@ -25,6 +25,7 @@ interface ProfileTabProps {
   profile: Profile | null;
   whatsappValue: string;
   loading: boolean;
+  accountActive: boolean;
   onWhatsappChange: (value: string) => void;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 }
@@ -34,6 +35,7 @@ export const ProfileTab = ({
   profile, 
   whatsappValue, 
   loading, 
+  accountActive,
   onWhatsappChange, 
   onSubmit 
 }: ProfileTabProps) => {
@@ -112,7 +114,7 @@ export const ProfileTab = ({
         </CardContent>
       </Card>
 
-      <DeactivateAccountSection />
+      <AccountStatusCard accountActive={accountActive} />
     </div>
   );
 };
