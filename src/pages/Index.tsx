@@ -97,6 +97,16 @@ const Index = () => {
     setShowSubscriptionFlow(true);
   };
 
+  const scrollToPlans = () => {
+    const plansSection = document.getElementById('pricing-section');
+    if (plansSection) {
+      plansSection.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  };
+
   const features = [
     {
       icon: BarChart3,
@@ -212,23 +222,34 @@ const Index = () => {
               </div>
             </div>
             
-            <div className="flex items-center space-x-3">
-              <Link to="/login">
-                <Button variant="ghost" className="font-semibold">
-                  Entrar
+            <div className="flex items-center space-x-6">
+              <nav className="hidden md:flex items-center space-x-6">
+                <button
+                  onClick={scrollToPlans}
+                  className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors cursor-pointer"
+                >
+                  Planos
+                </button>
+              </nav>
+              
+              <div className="flex items-center space-x-3">
+                <Link to="/login">
+                  <Button variant="ghost" className="font-semibold">
+                    Entrar
+                  </Button>
+                </Link>
+                <Button 
+                  onClick={handleStartFree}
+                  className="font-semibold shadow-lg hover:shadow-xl transition-all"
+                  style={{ 
+                    background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
+                    border: 'none'
+                  }}
+                >
+                  Começar Agora
+                  <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
-              </Link>
-              <Button 
-                onClick={handleStartFree}
-                className="font-semibold shadow-lg hover:shadow-xl transition-all"
-                style={{ 
-                  background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
-                  border: 'none'
-                }}
-              >
-                Começar Agora
-                <ArrowRight className="ml-2 w-4 h-4" />
-              </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -706,7 +727,7 @@ const Index = () => {
 
       {/* Pricing Section - Enhanced with integrated plan selection */}
       {subscriptionPlans && subscriptionPlans.length > 0 && (
-        <section className="py-20 bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900/20">
+        <section id="pricing-section" className="py-20 bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900/20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <div className="inline-block px-4 py-2 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-full mb-6">
@@ -723,11 +744,11 @@ const Index = () => {
             </div>
             
             <div
-  className={`grid gap-8 max-w-5xl mx-auto ${
-    subscriptionPlans.length === 1
-      ? 'grid-cols-1 justify-items-center'
-      : 'md:grid-cols-2 lg:grid-cols-3'
-  }`}>
+              className={`grid gap-8 max-w-5xl mx-auto ${
+                subscriptionPlans.length === 1
+                  ? 'grid-cols-1 justify-items-center'
+                  : 'md:grid-cols-2 lg:grid-cols-3'
+              }`}>
               {subscriptionPlans.map((plan, index) => {
                 const features = Array.isArray(plan.features) 
                   ? plan.features 
