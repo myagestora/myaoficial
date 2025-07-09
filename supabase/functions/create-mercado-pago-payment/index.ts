@@ -59,7 +59,7 @@ serve(async (req) => {
       });
     }
 
-    console.log('Dados recebidos:', { planId, frequency, paymentMethod });
+    console.log('Dados recebidos:', { planId, frequency, paymentMethod, hasCardData: !!cardData });
 
     // Validar dados do cartão se necessário
     if (paymentMethod === 'credit_card') {
@@ -72,6 +72,7 @@ serve(async (req) => {
         });
       }
 
+      console.log('Validando dados do cartão...');
       const validation = validateCardData(cardData);
       if (!validation.isValid) {
         console.error('Dados do cartão inválidos:', validation.error);
@@ -82,6 +83,7 @@ serve(async (req) => {
           status: 400,
         });
       }
+      console.log('Dados do cartão validados com sucesso');
     }
 
     // Buscar dados do plano
@@ -123,57 +125,81 @@ serve(async (req) => {
       cardData
     );
 
-    // Criar pagamento no Mercado Pago
-    const mpPayment = await createMercadoPagoPayment(paymentData, accessToken, externalReference);
+    console.log('Enviando pagamento para o Mercado Pago...');
 
-    // Salvar o pagamento no banco de dados
-    const paymentRecord = await savePaymentRecord(
-      supabaseClient,
-      user.id,
-      planId,
-      subscriptionId,
-      amount,
-      paymentMethod,
-      mpPayment,
-      externalReference
-    );
+    try {
+      // Criar pagamento no Mercado Pago
+      const mpPayment = await createMercadoPagoPayment(paymentData, accessToken, externalReference);
 
-    // Se foi aprovado imediatamente, ativar assinatura
-    if (mpPayment.status === 'approved') {
-      await activateSubscription(supabaseClient, subscriptionId, user.id);
-    }
+      console.log('Pagamento criado no MP com sucesso:', {
+        id: mpPayment.id,
+        status: mpPayment.status,
+        status_detail: mpPayment.status_detail
+      });
 
-    // Preparar resposta
-    const response: any = {
-      id: mpPayment.id,
-      status: mpPayment.status,
-      status_detail: mpPayment.status_detail,
-      payment_method_id: mpPayment.payment_method?.id,
-      date_created: mpPayment.date_created,
-      date_approved: mpPayment.date_approved,
-      external_reference: mpPayment.external_reference,
-      transaction_amount: mpPayment.transaction_amount,
-      payment_record_id: paymentRecord.id,
-      subscription_id: subscriptionId
-    };
+      // Salvar o pagamento no banco de dados
+      const paymentRecord = await savePaymentRecord(
+        supabaseClient,
+        user.id,
+        planId,
+        subscriptionId,
+        amount,
+        paymentMethod,
+        mpPayment,
+        externalReference
+      );
 
-    // Se for PIX, incluir dados do QR Code
-    if (paymentMethod === 'pix' && mpPayment.point_of_interaction?.transaction_data) {
-      response.pix_data = {
-        qr_code: mpPayment.point_of_interaction.transaction_data.qr_code,
-        qr_code_base64: mpPayment.point_of_interaction.transaction_data.qr_code_base64,
+      // Se foi aprovado imediatamente, ativar assinatura
+      if (mpPayment.status === 'approved') {
+        await activateSubscription(supabaseClient, subscriptionId, user.id);
+      }
+
+      // Preparar resposta
+      const response: any = {
+        id: mpPayment.id,
+        status: mpPayment.status,
+        status_detail: mpPayment.status_detail,
+        payment_method_id: mpPayment.payment_method?.id,
+        date_created: mpPayment.date_created,
+        date_approved: mpPayment.date_approved,
+        external_reference: mpPayment.external_reference,
+        transaction_amount: mpPayment.transaction_amount,
+        payment_record_id: paymentRecord.id,
+        subscription_id: subscriptionId
       };
-      console.log('QR Code PIX gerado com sucesso');
+
+      // Se for PIX, incluir dados do QR Code
+      if (paymentMethod === 'pix' && mpPayment.point_of_interaction?.transaction_data) {
+        response.pix_data = {
+          qr_code: mpPayment.point_of_interaction.transaction_data.qr_code,
+          qr_code_base64: mpPayment.point_of_interaction.transaction_data.qr_code_base64,
+        };
+        console.log('QR Code PIX gerado com sucesso');
+      }
+
+      console.log('=== PAGAMENTO CRIADO COM SUCESSO ===');
+      console.log('Payment ID:', mpPayment.id);
+      console.log('Status:', mpPayment.status);
+
+      return new Response(JSON.stringify(response), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+
+    } catch (mpError) {
+      console.error('=== ERRO ESPECÍFICO DO MERCADO PAGO ===');
+      console.error('MP Error:', mpError);
+      console.error('MP Error message:', mpError.message);
+      
+      // Retornar erro mais específico do Mercado Pago
+      return new Response(JSON.stringify({ 
+        error: `Erro no Mercado Pago: ${mpError.message}`,
+        details: mpError.message
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 422,
+      });
     }
-
-    console.log('=== PAGAMENTO CRIADO COM SUCESSO ===');
-    console.log('Payment ID:', mpPayment.id);
-    console.log('Status:', mpPayment.status);
-
-    return new Response(JSON.stringify(response), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
 
   } catch (error) {
     console.error('=== ERRO GERAL NA CRIAÇÃO DO PAGAMENTO ===');
@@ -181,7 +207,8 @@ serve(async (req) => {
     console.error('Stack:', error.stack);
     
     return new Response(JSON.stringify({ 
-      error: 'Erro interno do servidor: ' + (error.message || 'Erro desconhecido')
+      error: 'Erro interno do servidor: ' + (error.message || 'Erro desconhecido'),
+      details: error.message
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

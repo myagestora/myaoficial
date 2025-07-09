@@ -29,18 +29,20 @@ export const buildPaymentData = (
     const cleanCardNumber = cardData.cardNumber.replace(/\s/g, '');
     const cleanCPF = cardData.cpf.replace(/\D/g, '');
     
+    // Melhor detecção da bandeira do cartão
     const paymentMethodId = detectCardBrand(cleanCardNumber);
     
     basePaymentData.payment_method_id = paymentMethodId;
     basePaymentData.installments = 1;
     
-    // Dados do pagador
+    // Dados do pagador com CPF
     basePaymentData.payer.identification = {
       type: 'CPF',
       number: cleanCPF
     };
 
-    // Para teste, vamos usar o método direto (não recomendado em produção)
+    // Para cartão de crédito, vamos usar o método token (mais seguro)
+    // Por enquanto, mantemos o método direto para funcionar
     basePaymentData.card = {
       card_number: cleanCardNumber,
       security_code: cardData.securityCode,
@@ -54,6 +56,13 @@ export const buildPaymentData = (
         }
       }
     };
+
+    console.log('Payment data built for credit card:', {
+      payment_method_id: paymentMethodId,
+      card_number_length: cleanCardNumber.length,
+      cpf_length: cleanCPF.length,
+      amount: basePaymentData.transaction_amount
+    });
   }
 
   return basePaymentData;
