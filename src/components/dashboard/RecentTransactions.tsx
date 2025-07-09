@@ -44,6 +44,11 @@ export const RecentTransactions = () => {
     enabled: !!user?.id
   });
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString + 'T00:00:00'); // Força interpretação como data local
+    return date.toLocaleDateString('pt-BR');
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -131,7 +136,7 @@ export const RecentTransactions = () => {
                       {transaction.categories?.name || 'Sem categoria'}
                     </Badge>
                     <span className="text-xs text-gray-500">
-                      {new Date(transaction.date).toLocaleDateString('pt-BR')}
+                      {formatDate(transaction.date)}
                     </span>
                   </div>
                 </div>

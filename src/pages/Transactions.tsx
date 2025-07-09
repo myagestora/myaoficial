@@ -6,14 +6,17 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Filter, ArrowUpCircle, ArrowDownCircle, Edit, Trash2, Repeat } from 'lucide-react';
 import { TransactionForm } from '@/components/transactions/TransactionForm';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from '@/hooks/use-toast';
 
 const Transactions = () => {
   const { user } = useAuth();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const queryClient = useQueryClient();
 
   const { data: transactions, isLoading } = useQuery({
     queryKey: ['transactions', user?.id],
@@ -53,6 +56,33 @@ const Transactions = () => {
     enabled: !!user?.id
   });
 
+  const deleteTransactionMutation = useMutation({
+    mutationFn: async (transactionId: string) => {
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', transactionId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['recent-transactions'] });
+      toast({
+        title: 'Sucesso!',
+        description: 'Transação excluída com sucesso.',
+      });
+    },
+    onError: (error) => {
+      console.error('Error deleting transaction:', error);
+      toast({
+        title: 'Erro!',
+        description: 'Erro ao excluir transação.',
+        variant: 'destructive',
+      });
+    }
+  });
+
   const filteredTransactions = transactions?.filter(transaction =>
     transaction.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     transaction.categories?.name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -73,6 +103,27 @@ const Transactions = () => {
     const interval = transaction.recurrence_interval > 1 ? ` (${transaction.recurrence_interval}x)` : '';
     
     return `${frequency}${interval}`;
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString + 'T00:00:00'); // Força interpretação como data local
+    return date.toLocaleDateString('pt-BR');
+  };
+
+  const handleEditTransaction = (transaction: any) => {
+    setEditingTransaction(transaction);
+    setIsFormOpen(true);
+  };
+
+  const handleDeleteTransaction = (transactionId: string) => {
+    if (window.confirm('Tem certeza que deseja excluir esta transação?')) {
+      deleteTransactionMutation.mutate(transactionId);
+    }
+  };
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setEditingTransaction(null);
   };
 
   if (isLoading) {
@@ -186,7 +237,7 @@ const Transactions = () => {
                           </Badge>
                         )}
                         <span className="text-sm text-gray-500">
-                          {new Date(transaction.date).toLocaleDateString('pt-BR')}
+                          {formatDate(transaction.date)}
                         </span>
                         {transaction.is_recurring && (
                           <Badge variant="outline" className="text-xs">
@@ -200,7 +251,7 @@ const Transactions = () => {
                       )}
                       {transaction.is_recurring && transaction.next_recurrence_date && (
                         <p className="text-xs text-blue-600 mt-1">
-                          Próxima: {new Date(transaction.next_recurrence_date).toLocaleDateString('pt-BR')}
+                          Próxima: {formatDate(transaction.next_recurrence_date)}
                         </p>
                       )}
                     </div>
@@ -212,10 +263,21 @@ const Transactions = () => {
                       {transaction.type === 'income' ? '+' : ''}R$ {Math.abs(Number(transaction.amount)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </span>
                     <div className="flex space-x-2">
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleEditTransaction(transaction)}
+                        title="Editar transação"
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-red-600 hover:text-red-700"
+                        onClick={() => handleDeleteTransaction(transaction.id)}
+                        title="Excluir transação"
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -230,7 +292,8 @@ const Transactions = () => {
       {/* Transaction Form Modal */}
       <TransactionForm 
         isOpen={isFormOpen} 
-        onClose={() => setIsFormOpen(false)} 
+        onClose={handleCloseForm}
+        transaction={editingTransaction}
       />
     </div>
   );

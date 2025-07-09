@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -46,6 +45,7 @@ interface TransactionFormProps {
 export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFormProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const isEditing = !!transaction;
 
   const {
     register,
@@ -133,6 +133,7 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
       onClose();
     },
     onError: (error) => {
+      console.error('Error creating transaction:', error);
       toast({
         title: 'Erro!',
         description: 'Erro ao salvar transação.',
@@ -141,23 +142,109 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
     }
   });
 
+  const updateTransactionMutation = useMutation({
+    mutationFn: async (data: TransactionFormData) => {
+      if (!user || !transaction) throw new Error('Dados inválidos');
+
+      const transactionData: any = {
+        title: data.title,
+        amount: data.amount,
+        type: data.type,
+        category_id: data.category_id,
+        date: data.date,
+        description: data.description || null,
+        is_recurring: data.is_recurring,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Se for recorrente, adicionar campos específicos
+      if (data.is_recurring) {
+        transactionData.recurrence_frequency = data.recurrence_frequency;
+        transactionData.recurrence_interval = data.recurrence_interval;
+        transactionData.recurrence_end_date = data.recurrence_end_date || null;
+        
+        // Calcular próxima data de recorrência apenas se não existir
+        if (!transaction.next_recurrence_date) {
+          const { data: nextDate } = await supabase
+            .rpc('calculate_next_recurrence_date', {
+              base_date: data.date,
+              frequency: data.recurrence_frequency,
+              interval_count: data.recurrence_interval
+            });
+          
+          transactionData.next_recurrence_date = nextDate;
+        }
+      } else {
+        // Se não for mais recorrente, limpar campos
+        transactionData.recurrence_frequency = null;
+        transactionData.recurrence_interval = null;
+        transactionData.recurrence_end_date = null;
+        transactionData.next_recurrence_date = null;
+      }
+
+      const { error } = await supabase
+        .from('transactions')
+        .update(transactionData)
+        .eq('id', transaction.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['recent-transactions'] });
+      toast({
+        title: 'Sucesso!',
+        description: 'Transação atualizada com sucesso.',
+      });
+      reset();
+      onClose();
+    },
+    onError: (error) => {
+      console.error('Error updating transaction:', error);
+      toast({
+        title: 'Erro!',
+        description: 'Erro ao atualizar transação.',
+        variant: 'destructive',
+      });
+    }
+  });
+
   const onSubmit = async (data: TransactionFormData) => {
-    createTransactionMutation.mutate(data);
+    if (isEditing) {
+      updateTransactionMutation.mutate(data);
+    } else {
+      createTransactionMutation.mutate(data);
+    }
   };
 
-  // Reset form when dialog closes
+  // Reset form when dialog closes or transaction changes
   useEffect(() => {
     if (!isOpen) {
       reset();
+    } else if (transaction) {
+      // Preencher formulário com dados da transação para edição
+      setValue('title', transaction.title);
+      setValue('amount', Number(transaction.amount));
+      setValue('type', transaction.type);
+      setValue('category_id', transaction.category_id || '');
+      setValue('date', transaction.date);
+      setValue('description', transaction.description || '');
+      setValue('is_recurring', transaction.is_recurring || false);
+      
+      if (transaction.is_recurring) {
+        setValue('recurrence_frequency', transaction.recurrence_frequency);
+        setValue('recurrence_interval', transaction.recurrence_interval || 1);
+        setValue('recurrence_end_date', transaction.recurrence_end_date || '');
+      }
     }
-  }, [isOpen, reset]);
+  }, [isOpen, transaction, reset, setValue]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {transaction ? 'Editar Transação' : 'Nova Transação'}
+            {isEditing ? 'Editar Transação' : 'Nova Transação'}
           </DialogTitle>
           <DialogDescription>
             Preencha os dados da transação abaixo.
@@ -333,7 +420,7 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Salvando...' : 'Salvar'}
+              {isSubmitting ? 'Salvando...' : (isEditing ? 'Atualizar' : 'Salvar')}
             </Button>
           </DialogFooter>
         </form>
