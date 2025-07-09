@@ -45,8 +45,8 @@ export const usePaymentMutation = ({ onPixDataReceived }: UsePaymentMutationProp
           payment_id: data.id
         });
         toast({
-          title: 'PIX gerado com sucesso!',
-          description: 'Use o QR Code para finalizar o pagamento. Aguardando confirmação...',
+          title: '🎉 QR Code PIX gerado!',
+          description: 'Seu PIX está pronto! Use o QR Code ou copie o código para finalizar o pagamento.',
         });
       } else if (data.status === 'approved') {
         // Invalidar queries para atualizar status de assinatura
@@ -56,8 +56,8 @@ export const usePaymentMutation = ({ onPixDataReceived }: UsePaymentMutationProp
         await queryClient.invalidateQueries({ queryKey: ['user-access-check'] });
         
         toast({
-          title: 'Pagamento aprovado!',
-          description: 'Sua assinatura foi ativada com sucesso.',
+          title: '🎉 Pagamento aprovado!',
+          description: 'Parabéns! Sua assinatura foi ativada com sucesso. Bem-vindo à nossa plataforma!',
         });
         
         // Aguardar um pouco para dar tempo das queries serem invalidadas
@@ -66,34 +66,40 @@ export const usePaymentMutation = ({ onPixDataReceived }: UsePaymentMutationProp
         }, 1000);
       } else {
         toast({
-          title: 'Pagamento processado',
-          description: `Status: ${data.status_detail || data.status}`,
+          title: '⏳ Pagamento em processamento',
+          description: 'Estamos processando seu pagamento. Você será notificado assim que for confirmado.',
         });
       }
     },
     onError: (error: any) => {
       console.error('Error creating payment:', error);
       
-      let errorMessage = 'Erro ao processar pagamento. Tente novamente.';
+      let errorMessage = 'Algo deu errado ao processar seu pagamento. Que tal tentar novamente?';
+      let errorTitle = '😔 Ops! Tivemos um probleminha';
       
       if (error.message) {
         if (error.message.includes('Dados do cartão incompletos')) {
-          errorMessage = 'Por favor, preencha todos os dados do cartão.';
+          errorTitle = '📝 Dados incompletos';
+          errorMessage = 'Por favor, preencha todos os campos do seu cartão para continuar.';
         } else if (error.message.includes('Token do Mercado Pago não configurado')) {
-          errorMessage = 'Sistema de pagamentos em configuração. Tente novamente em alguns minutos.';
+          errorTitle = '⚙️ Sistema em manutenção';
+          errorMessage = 'Estamos ajustando nosso sistema de pagamentos. Tente novamente em alguns minutinhos!';
         } else if (error.message.includes('Mercado Pago')) {
-          errorMessage = 'Erro no processamento do pagamento. Verifique os dados do cartão e tente novamente.';
+          errorTitle = '💳 Problema com o cartão';
+          errorMessage = 'Verifique os dados do seu cartão e tente novamente. Se persistir, tente outro cartão.';
         } else if (error.message.includes('Número do cartão')) {
-          errorMessage = 'Número do cartão inválido. Verifique e tente novamente.';
+          errorTitle = '🔢 Número do cartão inválido';
+          errorMessage = 'O número do cartão parece estar incorreto. Pode verificar e tentar novamente?';
         } else if (error.message.includes('CPF')) {
-          errorMessage = 'CPF inválido. Verifique e tente novamente.';
+          errorTitle = '📄 CPF inválido';
+          errorMessage = 'O CPF informado não é válido. Por favor, verifique e tente novamente.';
         } else {
           errorMessage = error.message;
         }
       }
       
       toast({
-        title: 'Erro no pagamento',
+        title: errorTitle,
         description: errorMessage,
         variant: 'destructive',
       });

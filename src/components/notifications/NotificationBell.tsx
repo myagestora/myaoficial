@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -84,16 +85,29 @@ export const NotificationBell = () => {
     }
   };
 
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'success':
+        return '✅';
+      case 'warning':
+        return '⚠️';
+      case 'error':
+        return '❌';
+      default:
+        return 'ℹ️';
+    }
+  };
+
   const getNotificationColor = (type: string) => {
     switch (type) {
       case 'success':
-        return 'text-green-600';
+        return 'text-green-600 dark:text-green-400';
       case 'warning':
-        return 'text-yellow-600';
+        return 'text-yellow-600 dark:text-yellow-400';
       case 'error':
-        return 'text-red-600';
+        return 'text-red-600 dark:text-red-400';
       default:
-        return 'text-blue-600';
+        return 'text-blue-600 dark:text-blue-400';
     }
   };
 
@@ -113,11 +127,12 @@ export const NotificationBell = () => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-80 max-h-96 overflow-y-auto" align="end">
-        <DropdownMenuLabel>
-          Notificações
+        <DropdownMenuLabel className="flex items-center gap-2">
+          <Bell className="h-4 w-4" />
+          Suas Notificações
           {unreadNotifications.length > 0 && (
-            <Badge variant="secondary" className="ml-2">
-              {unreadNotifications.length} não lidas
+            <Badge variant="secondary" className="text-xs">
+              {unreadNotifications.length} nova{unreadNotifications.length !== 1 ? 's' : ''}
             </Badge>
           )}
         </DropdownMenuLabel>
@@ -125,7 +140,11 @@ export const NotificationBell = () => {
         
         {notifications.length === 0 ? (
           <div className="p-4 text-center text-gray-500">
-            Nenhuma notificação
+            <div className="mb-2">📭</div>
+            <p className="text-sm">Nenhuma notificação no momento</p>
+            <p className="text-xs text-gray-400 mt-1">
+              Você será notificado sobre atualizações importantes
+            </p>
           </div>
         ) : (
           notifications.map((notification) => {
@@ -134,25 +153,29 @@ export const NotificationBell = () => {
             return (
               <DropdownMenuItem
                 key={notification.id}
-                className={`flex flex-col items-start p-3 cursor-pointer ${
-                  isUnread ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                className={`flex flex-col items-start p-3 cursor-pointer transition-colors ${
+                  isUnread ? 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
                 }`}
                 onClick={() => handleNotificationClick(notification.id)}
               >
                 <div className="flex items-start justify-between w-full">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm">
+                        {getNotificationIcon(notification.type)}
+                      </span>
                       <h4 className={`font-medium text-sm ${getNotificationColor(notification.type)}`}>
                         {notification.title}
                       </h4>
                       {isUnread && (
-                        <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                        <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
                       )}
                     </div>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">
                       {notification.message}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-2 flex items-center gap-1">
+                      <span>🕒</span>
                       {formatDistanceToNow(new Date(notification.created_at), {
                         addSuffix: true,
                         locale: ptBR,
@@ -163,6 +186,17 @@ export const NotificationBell = () => {
               </DropdownMenuItem>
             );
           })
+        )}
+        
+        {notifications.length > 0 && (
+          <>
+            <DropdownMenuSeparator />
+            <div className="p-2 text-center">
+              <p className="text-xs text-gray-400">
+                💡 Clique em uma notificação para marcá-la como lida
+              </p>
+            </div>
+          </>
         )}
       </DropdownMenuContent>
     </DropdownMenu>

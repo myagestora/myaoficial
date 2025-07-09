@@ -17,8 +17,8 @@ const SubscriptionSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ['user-active-subscription'] });
     
     toast({
-      title: 'Assinatura Confirmada!',
-      description: 'Sua assinatura foi processada com sucesso. Bem-vindo!',
+      title: '🎉 Bem-vindo à bordo!',
+      description: 'Sua assinatura foi confirmada com sucesso! Agora você tem acesso completo à plataforma.',
     });
   }, [queryClient]);
 
@@ -30,17 +30,18 @@ const SubscriptionSuccess = () => {
             <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
           </div>
           <CardTitle className="text-2xl text-green-600 dark:text-green-400">
-            Assinatura Confirmada!
+            🎉 Assinatura Confirmada!
           </CardTitle>
         </CardHeader>
         
         <CardContent className="space-y-6 text-center">
           <div className="space-y-2">
             <p className="text-gray-600 dark:text-gray-400">
-              Parabéns! Sua assinatura foi processada com sucesso.
+              <strong>Parabéns!</strong> Sua assinatura foi processada com sucesso.
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-500">
-              Agora você tem acesso completo a todas as funcionalidades da plataforma.
+              🚀 Agora você tem acesso completo a todas as funcionalidades da nossa plataforma. 
+              Vamos começar sua jornada?
             </p>
           </div>
 
@@ -50,7 +51,7 @@ const SubscriptionSuccess = () => {
               className="w-full flex items-center gap-2"
             >
               <Home className="w-4 h-4" />
-              Ir para Dashboard
+              Ir para o Dashboard
             </Button>
             
             <Button
@@ -65,7 +66,7 @@ const SubscriptionSuccess = () => {
 
           <div className="pt-4 border-t">
             <p className="text-xs text-gray-500 dark:text-gray-500">
-              Você receberá um email de confirmação em breve com os detalhes da sua assinatura.
+              📧 Você receberá um email de confirmação em breve com todos os detalhes da sua assinatura.
             </p>
           </div>
         </CardContent>

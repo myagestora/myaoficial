@@ -76,16 +76,18 @@ export const NotificationsManager = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-notifications'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       toast({
-        title: editingNotification ? "Notificação atualizada" : "Notificação criada",
-        description: "A notificação foi salva com sucesso!",
+        title: editingNotification ? "✅ Notificação atualizada!" : "🎉 Notificação criada!",
+        description: editingNotification 
+          ? "As alterações foram salvas com sucesso!" 
+          : "Sua notificação foi enviada para todos os usuários!",
       });
       resetForm();
       setIsDialogOpen(false);
     },
     onError: (error) => {
       toast({
-        title: "Erro",
-        description: "Não foi possível salvar a notificação.",
+        title: "😔 Ops! Algo deu errado",
+        description: "Não conseguimos salvar a notificação. Que tal tentar novamente?",
         variant: "destructive",
       });
     },
@@ -105,14 +107,14 @@ export const NotificationsManager = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-notifications'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       toast({
-        title: "Notificação excluída",
-        description: "A notificação foi removida com sucesso!",
+        title: "🗑️ Notificação removida!",
+        description: "A notificação foi excluída com sucesso.",
       });
     },
     onError: (error) => {
       toast({
-        title: "Erro",
-        description: "Não foi possível excluir a notificação.",
+        title: "😔 Não foi possível excluir",
+        description: "Tivemos um problema ao remover a notificação. Tente novamente?",
         variant: "destructive",
       });
     },
@@ -156,8 +158,8 @@ export const NotificationsManager = () => {
     
     if (!title.trim() || !message.trim()) {
       toast({
-        title: "Erro",
-        description: "Título e mensagem são obrigatórios.",
+        title: "📝 Campos obrigatórios",
+        description: "Por favor, preencha o título e a mensagem da notificação.",
         variant: "destructive",
       });
       return;
@@ -174,26 +176,26 @@ export const NotificationsManager = () => {
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'success':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300';
       case 'warning':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300';
       case 'error':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300';
       default:
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
     }
   };
 
   const getTypeName = (type: string) => {
     switch (type) {
       case 'success':
-        return 'Sucesso';
+        return '✅ Sucesso';
       case 'warning':
-        return 'Aviso';
+        return '⚠️ Aviso';
       case 'error':
-        return 'Erro';
+        return '❌ Erro';
       default:
-        return 'Info';
+        return 'ℹ️ Informação';
     }
   };
 
@@ -210,10 +212,10 @@ export const NotificationsManager = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Gerenciar Notificações
+            📢 Gerenciar Notificações
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
-            Envie notificações para todos os usuários da plataforma
+            Envie mensagens importantes para todos os usuários da plataforma
           </p>
         </div>
         
@@ -230,21 +232,24 @@ export const NotificationsManager = () => {
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>
-                {editingNotification ? 'Editar Notificação' : 'Nova Notificação'}
+                {editingNotification ? '✏️ Editar Notificação' : '✨ Nova Notificação'}
               </DialogTitle>
               <DialogDescription>
-                Crie uma notificação que será enviada para todos os usuários.
+                {editingNotification 
+                  ? 'Faça as alterações necessárias na sua notificação.'
+                  : 'Crie uma notificação que será enviada para todos os usuários.'
+                }
               </DialogDescription>
             </DialogHeader>
             
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="title">Título</Label>
+                <Label htmlFor="title">Título da Notificação</Label>
                 <Input
                   id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Digite o título da notificação"
+                  placeholder="Ex: Nova funcionalidade disponível!"
                   required
                 />
               </div>
@@ -255,23 +260,23 @@ export const NotificationsManager = () => {
                   id="message"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Digite a mensagem da notificação"
+                  placeholder="Escreva uma mensagem clara e amigável para seus usuários..."
                   rows={3}
                   required
                 />
               </div>
               
               <div>
-                <Label htmlFor="type">Tipo</Label>
+                <Label htmlFor="type">Tipo da Notificação</Label>
                 <Select value={type} onValueChange={setType}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="info">Informação</SelectItem>
-                    <SelectItem value="success">Sucesso</SelectItem>
-                    <SelectItem value="warning">Aviso</SelectItem>
-                    <SelectItem value="error">Erro</SelectItem>
+                    <SelectItem value="info">ℹ️ Informação</SelectItem>
+                    <SelectItem value="success">✅ Boa notícia</SelectItem>
+                    <SelectItem value="warning">⚠️ Atenção</SelectItem>
+                    <SelectItem value="error">❌ Importante</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -284,6 +289,9 @@ export const NotificationsManager = () => {
                   value={expiresAt}
                   onChange={(e) => setExpiresAt(e.target.value)}
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Deixe em branco para que a notificação não expire
+                </p>
               </div>
               
               <div className="flex justify-end space-x-2 pt-4">
@@ -302,7 +310,7 @@ export const NotificationsManager = () => {
                     ? 'Salvando...'
                     : editingNotification
                     ? 'Atualizar'
-                    : 'Criar'
+                    : 'Criar e Enviar'
                   }
                 </Button>
               </div>
@@ -316,13 +324,16 @@ export const NotificationsManager = () => {
           <Card>
             <CardContent className="p-8 text-center">
               <p className="text-gray-500 dark:text-gray-400">
-                Nenhuma notificação criada ainda.
+                📭 Nenhuma notificação criada ainda.
+              </p>
+              <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
+                Que tal criar sua primeira notificação para os usuários?
               </p>
             </CardContent>
           </Card>
         ) : (
           notifications.map((notification) => (
-            <Card key={notification.id}>
+            <Card key={notification.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -334,7 +345,7 @@ export const NotificationsManager = () => {
                         {getTypeName(notification.type)}
                       </Badge>
                       <Badge variant={notification.is_active ? "default" : "secondary"}>
-                        {notification.is_active ? "Ativa" : "Inativa"}
+                        {notification.is_active ? "🟢 Ativa" : "⚫ Inativa"}
                       </Badge>
                     </div>
                     <p className="text-gray-600 dark:text-gray-400 mb-2">
@@ -342,14 +353,14 @@ export const NotificationsManager = () => {
                     </p>
                     <div className="flex items-center gap-4 text-xs text-gray-500">
                       <span>
-                        Criada {formatDistanceToNow(new Date(notification.created_at), {
+                        📅 Criada {formatDistanceToNow(new Date(notification.created_at), {
                           addSuffix: true,
                           locale: ptBR,
                         })}
                       </span>
                       {notification.expires_at && (
                         <span>
-                          Expira em {formatDistanceToNow(new Date(notification.expires_at), {
+                          ⏰ Expira em {formatDistanceToNow(new Date(notification.expires_at), {
                             addSuffix: true,
                             locale: ptBR,
                           })}
@@ -366,13 +377,15 @@ export const NotificationsManager = () => {
                         id: notification.id,
                         isActive: notification.is_active
                       })}
+                      className="text-xs"
                     >
-                      {notification.is_active ? 'Desativar' : 'Ativar'}
+                      {notification.is_active ? '⏸️ Pausar' : '▶️ Ativar'}
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => openEditDialog(notification)}
+                      className="text-xs"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -380,6 +393,7 @@ export const NotificationsManager = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => deleteNotificationMutation.mutate(notification.id)}
+                      className="text-xs text-red-600 hover:text-red-700"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
