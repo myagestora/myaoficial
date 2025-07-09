@@ -2,23 +2,24 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Filter, ArrowUpCircle, ArrowDownCircle, Edit, Trash2, Repeat } from 'lucide-react';
+import { Plus, ArrowUpCircle, ArrowDownCircle, Edit, Trash2, Repeat } from 'lucide-react';
 import { TransactionForm } from '@/components/transactions/TransactionForm';
+import { TransactionFilters } from '@/components/transactions/TransactionFilters';
+import { TransactionStats } from '@/components/transactions/TransactionStats';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useTransactionFilters } from '@/hooks/useTransactionFilters';
 import { toast } from '@/hooks/use-toast';
 
 const Transactions = () => {
   const { user } = useAuth();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
   const queryClient = useQueryClient();
 
-  const { data: transactions, isLoading } = useQuery({
+  const { data: transactions = [], isLoading } = useQuery({
     queryKey: ['transactions', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
@@ -38,7 +39,9 @@ const Transactions = () => {
           recurrence_end_date,
           next_recurrence_date,
           parent_transaction_id,
+          category_id,
           categories (
+            id,
             name,
             color
           )
@@ -55,6 +58,35 @@ const Transactions = () => {
     },
     enabled: !!user?.id
   });
+
+  // Buscar categorias para os filtros
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories-for-filters'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('id, name, color, type')
+        .order('name');
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user
+  });
+
+  const {
+    searchTerm,
+    setSearchTerm,
+    dateRange,
+    setDateRange,
+    selectedType,
+    setSelectedType,
+    selectedCategory,
+    setSelectedCategory,
+    filteredTransactions,
+    hasActiveFilters,
+    clearFilters
+  } = useTransactionFilters(transactions);
 
   const deleteTransactionMutation = useMutation({
     mutationFn: async (transactionId: string) => {
@@ -83,11 +115,6 @@ const Transactions = () => {
     }
   });
 
-  const filteredTransactions = transactions?.filter(transaction =>
-    transaction.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    transaction.categories?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
-
   const formatRecurrenceInfo = (transaction: any) => {
     if (!transaction.is_recurring) return null;
     
@@ -106,7 +133,7 @@ const Transactions = () => {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString + 'T00:00:00'); // Força interpretação como data local
+    const date = new Date(dateString + 'T00:00:00');
     return date.toLocaleDateString('pt-BR');
   };
 
@@ -150,7 +177,9 @@ const Transactions = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Transações</h1>
-          <p className="text-gray-600 dark:text-gray-400">Gerencie suas receitas e despesas</p>
+          <p className="text-gray-600 dark:text-gray-400">
+            Gerencie suas receitas e despesas com filtros avançados
+          </p>
         </div>
         <Button onClick={() => setIsFormOpen(true)} className="bg-primary hover:bg-primary/90">
           <Plus className="mr-2 h-4 w-4" />
@@ -158,40 +187,55 @@ const Transactions = () => {
         </Button>
       </div>
 
+      {/* Statistics */}
+      <TransactionStats transactions={filteredTransactions} />
+
       {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Buscar transações..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Button variant="outline">
-              <Filter className="mr-2 h-4 w-4" />
-              Filtros
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <TransactionFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
+        selectedType={selectedType}
+        onTypeChange={setSelectedType}
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+        categories={categories}
+        onClearFilters={clearFilters}
+        hasActiveFilters={hasActiveFilters}
+      />
 
       {/* Transactions List */}
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Transações</CardTitle>
+          <CardTitle className="flex items-center justify-between">
+            <span>Lista de Transações</span>
+            <Badge variant="outline" className="ml-2">
+              {filteredTransactions.length} de {transactions.length}
+            </Badge>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {filteredTransactions.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">Nenhuma transação encontrada</p>
-                <p className="text-sm text-gray-400 mt-2">
-                  Comece criando sua primeira transação!
+              <div className="text-center py-12">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                  <ArrowUpCircle className="h-8 w-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                  {hasActiveFilters ? 'Nenhuma transação encontrada' : 'Nenhuma transação cadastrada'}
+                </h3>
+                <p className="text-gray-500 mb-4">
+                  {hasActiveFilters 
+                    ? 'Tente ajustar os filtros para encontrar suas transações.'
+                    : 'Comece criando sua primeira transação!'
+                  }
                 </p>
+                {hasActiveFilters && (
+                  <Button variant="outline" onClick={clearFilters}>
+                    Limpar Filtros
+                  </Button>
+                )}
               </div>
             ) : (
               filteredTransactions.map((transaction) => (
