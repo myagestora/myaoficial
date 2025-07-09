@@ -12,7 +12,7 @@ export const AppLayout = ({
   children
 }: AppLayoutProps) => {
   return (
-    <div className="min-h-screen flex bg-slate-50">
+    <div className="min-h-screen flex bg-background">
       <div className="hidden lg:block">
         <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
           <Sidebar />
