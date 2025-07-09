@@ -1,9 +1,13 @@
+
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, CreditCard, PieChart, Target, Calendar, FolderOpen, Settings } from 'lucide-react';
+import { LayoutDashboard, CreditCard, PieChart, Target, Calendar, FolderOpen, Settings, Crown, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useSubscription } from '@/hooks/useSubscription';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
 
 interface SidebarProps {
   className?: string;
@@ -38,6 +42,9 @@ const navigationItems = [{
 export const Sidebar = ({
   className
 }: SidebarProps) => {
+  const { user } = useAuth();
+  const { subscription, hasActiveSubscription } = useSubscription();
+
   // Buscar logo do sistema
   const {
     data: logoUrl
@@ -124,9 +131,30 @@ export const Sidebar = ({
     retry: 1,
     refetchOnWindowFocus: false
   });
+
+  // Verificar se a assinatura está próxima do vencimento (7 dias)
+  const isNearExpiration = () => {
+    if (!subscription?.current_period_end) return false;
+    const expirationDate = new Date(subscription.current_period_end);
+    const today = new Date();
+    const diffTime = expirationDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays <= 7 && diffDays > 0;
+  };
+
+  // Formatar data de expiração
+  const formatExpirationDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR');
+  };
+
+  const handleRenewSubscription = () => {
+    // Aqui você pode implementar a lógica para renovar a assinatura
+    // Por exemplo, redirecionar para a página de checkout ou abrir um modal
+    window.open('/subscription', '_blank');
+  };
   
   return (
-    <div className={cn("h-full w-full flex flex-col", className)}>
+    <div className={cn("h-full w-full flex flex-col bg-white dark:bg-gray-900", className)}>
       <div className="flex-1 py-4">
         {/* Header com logo - fundo branco */}
         <div className="px-4 py-6">
@@ -191,6 +219,85 @@ export const Sidebar = ({
             </NavLink>
           </div>
         </div>
+      </div>
+
+      {/* Informações da Assinatura no Rodapé */}
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+        {hasActiveSubscription && subscription ? (
+          <div className="space-y-3">
+            {/* Plano Ativo */}
+            <div className="flex items-center gap-2">
+              <Crown className="h-4 w-4 text-yellow-500" />
+              <div>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {subscription.subscription_plans?.name || 'Plano Premium'}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Plano ativo
+                </p>
+              </div>
+            </div>
+
+            {/* Data de Expiração */}
+            {subscription.current_period_end && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Expira em
+                    </p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {formatExpirationDate(subscription.current_period_end)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Botão de Renovar se próximo do vencimento */}
+                {isNearExpiration() && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                      <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                      <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                        Sua assinatura expira em breve
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={handleRenewSubscription}
+                      size="sm" 
+                      className="w-full text-sm"
+                      style={{ backgroundColor: primaryColor || '#222222' }}
+                    >
+                      Renovar Agora
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Crown className="h-4 w-4 text-gray-400" />
+              <div>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  Plano Gratuito
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Faça upgrade para mais recursos
+                </p>
+              </div>
+            </div>
+            <Button 
+              onClick={() => window.open('/subscription', '_blank')}
+              size="sm" 
+              variant="outline"
+              className="w-full text-sm"
+            >
+              Fazer Upgrade
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
