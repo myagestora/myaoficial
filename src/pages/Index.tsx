@@ -364,7 +364,7 @@ const Index = () => {
               {/* Benefits List */}
               <div className="space-y-4 mb-8">
                 {[
-                  `A ${appName} entende áudios e imagens`,
+                  'Você pode enviar áudios e imagens',
                   'Reconhecimento automático de valores e categorias',
                   'Relatórios instantâneos e insights personalizados',
                   'Lembretes inteligentes para suas metas financeiras'
