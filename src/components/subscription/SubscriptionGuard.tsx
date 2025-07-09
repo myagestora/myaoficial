@@ -3,9 +3,8 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { SubscriptionPlans } from './SubscriptionPlans';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lock } from 'lucide-react';
+import { AppLayout } from '@/components/layout/AppLayout';
+import { SubscriptionRequiredPage } from './SubscriptionRequiredPage';
 
 interface SubscriptionGuardProps {
   children: React.ReactNode;
@@ -20,7 +19,7 @@ export const SubscriptionGuard = ({ children }: SubscriptionGuardProps) => {
       if (!user?.id) return { hasActiveSubscription: false };
       
       // Verificar se existe assinatura ativa
-      const { data: subscription, error: subError } = await supabase
+      const { data: subscription, error: subError } = await subabase
         .from('user_subscriptions')
         .select('id, status')
         .eq('user_id', user.id)
@@ -52,33 +51,15 @@ export const SubscriptionGuard = ({ children }: SubscriptionGuardProps) => {
     return null;
   }
 
-  // Se não tem assinatura ativa, mostra os planos
+  // Se não tem assinatura ativa, mostra a página de assinatura necessária dentro do layout
   if (userAccess && !userAccess.hasActiveSubscription) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-        <div className="max-w-6xl mx-auto">
-          <Card className="mb-8 border-orange-200 bg-orange-50 dark:bg-orange-900/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-orange-800 dark:text-orange-200">
-                <Lock className="h-5 w-5" />
-                Assinatura Necessária
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-orange-700 dark:text-orange-300">
-                Para acessar todas as funcionalidades da plataforma, você precisa de uma assinatura ativa.
-                Escolha o plano que melhor atende às suas necessidades.
-              </p>
-            </CardContent>
-          </Card>
-          
-          <SubscriptionPlans />
-        </div>
-      </div>
+      <AppLayout>
+        <SubscriptionRequiredPage />
+      </AppLayout>
     );
   }
 
-  // Se tem assinatura ativa, permite acesso independente do status da conta
-  // O status da conta será mostrado dentro das configurações
+  // Se tem assinatura ativa, permite acesso completo
   return <>{children}</>;
 };

@@ -1,140 +1,139 @@
 
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { 
-  Home, 
+  LayoutDashboard, 
   CreditCard, 
+  PieChart, 
   Target, 
-  Calendar, 
-  BarChart3, 
-  Settings,
-  DollarSign,
-  PieChart
+  Calendar,
+  FolderOpen,
+  FileText,
+  Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: Home },
-  { name: 'Transações', href: '/transactions', icon: CreditCard },
-  { name: 'Metas', href: '/goals', icon: Target },
-  { name: 'Agendamentos', href: '/scheduled', icon: Calendar },
-  { name: 'Relatórios', href: '/reports', icon: BarChart3 },
-  { name: 'Categorias', href: '/categories', icon: PieChart },
-  { name: 'Configurações', href: '/settings', icon: Settings },
+interface SidebarProps {
+  className?: string;
+  disableNavigation?: boolean;
+}
+
+const navigationItems = [
+  {
+    name: 'Dashboard',
+    href: '/dashboard',
+    icon: LayoutDashboard,
+  },
+  {
+    name: 'Transações',
+    href: '/transactions',
+    icon: CreditCard,
+  },
+  {
+    name: 'Relatórios',
+    href: '/reports',
+    icon: PieChart,
+  },
+  {
+    name: 'Metas',
+    href: '/goals',
+    icon: Target,
+  },
+  {
+    name: 'Agendadas',
+    href: '/scheduled',
+    icon: Calendar,
+  },
+  {
+    name: 'Categorias',
+    href: '/categories',
+    icon: FolderOpen,
+  },
 ];
 
-export const Sidebar = () => {
-  const location = useLocation();
+export const Sidebar = ({ className, disableNavigation = false }: SidebarProps) => {
+  const { user } = useAuth();
 
-  // Buscar configurações do sistema para logo, nome e cores - com cache mais curto para refletir mudanças
-  const { data: systemConfig } = useQuery({
-    queryKey: ['system-config-sidebar'],
+  // Verificar se tem assinatura ativa
+  const { data: hasSubscription } = useQuery({
+    queryKey: ['user-active-subscription', user?.id],
     queryFn: async () => {
-      console.log('Buscando configurações do sistema...');
-      const { data, error } = await supabase
-        .from('system_config')
-        .select('*')
-        .in('key', ['app_name', 'app_logo', 'secondary_color']);
+      if (!user?.id) return false;
       
-      if (error) {
-        console.error('Erro ao buscar configurações:', error);
-        throw error;
-      }
+      const { data: subscription } = await supabase
+        .from('user_subscriptions')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle();
       
-      console.log('Configurações encontradas:', data);
-      
-      const configObj: Record<string, string> = {};
-      data.forEach(item => {
-        configObj[item.key] = typeof item.value === 'string' ? 
-          item.value.replace(/^"|"$/g, '') : 
-          JSON.stringify(item.value).replace(/^"|"$/g, '');
-      });
-      
-      console.log('Configurações processadas:', configObj);
-      return configObj;
+      return !!subscription;
     },
-    staleTime: 30000, // Cache por 30 segundos apenas
-    gcTime: 60000, // Manter em cache por 1 minuto (nova nomenclatura)
+    enabled: !!user?.id
   });
 
-  const appName = systemConfig?.app_name || 'Controle Financeiro';
-  const appLogo = systemConfig?.app_logo;
-  const secondaryColor = systemConfig?.secondary_color || '#10B981';
-
-  console.log('Logo URL no sidebar:', appLogo);
-  console.log('Cor secundária:', secondaryColor);
+  const isNavigationDisabled = disableNavigation && !hasSubscription;
 
   return (
-    <div className="flex flex-col w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
-      {/* Logo */}
-      <div className="flex items-center justify-center h-20 px-4 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-center">
-          {appLogo && appLogo.trim() !== '' ? (
-            // Quando tem logo, mostra apenas o logo
-            <img 
-              src={appLogo} 
-              alt={appName}
-              className="h-12 w-auto object-contain"
-              onError={(e) => {
-                console.error('Erro ao carregar logo:', appLogo);
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                // Mostrar fallback com nome
-                const fallback = target.parentElement?.querySelector('.logo-fallback') as HTMLElement;
-                if (fallback) {
-                  fallback.style.display = 'flex';
+    <div className={cn("pb-12 w-64", className)}>
+      <div className="space-y-4 py-4">
+        <div className="px-3 py-2">
+          <div className="space-y-1">
+            {navigationItems.map((item) => (
+              <NavLink
+                key={item.name}
+                to={isNavigationDisabled ? '#' : item.href}
+                className={({ isActive }) =>
+                  cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    isActive && !isNavigationDisabled
+                      ? "bg-primary text-primary-foreground"
+                      : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800",
+                    isNavigationDisabled && "opacity-50 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent"
+                  )
+                }
+                onClick={(e) => {
+                  if (isNavigationDisabled) {
+                    e.preventDefault();
+                  }
+                }}
+              >
+                <item.icon className="h-5 w-5" />
+                {item.name}
+                {isNavigationDisabled && (
+                  <span className="ml-auto text-xs text-orange-600">🔒</span>
+                )}
+              </NavLink>
+            ))}
+            
+            <NavLink
+              to={isNavigationDisabled ? '#' : '/settings'}
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  isActive && !isNavigationDisabled
+                    ? "bg-primary text-primary-foreground"
+                    : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800",
+                  isNavigationDisabled && "opacity-50 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent"
+                )
+              }
+              onClick={(e) => {
+                if (isNavigationDisabled) {
+                  e.preventDefault();
                 }
               }}
-              onLoad={() => {
-                console.log('Logo carregada com sucesso:', appLogo);
-              }}
-            />
-          ) : null}
-          
-          {/* Fallback: quando não tem logo ou erro no carregamento */}
-          <div 
-            className={`flex items-center space-x-3 logo-fallback ${appLogo && appLogo.trim() !== '' ? 'hidden' : ''}`}
-          >
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <DollarSign className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-gray-900 dark:text-white">
-              {appName}
-            </span>
+            >
+              <Settings className="h-5 w-5" />
+              Configurações
+              {isNavigationDisabled && (
+                <span className="ml-auto text-xs text-orange-600">🔒</span>
+              )}
+            </NavLink>
           </div>
         </div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-2">
-        {navigation.map((item) => {
-          const isActive = location.pathname === item.href;
-          return (
-            <NavLink
-              key={item.name}
-              to={item.href}
-              className={cn(
-                'flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors',
-                isActive
-                  ? 'text-white'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-              )}
-              style={isActive ? { backgroundColor: secondaryColor } : {}}
-            >
-              <item.icon className="w-5 h-5 mr-3" />
-              {item.name}
-            </NavLink>
-          );
-        })}
-      </nav>
-
-      {/* Footer */}
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-        <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-          © 2025 {systemConfig?.app_name || 'MYA Gestora'}
-        </p>
       </div>
     </div>
   );
