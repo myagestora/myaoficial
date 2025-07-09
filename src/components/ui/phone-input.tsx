@@ -1,4 +1,5 @@
 
+
 import * as React from "react"
 import PhoneInputComponent from 'react-phone-number-input'
 import 'react-phone-number-input/style.css'
@@ -35,8 +36,8 @@ const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
         return
       }
       
-      // Verificar limite baseado no país
-      const maxLength = newValue.startsWith('+55') ? 15 : 17
+      // Verificar limite baseado no país - diminuído em 1
+      const maxLength = newValue.startsWith('+55') ? 14 : 16
       
       // Se exceder o limite, bloquear completamente
       if (newValue.length > maxLength) {
@@ -63,7 +64,7 @@ const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
     // Interceptar eventos de teclado para bloquear na fonte
     const handleKeyDown = (e: React.KeyboardEvent) => {
       // Se já atingiu o limite e não é uma tecla de controle, bloquear
-      if (internalValue && internalValue.length >= (internalValue.startsWith('+55') ? 15 : 17)) {
+      if (internalValue && internalValue.length >= (internalValue.startsWith('+55') ? 14 : 16)) {
         // Permitir apenas teclas de controle como Backspace, Delete, Arrow keys, etc.
         const allowedKeys = [
           'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
@@ -102,3 +103,4 @@ const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
 PhoneInput.displayName = "PhoneInput"
 
 export { PhoneInput }
+
