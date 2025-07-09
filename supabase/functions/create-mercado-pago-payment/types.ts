@@ -17,8 +17,13 @@ export interface PaymentRequest {
 
 export interface MercadoPagoPaymentData {
   transaction_amount: number;
+  token?: string;
   description: string;
+  installments?: number;
+  payment_method_id?: string;
   external_reference: string;
+  statement_descriptor: string;
+  notification_url: string;
   payer: {
     email: string;
     first_name: string;
@@ -27,9 +32,18 @@ export interface MercadoPagoPaymentData {
       number: string;
     };
   };
-  notification_url: string;
-  payment_method_id?: string;
-  token?: string;
-  installments?: number;
-  issuer_id?: number;
+}
+
+export interface CardTokenData {
+  card_number: string;
+  security_code: string;
+  expiration_month: number;
+  expiration_year: number;
+  cardholder: {
+    name: string;
+    identification: {
+      type: string;
+      number: string;
+    };
+  };
 }

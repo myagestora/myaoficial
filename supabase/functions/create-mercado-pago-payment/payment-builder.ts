@@ -1,3 +1,4 @@
+
 import { MercadoPagoPaymentData, CardData } from './types.ts';
 
 export const buildPaymentData = (
@@ -18,6 +19,7 @@ export const buildPaymentData = (
     transaction_amount: Number(amount),
     description: `${planName} - ${frequency === 'monthly' ? 'Mensal' : 'Anual'}`,
     external_reference: externalReference,
+    statement_descriptor: 'MYAGESTORA',
     payer: {
       email: userEmail || 'user@example.com',
       first_name: userName || 'Usuario',
