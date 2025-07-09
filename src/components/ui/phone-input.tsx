@@ -22,54 +22,45 @@ const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
       }
 
       try {
-        // Parse o número para verificar se está válido
         const phoneNumber = parsePhoneNumber(newValue)
         
-        if (phoneNumber) {
-          // Se o número está completo e válido, aceita
-          if (phoneNumber.isValid()) {
-            onChange?.(newValue)
-            return
-          }
+        if (phoneNumber?.country) {
+          const maxLength = getMaxLengthForCountry(phoneNumber.country)
+          const nationalNumber = phoneNumber.nationalNumber
           
-          // Se não está válido mas é um número parcial do mesmo país, aceita
-          const currentCountry = phoneNumber.country
-          if (currentCountry) {
-            // Verifica se o número não excede o tamanho máximo para o país
-            const nationalNumber = phoneNumber.nationalNumber
-            const maxLength = getMaxLengthForCountry(currentCountry)
-            
-            if (nationalNumber.length <= maxLength) {
-              onChange?.(newValue)
-              return
-            }
+          // Bloqueia se exceder o limite máximo
+          if (nationalNumber.length > maxLength) {
+            return // Não aceita a mudança
           }
         }
         
-        // Se chegou aqui, o número pode estar sendo digitado
-        // Vamos verificar se é uma adição válida ao número atual
-        if (value && newValue.length > value.length) {
-          // Está adicionando dígitos
+        // Se não tem país detectado mas o valor anterior tinha, verifica pelo país anterior
+        if (!phoneNumber?.country && value) {
           try {
-            const currentPhone = parsePhoneNumber(value)
-            if (currentPhone?.country) {
-              const maxLength = getMaxLengthForCountry(currentPhone.country)
-              const currentNationalLength = currentPhone.nationalNumber.length
+            const previousPhone = parsePhoneNumber(value)
+            if (previousPhone?.country) {
+              const maxLength = getMaxLengthForCountry(previousPhone.country)
+              // Conta apenas os dígitos numéricos (remove espaços, parênteses, etc)
+              const digitsOnly = newValue.replace(/\D/g, '')
+              const countryCode = previousPhone.countryCallingCode
+              const nationalDigits = digitsOnly.replace(new RegExp(`^${countryCode}`), '')
               
-              if (currentNationalLength >= maxLength) {
-                // Já atingiu o limite, não aceita mais dígitos
-                return
+              if (nationalDigits.length > maxLength) {
+                return // Não aceita a mudança
               }
             }
           } catch (e) {
-            // Se não conseguir parsear o valor atual, aceita a mudança
+            // Se não conseguir parsear o valor anterior, permite a mudança
           }
         }
         
         onChange?.(newValue)
       } catch (error) {
-        // Se não conseguir parsear, aceita a mudança (pode estar sendo digitado)
-        onChange?.(newValue)
+        // Em caso de erro no parsing, só aceita se não estiver excedendo um limite básico
+        const digitsOnly = newValue.replace(/\D/g, '')
+        if (digitsOnly.length <= 15) { // Limite internacional máximo
+          onChange?.(newValue)
+        }
       }
     }
 
@@ -95,7 +86,6 @@ const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
 
 // Função auxiliar para obter o comprimento máximo do número nacional por país
 const getMaxLengthForCountry = (country: CountryCode): number => {
-  // Mapeamento dos principais países e seus comprimentos máximos
   const maxLengths: Record<string, number> = {
     'BR': 11, // Brasil: 11 dígitos (ex: 11987654321)
     'US': 10, // EUA: 10 dígitos
@@ -118,7 +108,7 @@ const getMaxLengthForCountry = (country: CountryCode): number => {
     'VE': 11, // Venezuela: 11 dígitos
   }
   
-  return maxLengths[country] || 15; // 15 é o máximo internacional padrão
+  return maxLengths[country] || 15;
 }
 
 PhoneInput.displayName = "PhoneInput"
