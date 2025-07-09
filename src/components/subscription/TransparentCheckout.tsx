@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -173,9 +174,24 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
     },
     onError: (error: any) => {
       console.error('Error creating payment:', error);
+      
+      let errorMessage = 'Erro ao processar pagamento. Tente novamente.';
+      
+      if (error.message) {
+        if (error.message.includes('Dados do cartão incompletos')) {
+          errorMessage = 'Por favor, preencha todos os dados do cartão.';
+        } else if (error.message.includes('Token do Mercado Pago não configurado')) {
+          errorMessage = 'Sistema de pagamentos em configuração. Tente novamente em alguns minutos.';
+        } else if (error.message.includes('Mercado Pago')) {
+          errorMessage = 'Erro no processamento do pagamento. Verifique os dados e tente novamente.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: 'Erro no pagamento',
-        description: error.message || 'Erro ao processar pagamento. Tente novamente.',
+        description: errorMessage,
         variant: 'destructive',
       });
     }
@@ -199,6 +215,28 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
         toast({
           title: 'Dados incompletos',
           description: 'Por favor, preencha todos os dados do cartão.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Validar formato do cartão
+      const cleanCardNumber = cardNumber.replace(/\s/g, '');
+      if (cleanCardNumber.length < 13 || cleanCardNumber.length > 19) {
+        toast({
+          title: 'Cartão inválido',
+          description: 'Número do cartão deve ter entre 13 e 19 dígitos.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Validar CPF (formato básico)
+      const cleanCPF = cpf.replace(/\D/g, '');
+      if (cleanCPF.length !== 11) {
+        toast({
+          title: 'CPF inválido',
+          description: 'CPF deve ter 11 dígitos.',
           variant: 'destructive',
         });
         return;

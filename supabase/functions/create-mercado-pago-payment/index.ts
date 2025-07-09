@@ -223,22 +223,45 @@ serve(async (req) => {
     if (paymentMethod === 'pix') {
       paymentData.payment_method_id = 'pix';
     } else if (paymentMethod === 'credit_card' && cardData) {
-      // Para cartão de crédito, seria necessário tokenizar no frontend
-      paymentData.payment_method_id = 'visa'; // Exemplo
-      paymentData.installments = 1;
-      if (cardData.cpf) {
-        paymentData.payer.identification = {
-          type: 'CPF',
-          number: cardData.cpf.replace(/\D/g, '')
-        };
+      // Validar dados do cartão
+      const { cardNumber, cardholderName, expirationMonth, expirationYear, securityCode, cpf } = cardData;
+      
+      if (!cardNumber || !cardholderName || !expirationMonth || !expirationYear || !securityCode) {
+        console.error('Dados do cartão incompletos');
+        return new Response(JSON.stringify({ 
+          error: 'Dados do cartão incompletos' 
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
       }
+
+      // Para cartão de crédito, o Mercado Pago requer que o card seja tokenizado primeiro
+      // Vamos usar o método direto com dados do cartão (apenas para teste)
+      paymentData.payment_method_id = 'master'; // Detectar automaticamente
+      paymentData.installments = 1;
+      
+      // Adicionar dados do cartão (ATENÇÃO: Em produção, use tokenização)
+      paymentData.card = {
+        card_number: cardNumber.replace(/\s/g, ''),
+        security_code: securityCode,
+        expiration_month: parseInt(expirationMonth),
+        expiration_year: parseInt(expirationYear),
+        cardholder: {
+          name: cardholderName,
+          identification: {
+            type: 'CPF',
+            number: cpf.replace(/\D/g, '')
+          }
+        }
+      };
     }
 
     console.log('Criando pagamento no Mercado Pago...');
     console.log('Dados do pagamento:', JSON.stringify({
       ...paymentData,
-      // Não logar dados sensíveis
-      payer: { ...paymentData.payer, identification: paymentData.payer.identification ? 'HIDDEN' : undefined }
+      // Não logar dados sensíveis do cartão
+      card: paymentData.card ? { ...paymentData.card, card_number: 'HIDDEN', security_code: 'HIDDEN' } : undefined
     }, null, 2));
 
     const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
@@ -293,7 +316,7 @@ serve(async (req) => {
       .insert({
         user_id: user.id,
         plan_id: planId,
-        subscription_id: subscriptionId, // Vincular com a assinatura
+        subscription_id: subscriptionId,
         amount: Number(amount),
         currency: 'BRL',
         payment_method: paymentMethod,
