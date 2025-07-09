@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, TrendingUp, TrendingDown, Target } from 'lucide-react';
@@ -69,17 +68,30 @@ const Dashboard = () => {
     enabled: !!user?.id
   });
 
-  // Buscar progresso das metas separadamente
+  // Buscar progresso das metas considerando o período filtrado
   const { data: goalsProgress, isLoading: goalsLoading } = useQuery({
-    queryKey: ['goals-progress', user?.id],
+    queryKey: ['goals-progress', user?.id, dateRange],
     queryFn: async () => {
       if (!user?.id) return 0;
 
-      console.log('🎯 Buscando metas do usuário...');
+      console.log('🎯 Buscando metas do usuário no período...');
 
       const { data: goals, error } = await supabase
         .from('goals')
-        .select('current_amount, target_amount, status, goal_type')
+        .select(`
+          id,
+          current_amount, 
+          target_amount, 
+          status, 
+          goal_type,
+          category_id,
+          month_year,
+          target_date,
+          categories (
+            name,
+            color
+          )
+        `)
         .eq('user_id', user.id)
         .eq('status', 'active'); // Apenas metas ativas
 
@@ -95,24 +107,79 @@ const Dashboard = () => {
 
       console.log('📊 Metas encontradas:', goals);
 
-      // Calcular progresso das metas (média)
-      const totalProgress = goals.reduce((sum, goal) => {
-        const currentAmount = Number(goal.current_amount || 0);
-        const targetAmount = Number(goal.target_amount || 0);
-        
-        if (targetAmount === 0) return sum;
-        
-        const progress = (currentAmount / targetAmount) * 100;
-        const limitedProgress = Math.min(progress, 100); // Limitar a 100%
-        
-        console.log(`Meta: ${goal.goal_type} - Progresso: ${limitedProgress.toFixed(1)}%`);
-        
-        return sum + limitedProgress;
-      }, 0);
+      // Filtrar metas relevantes para o período selecionado
+      const relevantGoals = goals.filter(goal => {
+        if (!dateRange?.from || !dateRange?.to) return true;
 
-      const averageProgress = Math.round(totalProgress / goals.length);
+        if (goal.goal_type === 'monthly_budget' && goal.month_year) {
+          // Para metas mensais, verificar se o mês está no período
+          const goalDate = new Date(goal.month_year + '-01');
+          const fromMonth = new Date(dateRange.from.getFullYear(), dateRange.from.getMonth(), 1);
+          const toMonth = new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), 1);
+          
+          return goalDate >= fromMonth && goalDate <= toMonth;
+        }
+
+        if (goal.goal_type === 'savings' && goal.target_date) {
+          // Para metas de economia, verificar se a data alvo está no período
+          const targetDate = new Date(goal.target_date);
+          return targetDate >= dateRange.from && targetDate <= dateRange.to;
+        }
+
+        return true; // Incluir outras metas por padrão
+      });
+
+      if (relevantGoals.length === 0) {
+        console.log('📝 Nenhuma meta relevante para o período encontrada');
+        return 0;
+      }
+
+      // Calcular progresso para cada meta
+      const goalProgressPromises = relevantGoals.map(async (goal) => {
+        if (goal.goal_type === 'monthly_budget' && goal.category_id && goal.month_year) {
+          // Para metas de gastos mensais, calcular baseado nas transações reais
+          const { data: transactions } = await supabase
+            .from('transactions')
+            .select('amount')
+            .eq('user_id', user.id)
+            .eq('category_id', goal.category_id)
+            .eq('type', 'expense')
+            .gte('date', goal.month_year + '-01')
+            .lt('date', new Date(new Date(goal.month_year + '-01').getFullYear(), new Date(goal.month_year + '-01').getMonth() + 1, 1).toISOString().split('T')[0]);
+
+          const spentAmount = transactions?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
+          const targetAmount = Number(goal.target_amount || 0);
+          
+          if (targetAmount === 0) return 0;
+          
+          // Para gastos, o progresso é quanto foi gasto vs. o orçamento
+          // Se gastou menos que o orçamento, é bom (progresso alto)
+          // Se gastou mais, excedeu o orçamento (progresso > 100%)
+          const progress = (spentAmount / targetAmount) * 100;
+          
+          console.log(`Meta mensal ${goal.categories?.name}: Gasto: ${spentAmount}, Orçamento: ${targetAmount}, Progresso: ${progress.toFixed(1)}%`);
+          
+          return Math.min(progress, 100); // Limitar a 100% para o cálculo da média
+        } else {
+          // Para metas de economia, usar current_amount vs target_amount
+          const currentAmount = Number(goal.current_amount || 0);
+          const targetAmount = Number(goal.target_amount || 0);
+          
+          if (targetAmount === 0) return 0;
+          
+          const progress = (currentAmount / targetAmount) * 100;
+          
+          console.log(`Meta de economia: ${currentAmount}/${targetAmount} - Progresso: ${progress.toFixed(1)}%`);
+          
+          return Math.min(progress, 100);
+        }
+      });
+
+      const goalProgresses = await Promise.all(goalProgressPromises);
+      const totalProgress = goalProgresses.reduce((sum, progress) => sum + progress, 0);
+      const averageProgress = Math.round(totalProgress / goalProgresses.length);
       
-      console.log(`📈 Progresso médio das metas: ${averageProgress}%`);
+      console.log(`📈 Progresso médio das metas no período: ${averageProgress}%`);
       
       return averageProgress;
     },
