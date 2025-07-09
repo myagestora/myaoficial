@@ -103,8 +103,11 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
   // Redirecionar quando pagamento for aprovado
   useEffect(() => {
     if (paymentStatus?.status === 'completed') {
+      // Invalidar todas as queries necessárias
       queryClient.invalidateQueries({ queryKey: ['user-subscription'] });
       queryClient.invalidateQueries({ queryKey: ['user-active-subscription'] });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['user-access-check'] });
       
       toast({
         title: 'Pagamento Confirmado! 🎉',

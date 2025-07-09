@@ -36,7 +36,7 @@ export const usePaymentMutation = ({ onPixDataReceived }: UsePaymentMutationProp
       console.log('Function response:', data);
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       console.log('Payment created successfully:', data);
       
       if (data.pix_data) {
@@ -49,17 +49,21 @@ export const usePaymentMutation = ({ onPixDataReceived }: UsePaymentMutationProp
           description: 'Use o QR Code para finalizar o pagamento. Aguardando confirmação...',
         });
       } else if (data.status === 'approved') {
+        // Invalidar queries para atualizar status de assinatura
+        await queryClient.invalidateQueries({ queryKey: ['user-subscription'] });
+        await queryClient.invalidateQueries({ queryKey: ['user-active-subscription'] });
+        await queryClient.invalidateQueries({ queryKey: ['profile'] });
+        await queryClient.invalidateQueries({ queryKey: ['user-access-check'] });
+        
         toast({
           title: 'Pagamento aprovado!',
           description: 'Sua assinatura foi ativada com sucesso.',
         });
         
-        queryClient.invalidateQueries({ queryKey: ['user-subscription'] });
-        queryClient.invalidateQueries({ queryKey: ['user-active-subscription'] });
-        
+        // Aguardar um pouco para dar tempo das queries serem invalidadas
         setTimeout(() => {
           navigate('/dashboard');
-        }, 2000);
+        }, 1000);
       } else {
         toast({
           title: 'Pagamento processado',
