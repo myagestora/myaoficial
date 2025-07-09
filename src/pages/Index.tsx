@@ -711,14 +711,14 @@ const Index = () => {
             <div className="text-center mb-16">
               <div className="inline-block px-4 py-2 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-full mb-6">
                 <span className="bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent font-bold">
-                  🔥 Oferta Limitada
+                  🔥 Oferta especial de lançamento
                 </span>
               </div>
               <h2 className="text-5xl font-bold text-gray-900 dark:text-white mb-6">
                 Escolha o Plano Ideal
               </h2>
               <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
-                Comece agora e evolua conforme suas necessidades
+                Você pode optar pelo plano Mensal ou Anual
               </p>
             </div>
             
@@ -884,7 +884,7 @@ const Index = () => {
             </h2>
             <p className="text-2xl text-white/90 mb-12 leading-relaxed">
               Junte-se a mais de 15.000 pessoas que já estão no controle total 
-              da sua vida financeira com {appName}. Comece agora mesmo!
+              da sua vida financeira com a {appName}. Comece agora mesmo!
             </p>
             
             {/* Enhanced CTA Buttons */}
@@ -960,7 +960,7 @@ const Index = () => {
               <p className="text-gray-500 text-sm">
                 © 2025 {appName}. Todos os direitos reservados. 
                 <span className="block mt-2">
-                  Feito com ❤️ para transformar sua vida financeira.
+                  Feito com ❤️ para transformar sua vida financeira por <a href="https://www.b1m.digital" target="_blank"><strong>B1M</strong></a>.
                 </span>
               </p>
             </div>
