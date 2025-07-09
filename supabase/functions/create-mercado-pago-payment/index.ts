@@ -223,10 +223,10 @@ serve(async (req) => {
     if (paymentMethod === 'pix') {
       paymentData.payment_method_id = 'pix';
     } else if (paymentMethod === 'credit_card' && cardData) {
-      // Validar dados do cartão
+      // Validar e processar dados do cartão
       const { cardNumber, cardholderName, expirationMonth, expirationYear, securityCode, cpf } = cardData;
       
-      if (!cardNumber || !cardholderName || !expirationMonth || !expirationYear || !securityCode) {
+      if (!cardNumber || !cardholderName || !expirationMonth || !expirationYear || !securityCode || !cpf) {
         console.error('Dados do cartão incompletos');
         return new Response(JSON.stringify({ 
           error: 'Dados do cartão incompletos' 
@@ -236,40 +236,92 @@ serve(async (req) => {
         });
       }
 
-      // Para cartão de crédito, o Mercado Pago requer que o card seja tokenizado primeiro
-      // Vamos usar o método direto com dados do cartão (apenas para teste)
-      paymentData.payment_method_id = 'master'; // Detectar automaticamente
+      // Limpar e validar número do cartão
+      const cleanCardNumber = cardNumber.replace(/\s/g, '');
+      if (cleanCardNumber.length < 13 || cleanCardNumber.length > 19) {
+        console.error('Número do cartão inválido:', cleanCardNumber.length);
+        return new Response(JSON.stringify({ 
+          error: 'Número do cartão deve ter entre 13 e 19 dígitos' 
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
+
+      // Validar CPF
+      const cleanCPF = cpf.replace(/\D/g, '');
+      if (cleanCPF.length !== 11) {
+        console.error('CPF inválido:', cleanCPF.length);
+        return new Response(JSON.stringify({ 
+          error: 'CPF deve ter 11 dígitos' 
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
+
+      // Detectar bandeira do cartão
+      let paymentMethodId = 'visa'; // padrão
+      const firstDigit = cleanCardNumber.charAt(0);
+      const firstTwoDigits = cleanCardNumber.substring(0, 2);
+      const firstFourDigits = cleanCardNumber.substring(0, 4);
+
+      if (firstDigit === '4') {
+        paymentMethodId = 'visa';
+      } else if (['51', '52', '53', '54', '55'].includes(firstTwoDigits) || 
+                 (parseInt(firstFourDigits) >= 2221 && parseInt(firstFourDigits) <= 2720)) {
+        paymentMethodId = 'master';
+      } else if (['34', '37'].includes(firstTwoDigits)) {
+        paymentMethodId = 'amex';
+      } else if (firstFourDigits === '6011' || firstTwoDigits === '65') {
+        paymentMethodId = 'discover';
+      }
+
+      console.log('Bandeira detectada:', paymentMethodId);
+
+      // Configurar pagamento com cartão
+      paymentData.payment_method_id = paymentMethodId;
       paymentData.installments = 1;
       
-      // Adicionar dados do cartão (ATENÇÃO: Em produção, use tokenização)
+      // Token do cartão (simulação - em produção deve usar SDK do MP)
+      paymentData.token = `card_token_${Date.now()}`;
+      
+      // Dados do pagador
+      paymentData.payer = {
+        ...paymentData.payer,
+        identification: {
+          type: 'CPF',
+          number: cleanCPF
+        }
+      };
+
+      // Para teste, vamos usar o método direto (não recomendado em produção)
+      delete paymentData.token;
       paymentData.card = {
-        card_number: cardNumber.replace(/\s/g, ''),
+        card_number: cleanCardNumber,
         security_code: securityCode,
         expiration_month: parseInt(expirationMonth),
         expiration_year: parseInt(expirationYear),
         cardholder: {
-          name: cardholderName,
+          name: cardholderName.toUpperCase(),
           identification: {
             type: 'CPF',
-            number: cpf.replace(/\D/g, '')
+            number: cleanCPF
           }
         }
       };
     }
 
     console.log('Criando pagamento no Mercado Pago...');
-    console.log('Dados do pagamento:', JSON.stringify({
-      ...paymentData,
-      // Não logar dados sensíveis do cartão
-      card: paymentData.card ? { ...paymentData.card, card_number: 'HIDDEN', security_code: 'HIDDEN' } : undefined
-    }, null, 2));
+    console.log('Payment method:', paymentData.payment_method_id);
+    console.log('Amount:', paymentData.transaction_amount);
 
     const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
-        'X-Idempotency-Key': externalReference // Para evitar pagamentos duplicados
+        'X-Idempotency-Key': externalReference
       },
       body: JSON.stringify(paymentData),
     });
@@ -279,22 +331,28 @@ serve(async (req) => {
     if (!mpResponse.ok) {
       const errorText = await mpResponse.text();
       console.error('Erro do Mercado Pago - Status:', mpResponse.status);
-      console.error('Erro do Mercado Pago - Body:', errorText);
+      console.error('Erro do Mercado Pago - Response:', errorText);
       
       let errorMessage = `Erro do Mercado Pago (${mpResponse.status})`;
       try {
         const errorJson = JSON.parse(errorText);
+        console.error('Erro JSON:', errorJson);
+        
         if (errorJson.message) {
           errorMessage += `: ${errorJson.message}`;
         } else if (errorJson.cause && errorJson.cause.length > 0) {
-          errorMessage += `: ${errorJson.cause[0].description}`;
+          const causes = errorJson.cause.map((c: any) => c.description || c.code).join(', ');
+          errorMessage += `: ${causes}`;
+        } else if (errorJson.error) {
+          errorMessage += `: ${errorJson.error}`;
         }
       } catch {
         errorMessage += `: ${errorText.substring(0, 200)}`;
       }
       
       return new Response(JSON.stringify({ 
-        error: errorMessage
+        error: errorMessage,
+        details: errorText
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,

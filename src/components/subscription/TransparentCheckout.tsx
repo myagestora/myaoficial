@@ -96,14 +96,13 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
       return data;
     },
     enabled: !!pixData?.payment_id && !!user,
-    refetchInterval: pixData?.payment_id ? 3000 : false, // Verifica a cada 3 segundos
+    refetchInterval: pixData?.payment_id ? 3000 : false,
     refetchIntervalInBackground: true,
   });
 
   // Redirecionar quando pagamento for aprovado
   useEffect(() => {
     if (paymentStatus?.status === 'completed') {
-      // Invalidar queries de assinatura
       queryClient.invalidateQueries({ queryKey: ['user-subscription'] });
       queryClient.invalidateQueries({ queryKey: ['user-active-subscription'] });
       
@@ -112,7 +111,6 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
         description: 'Sua assinatura foi ativada com sucesso. Redirecionando...',
       });
       
-      // Redirecionar após 2 segundos
       setTimeout(() => {
         navigate('/dashboard');
       }, 2000);
@@ -158,7 +156,6 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
           description: 'Sua assinatura foi ativada com sucesso.',
         });
         
-        // Invalidar queries e redirecionar
         queryClient.invalidateQueries({ queryKey: ['user-subscription'] });
         queryClient.invalidateQueries({ queryKey: ['user-active-subscription'] });
         
@@ -183,7 +180,11 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
         } else if (error.message.includes('Token do Mercado Pago não configurado')) {
           errorMessage = 'Sistema de pagamentos em configuração. Tente novamente em alguns minutos.';
         } else if (error.message.includes('Mercado Pago')) {
-          errorMessage = 'Erro no processamento do pagamento. Verifique os dados e tente novamente.';
+          errorMessage = 'Erro no processamento do pagamento. Verifique os dados do cartão e tente novamente.';
+        } else if (error.message.includes('Número do cartão')) {
+          errorMessage = 'Número do cartão inválido. Verifique e tente novamente.';
+        } else if (error.message.includes('CPF')) {
+          errorMessage = 'CPF inválido. Verifique e tente novamente.';
         } else {
           errorMessage = error.message;
         }
@@ -237,6 +238,29 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
         toast({
           title: 'CPF inválido',
           description: 'CPF deve ter 11 dígitos.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Validar mês
+      const month = parseInt(expirationMonth);
+      if (month < 1 || month > 12) {
+        toast({
+          title: 'Data inválida',
+          description: 'Mês de vencimento deve estar entre 01 e 12.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Validar ano
+      const year = parseInt(expirationYear);
+      const currentYear = new Date().getFullYear();
+      if (year < currentYear || year > currentYear + 20) {
+        toast({
+          title: 'Data inválida',
+          description: 'Ano de vencimento inválido.',
           variant: 'destructive',
         });
         return;
@@ -401,7 +425,7 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
         <div className="space-y-4 border-t pt-4">
           <Label className="text-sm font-medium">Dados do Cartão:</Label>
           <div className="space-y-4">
-            {/* Número e Nome do Cartão - 50/50 */}
+            {/* Número e Nome do Cartão */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="cardNumber" className="text-sm">Número do Cartão</Label>
@@ -409,7 +433,12 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
                   id="cardNumber"
                   placeholder="0000 0000 0000 0000"
                   value={cardData.cardNumber}
-                  onChange={(e) => setCardData(prev => ({ ...prev, cardNumber: e.target.value }))}
+                  onChange={(e) => {
+                    let value = e.target.value.replace(/\D/g, '');
+                    value = value.replace(/(\d{4})(?=\d)/g, '$1 ');
+                    setCardData(prev => ({ ...prev, cardNumber: value }));
+                  }}
+                  maxLength={19}
                   className="mt-1"
                 />
               </div>
@@ -419,7 +448,7 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
                   id="cardholderName"
                   placeholder="Nome completo"
                   value={cardData.cardholderName}
-                  onChange={(e) => setCardData(prev => ({ ...prev, cardholderName: e.target.value }))}
+                  onChange={(e) => setCardData(prev => ({ ...prev, cardholderName: e.target.value.toUpperCase() }))}
                   className="mt-1"
                 />
               </div>
@@ -433,7 +462,10 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
                   placeholder="MM"
                   maxLength={2}
                   value={cardData.expirationMonth}
-                  onChange={(e) => setCardData(prev => ({ ...prev, expirationMonth: e.target.value }))}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    setCardData(prev => ({ ...prev, expirationMonth: value }));
+                  }}
                   className="mt-1"
                 />
               </div>
@@ -444,7 +476,10 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
                   placeholder="AAAA"
                   maxLength={4}
                   value={cardData.expirationYear}
-                  onChange={(e) => setCardData(prev => ({ ...prev, expirationYear: e.target.value }))}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    setCardData(prev => ({ ...prev, expirationYear: value }));
+                  }}
                   className="mt-1"
                 />
               </div>
@@ -458,7 +493,10 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
                   placeholder="000"
                   maxLength={4}
                   value={cardData.securityCode}
-                  onChange={(e) => setCardData(prev => ({ ...prev, securityCode: e.target.value }))}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    setCardData(prev => ({ ...prev, securityCode: value }));
+                  }}
                   className="mt-1"
                 />
               </div>
@@ -468,7 +506,12 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
                   id="cpf"
                   placeholder="000.000.000-00"
                   value={cardData.cpf}
-                  onChange={(e) => setCardData(prev => ({ ...prev, cpf: e.target.value }))}
+                  onChange={(e) => {
+                    let value = e.target.value.replace(/\D/g, '');
+                    value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+                    setCardData(prev => ({ ...prev, cpf: value }));
+                  }}
+                  maxLength={14}
                   className="mt-1"
                 />
               </div>
