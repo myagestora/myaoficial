@@ -772,9 +772,9 @@ const Index = () => {
                         <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
                           {plan.price_monthly ? (
                             <>
-                              <span className="text-lg text-gray-500 line-through mr-2">
+                              {/*<span className="text-lg text-gray-500 line-through mr-2">
                                 R$ {(plan.price_monthly * 2).toFixed(2).replace('.', ',')}
-                              </span>
+                              </span>*/}
                               R$ {plan.price_monthly.toFixed(2).replace('.', ',')}
                               <span className="text-lg text-gray-500">/mês</span>
                             </>
