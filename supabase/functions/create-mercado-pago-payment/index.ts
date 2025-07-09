@@ -1,6 +1,18 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { PaymentRequest } from './types.ts';
+import { validateCardData } from './validation.ts';
+import { buildPaymentData } from './payment-builder.ts';
+import { 
+  createSupabaseClient, 
+  getPlanData, 
+  getMercadoPagoToken, 
+  createOrGetSubscription,
+  savePaymentRecord,
+  activateSubscription
+} from './database-service.ts';
+import { createMercadoPagoPayment } from './mercado-pago-service.ts';
+import { authenticateUser } from './auth-service.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,51 +27,14 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
+    const supabaseClient = createSupabaseClient();
 
-    // Obter usuário autenticado
+    // Autenticar usuário
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      console.error('Token de autorização não fornecido');
-      return new Response(JSON.stringify({ 
-        error: 'Token de autorização necessário' 
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 401,
-      });
-    }
+    const user = await authenticateUser(supabaseClient, authHeader);
 
-    const token = authHeader.replace('Bearer ', '');
-    console.log('Validando token de usuário...');
-    
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
-    if (authError) {
-      console.error('Erro de autenticação:', authError);
-      return new Response(JSON.stringify({ 
-        error: 'Token inválido: ' + authError.message
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 401,
-      });
-    }
-
-    if (!user) {
-      console.error('Usuário não encontrado');
-      return new Response(JSON.stringify({ 
-        error: 'Usuário não autenticado' 
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 401,
-      });
-    }
-
-    console.log('Usuário autenticado:', user.id);
-
-    let requestBody;
+    // Parse do corpo da requisição
+    let requestBody: PaymentRequest;
     try {
       requestBody = await req.json();
     } catch (parseError) {
@@ -86,69 +61,34 @@ serve(async (req) => {
 
     console.log('Dados recebidos:', { planId, frequency, paymentMethod });
 
-    // Buscar detalhes do plano
-    console.log('Buscando plano no banco de dados...');
-    const { data: planData, error: planError } = await supabaseClient
-      .from('subscription_plans')
-      .select('*')
-      .eq('id', planId)
-      .single();
+    // Validar dados do cartão se necessário
+    if (paymentMethod === 'credit_card') {
+      if (!cardData) {
+        return new Response(JSON.stringify({ 
+          error: 'Dados do cartão são obrigatórios para pagamento com cartão' 
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
 
-    if (planError) {
-      console.error('Erro ao buscar plano:', planError);
-      return new Response(JSON.stringify({ 
-        error: 'Erro ao buscar plano: ' + planError.message
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 404,
-      });
+      const validation = validateCardData(cardData);
+      if (!validation.isValid) {
+        console.error('Dados do cartão inválidos:', validation.error);
+        return new Response(JSON.stringify({ 
+          error: validation.error 
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
     }
 
-    if (!planData) {
-      console.error('Plano não encontrado:', planId);
-      return new Response(JSON.stringify({ 
-        error: 'Plano não encontrado' 
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 404,
-      });
-    }
-
-    console.log('Plano encontrado:', planData.name);
+    // Buscar dados do plano
+    const planData = await getPlanData(supabaseClient, planId);
 
     // Buscar token do Mercado Pago
-    console.log('Buscando token do Mercado Pago...');
-    const { data: configData, error: configError } = await supabaseClient
-      .from('system_config')
-      .select('value')
-      .eq('key', 'mercado_pago_access_token')
-      .single();
-
-    if (configError) {
-      console.error('Erro ao buscar token do MP:', configError);
-      return new Response(JSON.stringify({ 
-        error: 'Token do Mercado Pago não configurado: ' + configError.message
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      });
-    }
-
-    if (!configData || !configData.value) {
-      console.error('Token do MP não encontrado na configuração');
-      return new Response(JSON.stringify({ 
-        error: 'Token do Mercado Pago não configurado' 
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      });
-    }
-
-    const accessToken = typeof configData.value === 'string' ? 
-      configData.value.replace(/^"|"$/g, '') : 
-      String(configData.value).replace(/^"|"$/g, '');
-
-    console.log('Token obtido:', accessToken ? 'OK' : 'VAZIO');
+    const accessToken = await getMercadoPagoToken(supabaseClient);
 
     // Determinar valor baseado na frequência
     const amount = frequency === 'monthly' ? planData.price_monthly : planData.price_yearly;
@@ -165,261 +105,42 @@ serve(async (req) => {
     console.log('Valor do pagamento:', amount);
 
     // Criar ou buscar assinatura do usuário
-    let subscriptionId;
-    const { data: existingSubscription } = await supabaseClient
-      .from('user_subscriptions')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('plan_id', planId)
-      .maybeSingle();
-
-    if (existingSubscription) {
-      subscriptionId = existingSubscription.id;
-    } else {
-      // Criar nova assinatura
-      const { data: newSubscription, error: subscriptionError } = await supabaseClient
-        .from('user_subscriptions')
-        .insert({
-          user_id: user.id,
-          plan_id: planId,
-          status: 'inactive',
-          frequency: frequency,
-          current_period_start: new Date().toISOString(),
-          current_period_end: new Date(Date.now() + (frequency === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000).toISOString(),
-        })
-        .select()
-        .single();
-
-      if (subscriptionError) {
-        console.error('Erro ao criar assinatura:', subscriptionError);
-        return new Response(JSON.stringify({ 
-          error: 'Erro ao criar assinatura: ' + subscriptionError.message
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 500,
-        });
-      }
-
-      subscriptionId = newSubscription.id;
-    }
+    const subscriptionId = await createOrGetSubscription(supabaseClient, user.id, planId, frequency);
 
     // Criar referência externa única
     const externalReference = `${user.id}_${planId}_${Date.now()}`;
     console.log('External reference:', externalReference);
 
     // Criar dados do pagamento para o Mercado Pago
-    const paymentData: any = {
-      transaction_amount: Number(amount),
-      description: `${planData.name} - ${frequency === 'monthly' ? 'Mensal' : 'Anual'}`,
-      external_reference: externalReference,
-      payer: {
-        email: user.email || 'user@example.com',
-        first_name: user.user_metadata?.full_name || user.user_metadata?.name || 'Usuario',
-      },
-      notification_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/mercado-pago-webhook`,
-    };
+    const paymentData = buildPaymentData(
+      amount,
+      planData.name,
+      frequency,
+      externalReference,
+      user.email,
+      user.user_metadata?.full_name || user.user_metadata?.name,
+      paymentMethod,
+      cardData
+    );
 
-    // Configurar método de pagamento
-    if (paymentMethod === 'pix') {
-      paymentData.payment_method_id = 'pix';
-    } else if (paymentMethod === 'credit_card' && cardData) {
-      // Validar e processar dados do cartão
-      const { cardNumber, cardholderName, expirationMonth, expirationYear, securityCode, cpf } = cardData;
-      
-      if (!cardNumber || !cardholderName || !expirationMonth || !expirationYear || !securityCode || !cpf) {
-        console.error('Dados do cartão incompletos');
-        return new Response(JSON.stringify({ 
-          error: 'Dados do cartão incompletos' 
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        });
-      }
-
-      // Limpar e validar número do cartão
-      const cleanCardNumber = cardNumber.replace(/\s/g, '');
-      if (cleanCardNumber.length < 13 || cleanCardNumber.length > 19) {
-        console.error('Número do cartão inválido:', cleanCardNumber.length);
-        return new Response(JSON.stringify({ 
-          error: 'Número do cartão deve ter entre 13 e 19 dígitos' 
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        });
-      }
-
-      // Validar CPF
-      const cleanCPF = cpf.replace(/\D/g, '');
-      if (cleanCPF.length !== 11) {
-        console.error('CPF inválido:', cleanCPF.length);
-        return new Response(JSON.stringify({ 
-          error: 'CPF deve ter 11 dígitos' 
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        });
-      }
-
-      // Detectar bandeira do cartão
-      let paymentMethodId = 'visa'; // padrão
-      const firstDigit = cleanCardNumber.charAt(0);
-      const firstTwoDigits = cleanCardNumber.substring(0, 2);
-      const firstFourDigits = cleanCardNumber.substring(0, 4);
-
-      if (firstDigit === '4') {
-        paymentMethodId = 'visa';
-      } else if (['51', '52', '53', '54', '55'].includes(firstTwoDigits) || 
-                 (parseInt(firstFourDigits) >= 2221 && parseInt(firstFourDigits) <= 2720)) {
-        paymentMethodId = 'master';
-      } else if (['34', '37'].includes(firstTwoDigits)) {
-        paymentMethodId = 'amex';
-      } else if (firstFourDigits === '6011' || firstTwoDigits === '65') {
-        paymentMethodId = 'discover';
-      }
-
-      console.log('Bandeira detectada:', paymentMethodId);
-
-      // Configurar pagamento com cartão
-      paymentData.payment_method_id = paymentMethodId;
-      paymentData.installments = 1;
-      
-      // Token do cartão (simulação - em produção deve usar SDK do MP)
-      paymentData.token = `card_token_${Date.now()}`;
-      
-      // Dados do pagador
-      paymentData.payer = {
-        ...paymentData.payer,
-        identification: {
-          type: 'CPF',
-          number: cleanCPF
-        }
-      };
-
-      // Para teste, vamos usar o método direto (não recomendado em produção)
-      delete paymentData.token;
-      paymentData.card = {
-        card_number: cleanCardNumber,
-        security_code: securityCode,
-        expiration_month: parseInt(expirationMonth),
-        expiration_year: parseInt(expirationYear),
-        cardholder: {
-          name: cardholderName.toUpperCase(),
-          identification: {
-            type: 'CPF',
-            number: cleanCPF
-          }
-        }
-      };
-    }
-
-    console.log('Criando pagamento no Mercado Pago...');
-    console.log('Payment method:', paymentData.payment_method_id);
-    console.log('Amount:', paymentData.transaction_amount);
-
-    const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-        'X-Idempotency-Key': externalReference
-      },
-      body: JSON.stringify(paymentData),
-    });
-
-    console.log('Status da resposta do MP:', mpResponse.status);
-
-    if (!mpResponse.ok) {
-      const errorText = await mpResponse.text();
-      console.error('Erro do Mercado Pago - Status:', mpResponse.status);
-      console.error('Erro do Mercado Pago - Response:', errorText);
-      
-      let errorMessage = `Erro do Mercado Pago (${mpResponse.status})`;
-      try {
-        const errorJson = JSON.parse(errorText);
-        console.error('Erro JSON:', errorJson);
-        
-        if (errorJson.message) {
-          errorMessage += `: ${errorJson.message}`;
-        } else if (errorJson.cause && errorJson.cause.length > 0) {
-          const causes = errorJson.cause.map((c: any) => c.description || c.code).join(', ');
-          errorMessage += `: ${causes}`;
-        } else if (errorJson.error) {
-          errorMessage += `: ${errorJson.error}`;
-        }
-      } catch {
-        errorMessage += `: ${errorText.substring(0, 200)}`;
-      }
-      
-      return new Response(JSON.stringify({ 
-        error: errorMessage,
-        details: errorText
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      });
-    }
-
-    const mpPayment = await mpResponse.json();
-    console.log('Pagamento criado no MP:', {
-      id: mpPayment.id,
-      status: mpPayment.status,
-      payment_method_id: mpPayment.payment_method_id
-    });
+    // Criar pagamento no Mercado Pago
+    const mpPayment = await createMercadoPagoPayment(paymentData, accessToken, externalReference);
 
     // Salvar o pagamento no banco de dados
-    console.log('Salvando pagamento no banco de dados...');
-    
-    const { data: paymentRecord, error: paymentError } = await supabaseClient
-      .from('payments')
-      .insert({
-        user_id: user.id,
-        plan_id: planId,
-        subscription_id: subscriptionId,
-        amount: Number(amount),
-        currency: 'BRL',
-        payment_method: paymentMethod,
-        mercado_pago_payment_id: mpPayment.id.toString(),
-        mercado_pago_preference_id: externalReference,
-        status: mpPayment.status === 'approved' ? 'completed' : 'pending',
-        payment_date: mpPayment.date_approved || mpPayment.date_created,
-      })
-      .select()
-      .single();
-
-    if (paymentError) {
-      console.error('Erro ao salvar pagamento no banco:', paymentError);
-      return new Response(JSON.stringify({ 
-        error: 'Erro ao salvar pagamento: ' + paymentError.message
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      });
-    }
-
-    console.log('Pagamento salvo no banco:', paymentRecord.id);
+    const paymentRecord = await savePaymentRecord(
+      supabaseClient,
+      user.id,
+      planId,
+      subscriptionId,
+      amount,
+      paymentMethod,
+      mpPayment,
+      externalReference
+    );
 
     // Se foi aprovado imediatamente, ativar assinatura
     if (mpPayment.status === 'approved') {
-      console.log('Pagamento aprovado imediatamente - ativando assinatura...');
-      
-      await supabaseClient
-        .from('user_subscriptions')
-        .update({
-          status: 'active',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', subscriptionId);
-
-      // Atualizar perfil
-      await supabaseClient
-        .from('profiles')
-        .update({
-          subscription_status: 'active',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
-
-      console.log('Assinatura ativada');
+      await activateSubscription(supabaseClient, subscriptionId, user.id);
     }
 
     // Preparar resposta
