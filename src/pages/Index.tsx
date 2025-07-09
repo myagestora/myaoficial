@@ -357,8 +357,8 @@ const Index = () => {
                 <span className="text-green-600"> em segundos</span>
               </h2>
               <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
-                Registre gastos e receitas conversando naturalmente. Nosso assistente entende você 
-                e organiza tudo automaticamente, como mágica! 🪄
+                Registre gastos e receitas conversando naturalmente. A {appName} também entende áudio e imagem,
+                e organiza tudo automaticamente, como mágica!
               </p>
               
               {/* Benefits List */}
@@ -590,7 +590,7 @@ const Index = () => {
               </span>
             </div>
             <h2 className="text-5xl font-bold text-gray-900 dark:text-white mb-6">
-              Por que escolher o {appName}?
+              Por que escolher a {appName}?
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
               Mais de 15.000 pessoas já transformaram suas vidas financeiras conosco
