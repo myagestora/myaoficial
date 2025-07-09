@@ -3,7 +3,7 @@ import * as React from "react"
 import PhoneInputComponent from 'react-phone-number-input'
 import 'react-phone-number-input/style.css'
 import { cn } from "@/lib/utils"
-import { parsePhoneNumber, CountryCode, isValidPhoneNumber } from 'libphonenumber-js'
+import { parsePhoneNumber, CountryCode } from 'libphonenumber-js'
 
 interface PhoneInputProps {
   value?: string
@@ -21,56 +21,24 @@ const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
         return
       }
 
-      try {
-        // Verificar se o número é válido e obter informações
-        const phoneNumber = parsePhoneNumber(newValue)
-        
-        if (phoneNumber?.country) {
-          const maxLength = getMaxLengthForCountry(phoneNumber.country)
-          const nationalNumber = phoneNumber.nationalNumber
-          
-          // Bloquear se exceder o limite do país
-          if (nationalNumber.length > maxLength) {
-            return // Não aceita a mudança
-          }
-        } else {
-          // Para números sem país detectado, aplicar validação rigorosa
-          const digitsOnly = newValue.replace(/\D/g, '')
-          
-          // Para Brasil (+55), máximo 13 dígitos total (55 + 11 nacionais)
-          if (newValue.startsWith('+55') || newValue.startsWith('55')) {
-            const nationalDigits = digitsOnly.replace(/^55/, '')
-            if (nationalDigits.length > 11) {
-              return // Não aceita se exceder 11 dígitos nacionais
-            }
-          } else {
-            // Para outros países, limite genérico de 15 dígitos total
-            if (digitsOnly.length > 15) {
-              return
-            }
-          }
+      // Contar apenas dígitos (removendo todos os caracteres não numéricos)
+      const digitsOnly = newValue.replace(/\D/g, '')
+      
+      // Verificar limite baseado no código do país
+      if (newValue.startsWith('+55') || digitsOnly.startsWith('55')) {
+        // Brasil: máximo 13 dígitos total (55 + 11 dígitos nacionais)
+        if (digitsOnly.length > 13) {
+          return // Bloqueia a entrada
         }
-        
-        onChange?.(newValue)
-      } catch (error) {
-        // Em caso de erro, aplicar validação básica rigorosa
-        const digitsOnly = newValue.replace(/\D/g, '')
-        
-        // Verificar se começa com código do Brasil
-        if (digitsOnly.startsWith('55')) {
-          // Brasil: máximo 13 dígitos (55 + 11)
-          if (digitsOnly.length > 13) {
-            return
-          }
-        } else {
-          // Outros países: máximo 15 dígitos
-          if (digitsOnly.length > 15) {
-            return
-          }
+      } else {
+        // Outros países: máximo 15 dígitos total (padrão internacional)
+        if (digitsOnly.length > 15) {
+          return // Bloqueia a entrada
         }
-        
-        onChange?.(newValue)
       }
+
+      // Se chegou até aqui, aceita a mudança
+      onChange?.(newValue)
     }
 
     return (
@@ -92,33 +60,6 @@ const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
     )
   }
 )
-
-// Função para obter o comprimento máximo do número nacional por país
-const getMaxLengthForCountry = (country: CountryCode): number => {
-  const maxLengths: Record<string, number> = {
-    'BR': 11, // Brasil: 11 dígitos nacionais (ex: 11987654321)
-    'US': 10, // EUA: 10 dígitos
-    'CA': 10, // Canadá: 10 dígitos
-    'GB': 11, // Reino Unido: até 11 dígitos
-    'DE': 12, // Alemanha: até 12 dígitos
-    'FR': 10, // França: 10 dígitos
-    'IT': 11, // Itália: até 11 dígitos
-    'ES': 9,  // Espanha: 9 dígitos
-    'PT': 9,  // Portugal: 9 dígitos
-    'AR': 11, // Argentina: até 11 dígitos
-    'MX': 10, // México: 10 dígitos
-    'CL': 9,  // Chile: 9 dígitos
-    'CO': 10, // Colômbia: 10 dígitos
-    'PE': 9,  // Peru: 9 dígitos
-    'UY': 9,  // Uruguai: 9 dígitos
-    'PY': 9,  // Paraguai: 9 dígitos
-    'BO': 8,  // Bolívia: 8 dígitos
-    'EC': 9,  // Equador: 9 dígitos
-    'VE': 11, // Venezuela: 11 dígitos
-  }
-  
-  return maxLengths[country] || 11;
-}
 
 PhoneInput.displayName = "PhoneInput"
 
