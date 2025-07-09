@@ -39,7 +39,7 @@ export const AccountStatusCard = ({ accountActive }: AccountStatusCardProps) => 
         .update({ account_status: 'active' })
         .eq('id', user.id)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Erro ao reativar conta:', error);
@@ -80,7 +80,7 @@ export const AccountStatusCard = ({ accountActive }: AccountStatusCardProps) => 
         .update({ account_status: 'deactivated' })
         .eq('id', user.id)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Erro ao desativar conta:', error);
