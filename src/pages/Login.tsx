@@ -83,7 +83,7 @@ const Login = () => {
         console.log('✅ Cadastro realizado com sucesso!');
         toast({
           title: 'Sucesso',
-          description: 'Conta criada com sucesso! Você já pode fazer login.',
+          description: 'Conta criada com sucesso!',
         });
         
         setIsSignUp(false);
