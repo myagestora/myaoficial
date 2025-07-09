@@ -65,7 +65,7 @@ export const useSubscriptionFlow = (
 
         toast({
           title: 'Conta criada!',
-          description: 'Verifique seu email para confirmar a conta.',
+          description: 'Bem vindo(a) a MYA.',
         });
         
         // Após criar conta, ir para checkout
