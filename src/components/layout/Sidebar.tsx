@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, CreditCard, PieChart, Target, Calendar, FolderOpen, Settings } from 'lucide-react';
@@ -131,11 +130,15 @@ export const Sidebar = ({
         {/* Header com logo - fundo branco */}
         <div className="px-4 py-6 bg-white">
           <div className="flex flex-col items-center space-y-3">
-            {logoUrl && <img src={logoUrl} alt="Logo" className="h-16 w-auto object-contain" onError={e => {
-            console.error('Erro ao carregar logo:', logoUrl);
-            const target = e.target as HTMLImageElement;
-            target.style.display = 'none';
-          }} />}
+            {logoUrl && 
+              <NavLink to="/dashboard" className="cursor-pointer">
+                <img src={logoUrl} alt="Logo" className="h-16 w-auto object-contain" onError={e => {
+                  console.error('Erro ao carregar logo:', logoUrl);
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                }} />
+              </NavLink>
+            }
           </div>
         </div>
 
