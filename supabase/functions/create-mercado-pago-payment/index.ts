@@ -21,6 +21,8 @@ const corsHeaders = {
 
 serve(async (req) => {
   console.log('=== CREATE MERCADO PAGO PAYMENT INICIADO ===');
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
   
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -31,16 +33,22 @@ serve(async (req) => {
 
     // Autenticar usuário
     const authHeader = req.headers.get('Authorization');
+    console.log('Auth header presente:', !!authHeader);
+    
     const user = await authenticateUser(supabaseClient, authHeader);
+    console.log('Usuário autenticado:', user.id);
 
     // Parse do corpo da requisição
     let requestBody: PaymentRequest;
     try {
-      requestBody = await req.json();
+      const bodyText = await req.text();
+      console.log('Request body raw:', bodyText);
+      requestBody = JSON.parse(bodyText);
     } catch (parseError) {
       console.error('Erro ao fazer parse do JSON:', parseError);
       return new Response(JSON.stringify({ 
-        error: 'JSON inválido no corpo da requisição' 
+        error: 'JSON inválido no corpo da requisição',
+        details: parseError.message
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
@@ -48,6 +56,14 @@ serve(async (req) => {
     }
 
     const { planId, frequency, paymentMethod, cardData } = requestBody;
+    
+    console.log('Dados da requisição:', {
+      planId,
+      frequency,
+      paymentMethod,
+      hasCardData: !!cardData,
+      cardDataKeys: cardData ? Object.keys(cardData) : []
+    });
     
     if (!planId || !frequency || !paymentMethod) {
       console.error('Parâmetros obrigatórios faltando:', { planId, frequency, paymentMethod });
@@ -59,11 +75,10 @@ serve(async (req) => {
       });
     }
 
-    console.log('Dados recebidos:', { planId, frequency, paymentMethod, hasCardData: !!cardData });
-
     // Validar dados do cartão se necessário
     if (paymentMethod === 'credit_card') {
       if (!cardData) {
+        console.error('Dados do cartão não fornecidos para pagamento com cartão');
         return new Response(JSON.stringify({ 
           error: 'Dados do cartão são obrigatórios para pagamento com cartão' 
         }), {
@@ -87,10 +102,14 @@ serve(async (req) => {
     }
 
     // Buscar dados do plano
+    console.log('Buscando dados do plano:', planId);
     const planData = await getPlanData(supabaseClient, planId);
+    console.log('Plano encontrado:', planData.name);
 
     // Buscar token do Mercado Pago
+    console.log('Buscando token do Mercado Pago...');
     const accessToken = await getMercadoPagoToken(supabaseClient);
+    console.log('Token do MP obtido:', accessToken ? 'Sim' : 'Não');
 
     // Determinar valor baseado na frequência
     const amount = frequency === 'monthly' ? planData.price_monthly : planData.price_yearly;
@@ -104,16 +123,19 @@ serve(async (req) => {
       });
     }
 
-    console.log('Valor do pagamento:', amount);
+    console.log('Valor do pagamento determinado:', amount);
 
     // Criar ou buscar assinatura do usuário
+    console.log('Criando/buscando assinatura do usuário...');
     const subscriptionId = await createOrGetSubscription(supabaseClient, user.id, planId, frequency);
+    console.log('Subscription ID:', subscriptionId);
 
     // Criar referência externa única
     const externalReference = `${user.id}_${planId}_${Date.now()}`;
-    console.log('External reference:', externalReference);
+    console.log('External reference gerada:', externalReference);
 
     // Criar dados do pagamento para o Mercado Pago
+    console.log('Construindo dados do pagamento...');
     const paymentData = buildPaymentData(
       amount,
       planData.name,
@@ -131,13 +153,13 @@ serve(async (req) => {
       // Criar pagamento no Mercado Pago
       const mpPayment = await createMercadoPagoPayment(paymentData, accessToken, externalReference);
 
-      console.log('Pagamento criado no MP com sucesso:', {
-        id: mpPayment.id,
-        status: mpPayment.status,
-        status_detail: mpPayment.status_detail
-      });
+      console.log('=== PAGAMENTO MERCADO PAGO CRIADO ===');
+      console.log('Payment ID:', mpPayment.id);
+      console.log('Status:', mpPayment.status);
+      console.log('Status detail:', mpPayment.status_detail);
 
       // Salvar o pagamento no banco de dados
+      console.log('Salvando pagamento no banco de dados...');
       const paymentRecord = await savePaymentRecord(
         supabaseClient,
         user.id,
@@ -148,9 +170,11 @@ serve(async (req) => {
         mpPayment,
         externalReference
       );
+      console.log('Payment record salvo:', paymentRecord.id);
 
       // Se foi aprovado imediatamente, ativar assinatura
       if (mpPayment.status === 'approved') {
+        console.log('Pagamento aprovado imediatamente, ativando assinatura...');
         await activateSubscription(supabaseClient, subscriptionId, user.id);
       }
 
@@ -174,12 +198,11 @@ serve(async (req) => {
           qr_code: mpPayment.point_of_interaction.transaction_data.qr_code,
           qr_code_base64: mpPayment.point_of_interaction.transaction_data.qr_code_base64,
         };
-        console.log('QR Code PIX gerado com sucesso');
+        console.log('QR Code PIX incluído na resposta');
       }
 
-      console.log('=== PAGAMENTO CRIADO COM SUCESSO ===');
-      console.log('Payment ID:', mpPayment.id);
-      console.log('Status:', mpPayment.status);
+      console.log('=== RESPOSTA FINAL PREPARADA ===');
+      console.log('Response keys:', Object.keys(response));
 
       return new Response(JSON.stringify(response), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -188,13 +211,19 @@ serve(async (req) => {
 
     } catch (mpError) {
       console.error('=== ERRO ESPECÍFICO DO MERCADO PAGO ===');
+      console.error('MP Error type:', typeof mpError);
       console.error('MP Error:', mpError);
       console.error('MP Error message:', mpError.message);
+      console.error('MP Error details:', (mpError as any).details);
+      console.error('MP Error status:', (mpError as any).status);
+      console.error('MP Error statusText:', (mpError as any).statusText);
       
       // Retornar erro mais específico do Mercado Pago
       return new Response(JSON.stringify({ 
         error: `Erro no Mercado Pago: ${mpError.message}`,
-        details: mpError.message
+        details: (mpError as any).details || mpError.message,
+        status: (mpError as any).status || 'unknown',
+        statusText: (mpError as any).statusText || 'unknown'
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 422,
@@ -203,12 +232,15 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('=== ERRO GERAL NA CRIAÇÃO DO PAGAMENTO ===');
-    console.error('Erro:', error);
-    console.error('Stack:', error.stack);
+    console.error('Error type:', typeof error);
+    console.error('Error:', error);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     
     return new Response(JSON.stringify({ 
       error: 'Erro interno do servidor: ' + (error.message || 'Erro desconhecido'),
-      details: error.message
+      details: error.message,
+      stack: error.stack
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

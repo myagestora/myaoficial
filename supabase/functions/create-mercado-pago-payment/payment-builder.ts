@@ -12,6 +12,10 @@ export const buildPaymentData = (
   paymentMethod: 'pix' | 'credit_card',
   cardData?: CardData
 ): PaymentData => {
+  console.log('=== CONSTRUINDO DADOS DO PAGAMENTO ===');
+  console.log('Payment method:', paymentMethod);
+  console.log('Amount:', amount);
+  
   const basePaymentData: PaymentData = {
     transaction_amount: Number(amount),
     description: `${planName} - ${frequency === 'monthly' ? 'Mensal' : 'Anual'}`,
@@ -24,13 +28,17 @@ export const buildPaymentData = (
   };
 
   if (paymentMethod === 'pix') {
+    console.log('Configurando pagamento PIX');
     basePaymentData.payment_method_id = 'pix';
   } else if (paymentMethod === 'credit_card' && cardData) {
+    console.log('Configurando pagamento com cartão de crédito');
+    
     const cleanCardNumber = cardData.cardNumber.replace(/\s/g, '');
     const cleanCPF = cardData.cpf.replace(/\D/g, '');
     
-    // Melhor detecção da bandeira do cartão
+    // Detectar bandeira do cartão
     const paymentMethodId = detectCardBrand(cleanCardNumber);
+    console.log('Payment method ID detectado:', paymentMethodId);
     
     basePaymentData.payment_method_id = paymentMethodId;
     basePaymentData.installments = 1;
@@ -41,8 +49,7 @@ export const buildPaymentData = (
       number: cleanCPF
     };
 
-    // Para cartão de crédito, vamos usar o método token (mais seguro)
-    // Por enquanto, mantemos o método direto para funcionar
+    // Dados do cartão
     basePaymentData.card = {
       card_number: cleanCardNumber,
       security_code: cardData.securityCode,
@@ -57,13 +64,17 @@ export const buildPaymentData = (
       }
     };
 
-    console.log('Payment data built for credit card:', {
+    console.log('Dados do cartão configurados:', {
       payment_method_id: paymentMethodId,
       card_number_length: cleanCardNumber.length,
       cpf_length: cleanCPF.length,
+      expiration_month: basePaymentData.card.expiration_month,
+      expiration_year: basePaymentData.card.expiration_year,
+      cardholder_name: basePaymentData.card.cardholder.name,
       amount: basePaymentData.transaction_amount
     });
   }
 
+  console.log('=== DADOS DO PAGAMENTO CONSTRUÍDOS ===');
   return basePaymentData;
 };
