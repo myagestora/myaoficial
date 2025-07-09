@@ -1,8 +1,8 @@
 
-import { PaymentData } from './types.ts';
+import { MercadoPagoPaymentData } from './types.ts';
 
 export const createMercadoPagoPayment = async (
-  paymentData: PaymentData,
+  paymentData: MercadoPagoPaymentData,
   accessToken: string,
   externalReference: string
 ) => {
@@ -11,7 +11,7 @@ export const createMercadoPagoPayment = async (
   console.log('Amount:', paymentData.transaction_amount);
   console.log('External reference:', externalReference);
 
-  // Validar dados obrigatórios
+  // Validações básicas
   if (!paymentData.transaction_amount || paymentData.transaction_amount <= 0) {
     throw new Error('Valor do pagamento inválido');
   }
@@ -20,21 +20,20 @@ export const createMercadoPagoPayment = async (
     throw new Error('Email do pagador não especificado');
   }
 
-  // Validar token de acesso
   if (!accessToken || accessToken.trim() === '') {
     throw new Error('Token de acesso do Mercado Pago inválido');
   }
 
   // Log dos dados do pagamento (sem dados sensíveis)
-  console.log('Payment data structure:', {
+  console.log('Dados do pagamento:', {
     transaction_amount: paymentData.transaction_amount,
     description: paymentData.description,
     payment_method_id: paymentData.payment_method_id || 'auto-detect',
-    has_card_data: !!paymentData.card,
-    has_payer_identification: !!paymentData.payer.identification,
+    has_token: !!paymentData.token,
     installments: paymentData.installments,
     payer_email: paymentData.payer.email,
-    payer_first_name: paymentData.payer.first_name
+    payer_first_name: paymentData.payer.first_name,
+    has_payer_identification: !!paymentData.payer.identification
   });
 
   console.log('Fazendo chamada para API do Mercado Pago...');
@@ -59,7 +58,6 @@ export const createMercadoPagoPayment = async (
     if (!mpResponse.ok) {
       console.error('=== ERRO DO MERCADO PAGO ===');
       console.error('Status:', mpResponse.status);
-      console.error('Status Text:', mpResponse.statusText);
       console.error('Response:', responseText);
       
       let errorMessage = `Erro do Mercado Pago (${mpResponse.status})`;
@@ -71,30 +69,25 @@ export const createMercadoPagoPayment = async (
         console.error('Erro JSON detalhado:', JSON.stringify(errorJson, null, 2));
         
         if (errorJson.message) {
-          errorMessage += `: ${errorJson.message}`;
+          errorMessage = errorJson.message;
         } else if (errorJson.cause && Array.isArray(errorJson.cause) && errorJson.cause.length > 0) {
           const causes = errorJson.cause.map((c: any) => {
-            if (c.description) return c.description;
-            if (c.code) return `Código: ${c.code}`;
-            return JSON.stringify(c);
+            return c.description || c.code || JSON.stringify(c);
           }).join(', ');
-          errorMessage += `: ${causes}`;
+          errorMessage = causes;
         } else if (errorJson.error) {
-          errorMessage += `: ${errorJson.error}`;
-        } else if (errorJson.error_description) {
-          errorMessage += `: ${errorJson.error_description}`;
+          errorMessage = errorJson.error;
         } else {
-          errorMessage += `: Verifique os dados do cartão e tente novamente`;
+          errorMessage = 'Erro na validação dos dados do cartão';
         }
       } catch (parseError) {
         console.error('Erro ao fazer parse da resposta JSON:', parseError);
-        errorMessage += `: Erro na validação dos dados. Verifique as informações do cartão.`;
+        errorMessage = 'Erro na validação dos dados. Verifique as informações do cartão.';
       }
       
       const detailedError = new Error(errorMessage);
       (detailedError as any).details = errorDetails;
       (detailedError as any).status = mpResponse.status;
-      (detailedError as any).statusText = mpResponse.statusText;
       
       throw detailedError;
     }
@@ -106,7 +99,6 @@ export const createMercadoPagoPayment = async (
       console.log('Payment ID:', mpPayment.id);
       console.log('Status:', mpPayment.status);
       console.log('Status detail:', mpPayment.status_detail);
-      console.log('Payment method ID:', mpPayment.payment_method_id);
       
       if (!mpPayment.id) {
         throw new Error('Resposta do Mercado Pago não contém ID do pagamento');

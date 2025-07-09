@@ -15,7 +15,7 @@ export interface PaymentRequest {
   cardData?: CardData;
 }
 
-export interface PaymentData {
+export interface MercadoPagoPaymentData {
   transaction_amount: number;
   description: string;
   external_reference: string;
@@ -28,19 +28,8 @@ export interface PaymentData {
     };
   };
   notification_url: string;
-  payment_method_id?: string; // Só para PIX
-  installments?: number; // Só para cartão
-  card?: {
-    card_number: string;
-    security_code: string;
-    expiration_month: number;
-    expiration_year: number;
-    cardholder: {
-      name: string;
-      identification: {
-        type: string;
-        number: string;
-      };
-    };
-  };
+  payment_method_id?: string;
+  token?: string;
+  installments?: number;
+  issuer_id?: number;
 }
