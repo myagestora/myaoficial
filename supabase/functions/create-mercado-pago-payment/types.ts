@@ -28,9 +28,8 @@ export interface PaymentData {
     };
   };
   notification_url: string;
-  payment_method_id?: string;
-  installments?: number;
-  token?: string;
+  payment_method_id?: string; // Só para PIX
+  installments?: number; // Só para cartão
   card?: {
     card_number: string;
     security_code: string;

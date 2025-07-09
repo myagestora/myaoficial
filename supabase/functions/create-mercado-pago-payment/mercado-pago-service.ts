@@ -7,39 +7,35 @@ export const createMercadoPagoPayment = async (
   externalReference: string
 ) => {
   console.log('=== CRIANDO PAGAMENTO NO MERCADO PAGO ===');
-  console.log('Payment method:', paymentData.payment_method_id);
+  console.log('Payment type:', paymentData.payment_method_id ? 'PIX' : 'Credit Card');
   console.log('Amount:', paymentData.transaction_amount);
   console.log('External reference:', externalReference);
 
-  // Validar dados obrigatórios antes de enviar
+  // Validar dados obrigatórios
   if (!paymentData.transaction_amount || paymentData.transaction_amount <= 0) {
     throw new Error('Valor do pagamento inválido');
-  }
-
-  if (!paymentData.payment_method_id) {
-    throw new Error('Método de pagamento não especificado');
   }
 
   if (!paymentData.payer?.email) {
     throw new Error('Email do pagador não especificado');
   }
 
+  // Validar token de acesso
+  if (!accessToken || accessToken.trim() === '') {
+    throw new Error('Token de acesso do Mercado Pago inválido');
+  }
+
   // Log dos dados do pagamento (sem dados sensíveis)
   console.log('Payment data structure:', {
     transaction_amount: paymentData.transaction_amount,
     description: paymentData.description,
-    payment_method_id: paymentData.payment_method_id,
+    payment_method_id: paymentData.payment_method_id || 'auto-detect',
     has_card_data: !!paymentData.card,
     has_payer_identification: !!paymentData.payer.identification,
     installments: paymentData.installments,
     payer_email: paymentData.payer.email,
     payer_first_name: paymentData.payer.first_name
   });
-
-  // Validar token de acesso
-  if (!accessToken || accessToken.trim() === '') {
-    throw new Error('Token de acesso do Mercado Pago inválido');
-  }
 
   console.log('Fazendo chamada para API do Mercado Pago...');
 
@@ -74,7 +70,6 @@ export const createMercadoPagoPayment = async (
         errorDetails = errorJson;
         console.error('Erro JSON detalhado:', JSON.stringify(errorJson, null, 2));
         
-        // Tratar diferentes tipos de erro do MP
         if (errorJson.message) {
           errorMessage += `: ${errorJson.message}`;
         } else if (errorJson.cause && Array.isArray(errorJson.cause) && errorJson.cause.length > 0) {
@@ -89,14 +84,13 @@ export const createMercadoPagoPayment = async (
         } else if (errorJson.error_description) {
           errorMessage += `: ${errorJson.error_description}`;
         } else {
-          errorMessage += `: ${JSON.stringify(errorJson)}`;
+          errorMessage += `: Verifique os dados do cartão e tente novamente`;
         }
       } catch (parseError) {
         console.error('Erro ao fazer parse da resposta JSON:', parseError);
-        errorMessage += `: ${responseText.substring(0, 500)}`;
+        errorMessage += `: Erro na validação dos dados. Verifique as informações do cartão.`;
       }
       
-      // Criar erro com mais detalhes
       const detailedError = new Error(errorMessage);
       (detailedError as any).details = errorDetails;
       (detailedError as any).status = mpResponse.status;
@@ -114,7 +108,6 @@ export const createMercadoPagoPayment = async (
       console.log('Status detail:', mpPayment.status_detail);
       console.log('Payment method ID:', mpPayment.payment_method_id);
       
-      // Validar resposta do MP
       if (!mpPayment.id) {
         throw new Error('Resposta do Mercado Pago não contém ID do pagamento');
       }
@@ -134,7 +127,6 @@ export const createMercadoPagoPayment = async (
       throw new Error('Erro de conexão com o Mercado Pago. Verifique sua conexão com a internet.');
     }
     
-    // Re-throw outros erros
     throw networkError;
   }
 };

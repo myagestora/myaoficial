@@ -1,6 +1,5 @@
 
 import { PaymentData, CardData } from './types.ts';
-import { detectCardBrand } from './validation.ts';
 
 export const buildPaymentData = (
   amount: number,
@@ -16,65 +15,69 @@ export const buildPaymentData = (
   console.log('Payment method:', paymentMethod);
   console.log('Amount:', amount);
   
-  const basePaymentData: PaymentData = {
-    transaction_amount: Number(amount),
-    description: `${planName} - ${frequency === 'monthly' ? 'Mensal' : 'Anual'}`,
-    external_reference: externalReference,
-    payer: {
-      email: userEmail || 'user@example.com',
-      first_name: userName || 'Usuario',
-    },
-    notification_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/mercado-pago-webhook`,
-  };
-
   if (paymentMethod === 'pix') {
     console.log('Configurando pagamento PIX');
-    basePaymentData.payment_method_id = 'pix';
-  } else if (paymentMethod === 'credit_card' && cardData) {
+    return {
+      transaction_amount: Number(amount),
+      description: `${planName} - ${frequency === 'monthly' ? 'Mensal' : 'Anual'}`,
+      external_reference: externalReference,
+      payment_method_id: 'pix',
+      payer: {
+        email: userEmail || 'user@example.com',
+        first_name: userName || 'Usuario',
+      },
+      notification_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/mercado-pago-webhook`,
+    };
+  } 
+  
+  if (paymentMethod === 'credit_card' && cardData) {
     console.log('Configurando pagamento com cartão de crédito');
     
     const cleanCardNumber = cardData.cardNumber.replace(/\s/g, '');
     const cleanCPF = cardData.cpf.replace(/\D/g, '');
     
-    // Detectar bandeira do cartão
-    const paymentMethodId = detectCardBrand(cleanCardNumber);
-    console.log('Payment method ID detectado:', paymentMethodId);
-    
-    basePaymentData.payment_method_id = paymentMethodId;
-    basePaymentData.installments = 1;
-    
-    // Dados do pagador com CPF
-    basePaymentData.payer.identification = {
-      type: 'CPF',
-      number: cleanCPF
-    };
-
-    // Dados do cartão
-    basePaymentData.card = {
-      card_number: cleanCardNumber,
-      security_code: cardData.securityCode,
-      expiration_month: parseInt(cardData.expirationMonth),
-      expiration_year: parseInt(cardData.expirationYear),
-      cardholder: {
-        name: cardData.cardholderName.toUpperCase(),
+    // Para cartão de crédito, não especificamos payment_method_id
+    // O Mercado Pago detecta automaticamente baseado no número do cartão
+    const paymentData: PaymentData = {
+      transaction_amount: Number(amount),
+      description: `${planName} - ${frequency === 'monthly' ? 'Mensal' : 'Anual'}`,
+      external_reference: externalReference,
+      installments: 1,
+      payer: {
+        email: userEmail || 'user@example.com',
+        first_name: userName || 'Usuario',
         identification: {
           type: 'CPF',
           number: cleanCPF
         }
-      }
+      },
+      card: {
+        card_number: cleanCardNumber,
+        security_code: cardData.securityCode,
+        expiration_month: parseInt(cardData.expirationMonth),
+        expiration_year: parseInt(cardData.expirationYear),
+        cardholder: {
+          name: cardData.cardholderName.toUpperCase(),
+          identification: {
+            type: 'CPF',
+            number: cleanCPF
+          }
+        }
+      },
+      notification_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/mercado-pago-webhook`,
     };
 
     console.log('Dados do cartão configurados:', {
-      payment_method_id: paymentMethodId,
       card_number_length: cleanCardNumber.length,
       cpf_length: cleanCPF.length,
-      expiration_month: basePaymentData.card.expiration_month,
-      expiration_year: basePaymentData.card.expiration_year,
-      cardholder_name: basePaymentData.card.cardholder.name,
-      amount: basePaymentData.transaction_amount
+      expiration_month: paymentData.card?.expiration_month,
+      expiration_year: paymentData.card?.expiration_year,
+      cardholder_name: paymentData.card?.cardholder.name,
+      amount: paymentData.transaction_amount
     });
+
+    return paymentData;
   }
 
-  console.log('=== DADOS DO PAGAMENTO CONSTRUÍDOS ===');
-  return basePaymentData;
+  throw new Error('Método de pagamento inválido ou dados do cartão não fornecidos');
 };

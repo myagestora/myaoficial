@@ -29,7 +29,7 @@ serve(async (req) => {
   }
 
   try {
-    // Parse do corpo da requisição primeiro para ter todos os dados
+    // Parse do corpo da requisição
     let requestBody: PaymentRequest;
     try {
       const bodyText = await req.text();
@@ -110,8 +110,6 @@ serve(async (req) => {
       }
 
       console.log('Validando dados do cartão...');
-      console.log('Card data keys:', Object.keys(cardData));
-      
       const validation = validateCardData(cardData);
       if (!validation.isValid) {
         console.error('Dados do cartão inválidos:', validation.error);
@@ -183,16 +181,7 @@ serve(async (req) => {
     );
 
     console.log('=== DADOS DO PAGAMENTO CONSTRUÍDOS ===');
-    console.log('Payment data (sem dados sensíveis):', {
-      transaction_amount: paymentData.transaction_amount,
-      description: paymentData.description,
-      payment_method_id: paymentData.payment_method_id,
-      has_card_data: !!paymentData.card,
-      has_payer_identification: !!paymentData.payer.identification,
-      installments: paymentData.installments,
-      payer_email: paymentData.payer.email,
-      payer_first_name: paymentData.payer.first_name
-    });
+    console.log('Payment data type:', paymentData.payment_method_id ? 'PIX' : 'Credit Card');
 
     console.log('Enviando pagamento para o Mercado Pago...');
 
@@ -230,7 +219,7 @@ serve(async (req) => {
         id: mpPayment.id,
         status: mpPayment.status,
         status_detail: mpPayment.status_detail,
-        payment_method_id: mpPayment.payment_method?.id,
+        payment_method_id: mpPayment.payment_method_id,
         date_created: mpPayment.date_created,
         date_approved: mpPayment.date_approved,
         external_reference: mpPayment.external_reference,
@@ -258,19 +247,14 @@ serve(async (req) => {
 
     } catch (mpError) {
       console.error('=== ERRO ESPECÍFICO DO MERCADO PAGO ===');
-      console.error('MP Error type:', typeof mpError);
       console.error('MP Error:', mpError);
       console.error('MP Error message:', mpError.message);
-      console.error('MP Error details:', (mpError as any).details);
-      console.error('MP Error status:', (mpError as any).status);
-      console.error('MP Error statusText:', (mpError as any).statusText);
       
       // Retornar erro mais específico do Mercado Pago
       return new Response(JSON.stringify({ 
-        error: `Erro no Mercado Pago: ${mpError.message}`,
+        error: `Erro no processamento: ${mpError.message}`,
         details: (mpError as any).details || mpError.message,
-        mp_status: (mpError as any).status || 'unknown',
-        mp_statusText: (mpError as any).statusText || 'unknown'
+        mp_status: (mpError as any).status || 'unknown'
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 422,
@@ -279,15 +263,12 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('=== ERRO GERAL NA CRIAÇÃO DO PAGAMENTO ===');
-    console.error('Error type:', typeof error);
     console.error('Error:', error);
     console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
     
     return new Response(JSON.stringify({ 
       error: 'Erro interno do servidor: ' + (error.message || 'Erro desconhecido'),
-      details: error.message,
-      stack: error.stack?.split('\n').slice(0, 5).join('\n') // Limitar stack trace
+      details: error.message
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
