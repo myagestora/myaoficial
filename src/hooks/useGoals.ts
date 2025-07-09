@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -64,21 +63,38 @@ export const useGoals = () => {
       const goalsWithCalculatedAmounts = await Promise.all(
         (data || []).map(async (goal) => {
           if (goal.goal_type === 'monthly_budget' && goal.category_id && goal.month_year) {
+            console.log('Calculando gastos para meta:', goal.title, 'Categoria:', goal.category_id, 'Mês:', goal.month_year);
+            
+            // Extrair ano e mês do month_year (formato: YYYY-MM)
+            const [year, month] = goal.month_year.split('-');
+            const startDate = `${year}-${month.padStart(2, '0')}-01`;
+            
+            // Calcular último dia do mês
+            const nextMonth = parseInt(month) === 12 ? 1 : parseInt(month) + 1;
+            const nextYear = parseInt(month) === 12 ? parseInt(year) + 1 : parseInt(year);
+            const endDate = `${nextYear}-${nextMonth.toString().padStart(2, '0')}-01`;
+            
+            console.log('Buscando transações entre:', startDate, 'e', endDate);
+            
             // Buscar gastos reais da categoria no mês
             const { data: transactions, error: transError } = await supabase
               .from('transactions')
-              .select('amount')
+              .select('amount, title, date')
               .eq('user_id', user.id)
               .eq('category_id', goal.category_id)
               .eq('type', 'expense')
-              .gte('date', goal.month_year + '-01')
-              .lt('date', new Date(new Date(goal.month_year + '-01').getFullYear(), new Date(goal.month_year + '-01').getMonth() + 1, 1).toISOString().split('T')[0]);
+              .gte('date', startDate)
+              .lt('date', endDate);
+
+            console.log('Transações encontradas:', transactions);
 
             if (!transError && transactions) {
               const spentAmount = transactions.reduce((sum, t) => sum + Number(t.amount), 0);
+              console.log('Total gasto calculado:', spentAmount);
               
               // Atualizar o current_amount se for diferente do calculado
               if (Math.abs(goal.current_amount - spentAmount) > 0.01) {
+                console.log('Atualizando current_amount de', goal.current_amount, 'para', spentAmount);
                 const { error: updateError } = await supabase
                   .from('goals')
                   .update({ current_amount: spentAmount })
@@ -90,6 +106,8 @@ export const useGoals = () => {
               }
 
               return { ...goal, current_amount: spentAmount };
+            } else if (transError) {
+              console.error('Error fetching transactions:', transError);
             }
           }
           return goal;
@@ -127,17 +145,29 @@ export const useGoals = () => {
       let calculatedCurrentAmount = goalData.current_amount || 0;
       
       if (goalData.goal_type === 'monthly_budget' && goalData.category_id && goalData.month_year) {
+        console.log('Criando meta mensal, calculando gastos existentes...');
+        
+        // Extrair ano e mês do month_year (formato: YYYY-MM)
+        const [year, month] = goalData.month_year.split('-');
+        const startDate = `${year}-${month.padStart(2, '0')}-01`;
+        
+        // Calcular último dia do mês
+        const nextMonth = parseInt(month) === 12 ? 1 : parseInt(month) + 1;
+        const nextYear = parseInt(month) === 12 ? parseInt(year) + 1 : parseInt(year);
+        const endDate = `${nextYear}-${nextMonth.toString().padStart(2, '0')}-01`;
+        
         const { data: transactions, error: transError } = await supabase
           .from('transactions')
           .select('amount')
           .eq('user_id', user.id)
           .eq('category_id', goalData.category_id)
           .eq('type', 'expense')
-          .gte('date', goalData.month_year + '-01')
-          .lt('date', new Date(new Date(goalData.month_year + '-01').getFullYear(), new Date(goalData.month_year + '-01').getMonth() + 1, 1).toISOString().split('T')[0]);
+          .gte('date', startDate)
+          .lt('date', endDate);
 
         if (!transError && transactions) {
           calculatedCurrentAmount = transactions.reduce((sum, t) => sum + Number(t.amount), 0);
+          console.log('Gastos existentes calculados:', calculatedCurrentAmount);
         }
       }
 
