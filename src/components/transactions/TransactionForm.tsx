@@ -227,7 +227,6 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
       setValue('title', transaction.title);
       setValue('amount', Number(transaction.amount));
       setValue('type', transaction.type);
-      setValue('category_id', transaction.category_id || '');
       setValue('date', transaction.date);
       setValue('description', transaction.description || '');
       setValue('is_recurring', transaction.is_recurring || false);
@@ -239,6 +238,17 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
       }
     }
   }, [isOpen, transaction, reset, setValue]);
+
+  // Efeito para definir a categoria após as categorias serem carregadas
+  useEffect(() => {
+    if (transaction && categories && categories.length > 0) {
+      // Verificar se a categoria da transação existe nas categorias carregadas
+      const categoryExists = categories.find(cat => cat.id === transaction.category_id);
+      if (categoryExists) {
+        setValue('category_id', transaction.category_id);
+      }
+    }
+  }, [transaction, categories, setValue]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -258,7 +268,11 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
               <Label htmlFor="type">Tipo</Label>
               <Select
                 value={transactionType}
-                onValueChange={(value) => setValue('type', value as 'income' | 'expense')}
+                onValueChange={(value) => {
+                  setValue('type', value as 'income' | 'expense');
+                  // Limpar categoria quando o tipo mudar
+                  setValue('category_id', '');
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o tipo" />
