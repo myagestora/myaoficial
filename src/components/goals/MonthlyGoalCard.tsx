@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -54,12 +53,16 @@ export const MonthlyGoalCard: React.FC<MonthlyGoalCardProps> = ({
     statusText = `${progressPercentage.toFixed(1)}% da meta alcançada`;
   }
 
-  // Formatar o mês/ano para exibição
+  // Formatar o mês/ano para exibição - CORRIGINDO O PROBLEMA DA DATA
   const monthYear = goal.month_year ? 
-    new Date(goal.month_year + '-01').toLocaleDateString('pt-BR', { 
-      year: 'numeric', 
-      month: 'long' 
-    }) : 
+    (() => {
+      const [year, month] = goal.month_year.split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1, 1); // Subtraindo 1 do mês porque Date usa índice 0-11
+      return date.toLocaleDateString('pt-BR', { 
+        year: 'numeric', 
+        month: 'long' 
+      });
+    })() :
     goal.target_date ? 
       new Date(goal.target_date).toLocaleDateString('pt-BR') : 
       'Data não definida';
