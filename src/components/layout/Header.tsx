@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Bell, Menu, Settings, User, LogOut, Shield } from 'lucide-react';
+import { Bell, Menu, Settings, LogOut, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -94,10 +93,6 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuItem onClick={() => navigate('/settings')}>
-                <User className="mr-2 h-4 w-4" />
-                <span>Perfil</span>
-              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate('/settings')}>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Configurações</span>
