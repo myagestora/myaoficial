@@ -722,97 +722,104 @@ const Index = () => {
               </p>
             </div>
             
-            <div className="flex justify-center">
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl justify-items-center">
-                {subscriptionPlans.map((plan, index) => {
-                  const features = Array.isArray(plan.features) 
-                    ? plan.features 
-                    : (typeof plan.features === 'string' ? JSON.parse(plan.features) : []);
-                  
-                  const isPopular = index === 1;
-                  
-                  return (
-                    <Card 
-                      key={plan.id} 
-                      className={`relative text-center transform transition-all duration-300 hover:scale-105 border-0 shadow-xl w-full max-w-sm ${
-                        isPopular ? 'scale-105 shadow-2xl' : ''
-                      }`}
-                      style={isPopular ? { 
-                        background: `linear-gradient(135deg, ${primaryColor}05, ${secondaryColor}05)`,
-                        borderImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor}) 1`
-                      } : {}}
-                    >
-                      {isPopular && (
-                        <>
-                          <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                            <Badge 
-                              className="px-4 py-2 text-white font-bold shadow-lg"
-                              style={{ 
-                                background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` 
-                              }}
-                            >
-                              ⭐ MAIS POPULAR
-                            </Badge>
-                          </div>
-                          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r" 
-                            style={{ backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }} 
-                          />
-                        </>
-                      )}
-                      <CardHeader className="text-center pb-8">
-                        <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                        <p className="text-gray-600 dark:text-gray-300 mb-4">
-                          {plan.description}
-                        </p>
-                        <div className="flex flex-col items-center justify-center">
-                          <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-                            {plan.price_monthly ? (
-                              <>
-                                R$ {plan.price_monthly.toString().replace('.', ',')}
-                                <span className="text-lg text-gray-500">/mês</span>
-                              </>
-                            ) : (
-                              <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                                Gratuito
+            {/*<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto justify-center">*/}
+            <div
+  className={`grid gap-8 max-w-5xl mx-auto ${
+    subscriptionPlans.length === 1
+      ? 'grid-cols-1 justify-items-center'
+      : 'md:grid-cols-2 lg:grid-cols-3'
+  }`}>
+              {subscriptionPlans.map((plan, index) => {
+                const features = Array.isArray(plan.features) 
+                  ? plan.features 
+                  : (typeof plan.features === 'string' ? JSON.parse(plan.features) : []);
+                
+                const isPopular = index === 1;
+                
+                return (
+                  <Card 
+                    key={plan.id} 
+                    className={`relative text-center transform transition-all duration-300 hover:scale-105 border-0 shadow-xl ${
+                      isPopular ? 'scale-105 shadow-2xl' : ''
+                    }`}
+                    style={isPopular ? { 
+                      background: `linear-gradient(135deg, ${primaryColor}05, ${secondaryColor}05)`,
+                      borderImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor}) 1`
+                    } : {}}
+                  >
+                    {isPopular && (
+                      <>
+                        <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                          <Badge 
+                            className="px-4 py-2 text-white font-bold shadow-lg"
+                            style={{ 
+                              background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` 
+                            }}
+                          >
+                            ⭐ MAIS POPULAR
+                          </Badge>
+                        </div>
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r" 
+                          style={{ backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }} 
+                        />
+                      </>
+                    )}
+                    <CardHeader className="text-center pb-8">
+                      <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                      <p className="text-gray-600 dark:text-gray-300 mb-4">
+                        {plan.description}
+                      </p>
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+                          {plan.price_monthly ? (
+                            <>
+                              <span className="text-lg text-gray-500 line-through mr-2">
+                                R${(plan.price_monthly * 2).toFixed(0)}
                               </span>
-                            )}
-                          </div>
-                          {plan.price_yearly && (
-                            <p className="text-sm text-green-600 font-semibold bg-green-50 px-3 py-1 rounded-full">
-                              💰 Economize 44% no plano anual
-                            </p>
+                              R${plan.price_monthly}
+                              <span className="text-lg text-gray-500">/mês</span>
+                            </>
+                          ) : (
+                            <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                              Gratuito
+                            </span>
                           )}
                         </div>
-                      </CardHeader>
-                      <CardContent>
-                        <ul className="space-y-3 mb-6 text-left">
-                          {features.map((feature: string, featureIndex: number) => (
-                            <li key={featureIndex} className="flex items-start">
-                              <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mr-3 mt-0.5">
-                                <CheckCircle className="w-4 h-4 text-white" />
-                              </div>
-                              <span className="text-gray-600 dark:text-gray-300">
-                                {feature}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                        <Button 
-                          onClick={() => handlePlanSelect(plan)}
-                          className="w-full py-4 text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300"
-                          style={isPopular ? { 
-                            background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
-                            border: 'none'
-                          } : {}}
-                          variant={isPopular ? "default" : "outline"}
-                        >
-                          {plan.price_monthly ? '🚀 Assinar Agora' : '✨ Começar Agora'}
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
+                        {plan.price_yearly && (
+                          <p className="text-sm text-green-600 font-semibold bg-green-50 px-3 py-1 rounded-full">
+                            💰 Economize 44% no plano anual
+                          </p>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-3 mb-6 text-left">
+                        {features.map((feature: string, featureIndex: number) => (
+                          <li key={featureIndex} className="flex items-start">
+                            <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mr-3 mt-0.5">
+                              <CheckCircle className="w-4 h-4 text-white" />
+                            </div>
+                            <span className="text-gray-600 dark:text-gray-300">
+                              {feature}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                      <Button 
+                        onClick={() => handlePlanSelect(plan)}
+                        className="w-full py-4 text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300"
+                        style={isPopular ? { 
+                          background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
+                          border: 'none'
+                        } : {}}
+                        variant={isPopular ? "default" : "outline"}
+                      >
+                        {plan.price_monthly ? '🚀 Assinar Agora' : '✨ Começar Agora'}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </div>
         </section>
