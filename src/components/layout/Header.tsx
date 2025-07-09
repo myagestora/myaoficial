@@ -26,30 +26,30 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
   const { profile } = useProfile();
   const navigate = useNavigate();
 
-  // Buscar logo do sistema
-  const { data: logoUrl } = useQuery({
-    queryKey: ['system-config-header'],
+  // Buscar cor primária do sistema
+  const { data: primaryColor } = useQuery({
+    queryKey: ['system-config-primary-color'],
     queryFn: async () => {
       try {
         const { data, error } = await supabase
           .from('system_config')
           .select('value')
-          .eq('key', 'app_logo')
+          .eq('key', 'primary_color')
           .maybeSingle();
         
         if (error) {
-          console.error('Error fetching logo:', error);
-          return null;
+          console.error('Error fetching primary color:', error);
+          return '#222222'; // cor padrão
         }
 
-        const logoValue = data?.value;
-        if (typeof logoValue === 'string') {
-          return logoValue.replace(/^"|"$/g, '');
+        const colorValue = data?.value;
+        if (typeof colorValue === 'string') {
+          return colorValue.replace(/^"|"$/g, '');
         }
-        return logoValue ? JSON.stringify(logoValue).replace(/^"|"$/g, '') : null;
+        return colorValue ? JSON.stringify(colorValue).replace(/^"|"$/g, '') : '#222222';
       } catch (error) {
-        console.error('Error in logo query:', error);
-        return null;
+        console.error('Error in primary color query:', error);
+        return '#222222';
       }
     },
     retry: 1,
@@ -62,35 +62,20 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
   };
 
   return (
-    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+    <header 
+      className="border-b border-gray-200 dark:border-gray-700 px-4 py-3"
+      style={{ backgroundColor: primaryColor || '#222222' }}
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="sm"
             onClick={onMenuClick}
-            className="lg:hidden"
+            className="lg:hidden text-white hover:bg-white/10"
           >
             <Menu className="h-5 w-5" />
           </Button>
-          
-          <div className="flex items-center gap-3">
-            {logoUrl && (
-              <img 
-                src={logoUrl} 
-                alt="Logo" 
-                className="h-8 w-auto object-contain"
-                onError={(e) => {
-                  console.error('Erro ao carregar logo:', logoUrl);
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                }}
-              />
-            )}
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Mya Gestora
-            </h1>
-          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -98,10 +83,10 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-white/10">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={profile?.avatar_url} />
-                  <AvatarFallback>
+                  <AvatarFallback className="bg-white/20 text-white">
                     {profile?.full_name?.charAt(0)?.toUpperCase() || 
                      user?.email?.charAt(0)?.toUpperCase() || 'U'}
                   </AvatarFallback>
