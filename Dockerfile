@@ -1,33 +1,25 @@
-
-# Use Node.js 18 como base
-FROM node:18-alpine as builder
-
-# Definir diretório de trabalho
+# Estágio de build
+FROM node:22-alpine AS builder
 WORKDIR /app
-
-# Copiar arquivos de dependências
 COPY package*.json ./
-
-# Instalar dependências
-RUN npm ci --only=production
-
-# Copiar código fonte
+# Use npm ci para instalações mais rápidas e consistentes em CI/CD
+RUN npm ci
 COPY . .
-
-# Build da aplicação
 RUN npm run build
 
-# Estágio de produção com Nginx
-FROM nginx:alpine
+# Estágio de produção
+FROM node:22-alpine
+WORKDIR /app
+# Copie as variáveis de ambiente de build, se necessário, ou defina-as no Easypanel
+ENV NODE_ENV=production
+# Copie os artefatos de build do estágio anterior
+COPY --from=builder /app/dist ./dist
+COPY package*.json ./
+# Instale apenas dependências de produção se o preview precisar delas
+# Se o 'vite preview' não precisar de node_modules, pode pular esta instalação
+RUN npm install --omit=dev
 
-# Copiar arquivos buildados
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Copiar configuração customizada do Nginx
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Expor porta 80
-EXPOSE 80
-
-# Comando para iniciar o Nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Exponha a porta que o vite preview usa
+EXPOSE 4173
+# Comando para rodar a aplicação (usando o script 'start' ou 'preview')
+CMD [ "npm", "run", "preview", "--", "--host", "0.0.0.0" ]
