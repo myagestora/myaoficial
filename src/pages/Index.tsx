@@ -331,7 +331,7 @@ const Index = () => {
             
             <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center">
               <Shield className="w-4 h-4 mr-2" />
-              Cancele quando quiser • Suporte 24/7
+              Você no controle • 100% seguro
             </p>
           </div>
         </div>
@@ -349,7 +349,7 @@ const Index = () => {
             <div className="order-2 lg:order-1">
               <div className="inline-block px-4 py-2 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 rounded-full mb-6">
                 <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent font-bold flex items-center">
-                  ✨ Revolução Financeira pelo WhatsApp
+                  ✨ Gestão Financeira pelo WhatsApp
                 </span>
               </div>
               <h2 className="text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
@@ -357,7 +357,7 @@ const Index = () => {
                 <span className="text-green-600"> em segundos</span>
               </h2>
               <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
-                Registre gastos e receitas conversando naturalmente. A {appName} também entende áudio e imagem,
+                Registre gastos e receitas conversando naturalmente. A {appName} entende você
                 e organiza tudo automaticamente, como mágica!
               </p>
               
