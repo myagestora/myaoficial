@@ -143,14 +143,14 @@ export const Sidebar = ({ className }: SidebarProps) => {
   });
 
   return (
-    <div className={cn("pb-12 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700", className)}>
+    <div className={cn("pb-12 w-64 bg-white border-r border-gray-200", className)}>
       <div className="space-y-4 py-4">
         {/* Header com logo e cor primária */}
         <div 
           className="px-4 py-6 text-white"
           style={{ backgroundColor: primaryColor || '#222222' }}
         >
-          <div className="flex flex-col items-center space-y-3">
+          <div className="flex justify-center">
             {logoUrl && (
               <img 
                 src={logoUrl} 
@@ -163,16 +163,13 @@ export const Sidebar = ({ className }: SidebarProps) => {
                 }}
               />
             )}
-            <h1 className="text-lg font-semibold text-center">
-              Mya Gestora
-            </h1>
           </div>
         </div>
 
         {/* Frase motivacional */}
         {motivationalPhrase && (
-          <div className="px-4 py-3 mx-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <p className="text-sm text-gray-600 dark:text-gray-300 text-center italic">
+          <div className="px-4 py-3 mx-3 bg-gray-50 rounded-lg">
+            <p className="text-sm text-gray-600 text-center italic">
               "{motivationalPhrase}"
             </p>
           </div>
@@ -190,7 +187,7 @@ export const Sidebar = ({ className }: SidebarProps) => {
                     "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                     isActive
                       ? "text-white font-semibold"
-                      : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                      : "text-gray-600 hover:bg-gray-100"
                   )
                 }
                 style={({ isActive }) => ({
@@ -209,7 +206,7 @@ export const Sidebar = ({ className }: SidebarProps) => {
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   isActive
                     ? "text-white font-semibold"
-                    : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                    : "text-gray-600 hover:bg-gray-100"
                 )
               }
               style={({ isActive }) => ({
