@@ -14,21 +14,33 @@ interface PhoneInputProps {
 
 const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
   ({ className, onChange, value, ...props }, ref) => {
+    const [internalValue, setInternalValue] = React.useState(value || '')
+
+    // Sincronizar valor interno com valor externo
+    React.useEffect(() => {
+      setInternalValue(value || '')
+    }, [value])
+
     const handleChange = (newValue?: string) => {
-      console.log('PhoneInput - Valor alterado para:', newValue)
+      console.log('PhoneInput - Tentativa de alterar para:', newValue)
       
-      // Limitar caracteres baseado no país
-      if (newValue) {
-        // Para Brasil: máximo 15 caracteres (+5511999999999)
-        // Para outros países: máximo 17 caracteres
-        const maxLength = newValue.startsWith('+55') ? 15 : 17
-        
-        if (newValue.length > maxLength) {
-          console.log(`PhoneInput - Valor excede limite de ${maxLength} caracteres, bloqueando`)
-          return // Não chama onChange se exceder o limite
-        }
+      if (!newValue) {
+        setInternalValue('')
+        onChange?.('')
+        return
       }
       
+      // Limitar caracteres baseado no país
+      const maxLength = newValue.startsWith('+55') ? 15 : 17
+      
+      if (newValue.length > maxLength) {
+        console.log(`PhoneInput - Valor excede limite de ${maxLength} caracteres, bloqueando`)
+        // Não atualizar o valor se exceder o limite
+        return
+      }
+      
+      console.log('PhoneInput - Valor aceito:', newValue)
+      setInternalValue(newValue)
       onChange?.(newValue)
     }
 
@@ -37,7 +49,7 @@ const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
         international
         countryCallingCodeEditable={false}
         defaultCountry="BR"
-        value={value}
+        value={internalValue}
         onChange={handleChange}
         className={cn(
           "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm text-foreground",
