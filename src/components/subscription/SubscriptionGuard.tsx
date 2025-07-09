@@ -10,12 +10,17 @@ interface SubscriptionGuardProps {
 }
 
 export const SubscriptionGuard = ({ children }: SubscriptionGuardProps) => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
 
   const { data: userAccess, isLoading } = useQuery({
     queryKey: ['user-access-check', user?.id],
     queryFn: async () => {
       if (!user?.id) return { hasActiveSubscription: false, profileExists: false };
+      
+      // Se o usuário é admin, não precisa verificar assinatura
+      if (isAdmin) {
+        return { hasActiveSubscription: true, profileExists: true };
+      }
       
       // Primeiro verificar se o perfil existe
       const { data: profile, error: profileError } = await supabase
@@ -66,6 +71,11 @@ export const SubscriptionGuard = ({ children }: SubscriptionGuardProps) => {
   // Se não tem usuário logado, não mostra nada (AuthProvider deve redirecionar)
   if (!user) {
     return null;
+  }
+
+  // Se é admin, permite acesso direto
+  if (isAdmin) {
+    return <>{children}</>;
   }
 
   // Se o perfil não existe no banco, limpar sessão e mostrar página de assinatura
