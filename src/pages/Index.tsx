@@ -789,7 +789,7 @@ const Index = () => {
                         </div>
                         {plan.price_yearly && (
                           <p className="text-sm text-green-600 font-semibold bg-green-50 px-3 py-1 rounded-full">
-                            💰 Economize 20% no plano anual
+                            💰 Economize 44% no plano anual
                           </p>
                         )}
                       </div>

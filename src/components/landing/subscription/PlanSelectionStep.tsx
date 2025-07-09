@@ -85,7 +85,7 @@ export const PlanSelectionStep = ({
                 <div className="flex items-center gap-2">
                   <span>Anual</span>
                   <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
-                    Economize até 20%
+                    Economize até 44%
                   </Badge>
                 </div>
               </Label>
