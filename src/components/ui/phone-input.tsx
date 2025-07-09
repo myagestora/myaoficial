@@ -28,35 +28,25 @@ const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
           const maxLength = getMaxLengthForCountry(phoneNumber.country)
           const nationalNumber = phoneNumber.nationalNumber
           
-          // Bloqueia se exceder o limite máximo
+          // Se exceder o limite, não aceita a mudança
           if (nationalNumber.length > maxLength) {
-            return // Não aceita a mudança
+            return
           }
-        }
-        
-        // Se não tem país detectado mas o valor anterior tinha, verifica pelo país anterior
-        if (!phoneNumber?.country && value) {
-          try {
-            const previousPhone = parsePhoneNumber(value)
-            if (previousPhone?.country) {
-              const maxLength = getMaxLengthForCountry(previousPhone.country)
-              // Conta apenas os dígitos numéricos (remove espaços, parênteses, etc)
-              const digitsOnly = newValue.replace(/\D/g, '')
-              const countryCode = previousPhone.countryCallingCode
-              const nationalDigits = digitsOnly.replace(new RegExp(`^${countryCode}`), '')
-              
-              if (nationalDigits.length > maxLength) {
-                return // Não aceita a mudança
-              }
-            }
-          } catch (e) {
-            // Se não conseguir parsear o valor anterior, permite a mudança
+        } else {
+          // Se não conseguir detectar o país, usar limite genérico
+          const digitsOnly = newValue.replace(/\D/g, '')
+          // Remove o código do país (primeiros 2-3 dígitos)
+          const nationalDigits = digitsOnly.length > 2 ? digitsOnly.substring(2) : digitsOnly
+          
+          // Limite genérico para números nacionais
+          if (nationalDigits.length > 11) {
+            return
           }
         }
         
         onChange?.(newValue)
       } catch (error) {
-        // Em caso de erro no parsing, só aceita se não estiver excedendo um limite básico
+        // Em caso de erro, usar validação simples
         const digitsOnly = newValue.replace(/\D/g, '')
         if (digitsOnly.length <= 15) { // Limite internacional máximo
           onChange?.(newValue)
@@ -84,7 +74,7 @@ const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
   }
 )
 
-// Função auxiliar para obter o comprimento máximo do número nacional por país
+// Função para obter o comprimento máximo do número nacional por país
 const getMaxLengthForCountry = (country: CountryCode): number => {
   const maxLengths: Record<string, number> = {
     'BR': 11, // Brasil: 11 dígitos (ex: 11987654321)
@@ -108,7 +98,7 @@ const getMaxLengthForCountry = (country: CountryCode): number => {
     'VE': 11, // Venezuela: 11 dígitos
   }
   
-  return maxLengths[country] || 15;
+  return maxLengths[country] || 11;
 }
 
 PhoneInput.displayName = "PhoneInput"
