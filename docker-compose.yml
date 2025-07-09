@@ -1,0 +1,23 @@
+
+version: '3.8'
+
+services:
+  mya-gestora:
+    build: .
+    ports:
+      - "3000:80"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    
+  # Opcional: Nginx como proxy reverso (se precisar de SSL ou múltiplos serviços)
+  # nginx-proxy:
+  #   image: nginx:alpine
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./proxy.conf:/etc/nginx/conf.d/default.conf
+  #   depends_on:
+  #     - mya-gestora
+  #   restart: unless-stopped

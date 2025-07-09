@@ -1,3 +1,4 @@
+
 # Welcome to your Lovable project
 
 ## Project info
@@ -50,6 +51,65 @@ npm run dev
 - Click on "New codespace" to launch a new Codespace environment.
 - Edit files directly within the Codespace and commit and push your changes once you're done.
 
+## Docker Deployment
+
+Esta aplicação está preparada para ser executada em Docker.
+
+### Requisitos
+
+- Docker
+- Docker Compose (opcional, mas recomendado)
+
+### Deploy com Docker Compose (Recomendado)
+
+```sh
+# Build e iniciar os containers
+docker-compose up --build -d
+
+# Ver logs
+docker-compose logs -f
+
+# Parar os containers
+docker-compose down
+```
+
+### Deploy com Docker apenas
+
+```sh
+# Build da imagem
+docker build -t mya-gestora:latest .
+
+# Executar o container
+docker run -p 3000:80 mya-gestora:latest
+```
+
+### Scripts de Deploy
+
+Para facilitar o deploy, use os scripts disponíveis:
+
+```sh
+# Tornar scripts executáveis (Linux/Mac)
+chmod +x scripts/*.sh
+
+# Build da imagem
+./scripts/docker-build.sh
+
+# Deploy completo
+./scripts/docker-deploy.sh
+```
+
+### Acesso
+
+Após o deploy, a aplicação estará disponível em:
+- **Local**: http://localhost:3000
+- **Produção**: Configure seu domínio no nginx.conf
+
+### Configurações de Produção
+
+1. **Variáveis de Ambiente**: Configure as variáveis necessárias no docker-compose.yml
+2. **SSL/HTTPS**: Descomente e configure o nginx-proxy no docker-compose.yml para SSL
+3. **Domínio**: Atualize o server_name no nginx.conf com seu domínio
+
 ## What technologies are used for this project?
 
 This project is built with:
@@ -59,10 +119,15 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- Docker & Nginx (for production)
 
 ## How can I deploy this project?
 
+**Option 1: Lovable Hosting**
 Simply open [Lovable](https://lovable.dev/projects/c46de564-3ee4-45c1-9f4a-43d78557c5ef) and click on Share -> Publish.
+
+**Option 2: Docker**
+Use the Docker setup described above for self-hosting.
 
 ## Can I connect a custom domain to my Lovable project?
 
