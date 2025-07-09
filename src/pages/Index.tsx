@@ -720,14 +720,6 @@ const Index = () => {
               <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
                 Comece agora e evolua conforme suas necessidades
               </p>
-              <div className="bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-2xl p-6 mb-8 max-w-2xl mx-auto shadow-2xl">
-                <p className="text-2xl font-bold mb-2">
-                  🎉 DESCONTO ESPECIAL: 50% OFF
-                </p>
-                <p className="text-lg">
-                  No primeiro mês de qualquer plano pago! Válido por tempo limitado.
-                </p>
-              </div>
             </div>
             
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto justify-center">
