@@ -28,11 +28,64 @@ export const AccountStatusCard = ({ accountActive }: AccountStatusCardProps) => 
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Função helper para garantir que o perfil existe
+  const ensureProfileExists = async () => {
+    if (!user?.id) return null;
+
+    console.log('Verificando se perfil existe para usuário:', user.id);
+    
+    // Primeiro tenta buscar o perfil existente
+    const { data: existingProfile, error: fetchError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error('Erro ao buscar perfil:', fetchError);
+      throw fetchError;
+    }
+
+    // Se perfil existe, retorna ele
+    if (existingProfile) {
+      console.log('Perfil encontrado:', existingProfile);
+      return existingProfile;
+    }
+
+    // Se não existe, cria o perfil
+    console.log('Perfil não encontrado, criando novo perfil...');
+    const profileData = {
+      id: user.id,
+      email: user.email,
+      full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+      whatsapp: user.user_metadata?.whatsapp || user.user_metadata?.phone || '',
+      account_status: 'active',
+      subscription_status: 'inactive'
+    };
+
+    const { data: newProfile, error: createError } = await supabase
+      .from('profiles')
+      .insert(profileData)
+      .select()
+      .single();
+
+    if (createError) {
+      console.error('Erro ao criar perfil:', createError);
+      throw createError;
+    }
+
+    console.log('Perfil criado com sucesso:', newProfile);
+    return newProfile;
+  };
+
   const reactivateAccountMutation = useMutation({
     mutationFn: async () => {
       if (!user?.id) throw new Error('Usuário não encontrado');
 
       console.log('Reativando conta para usuário:', user.id);
+      
+      // Garantir que o perfil existe antes de tentar atualizar
+      await ensureProfileExists();
       
       const { data, error } = await supabase
         .from('profiles')
@@ -74,6 +127,9 @@ export const AccountStatusCard = ({ accountActive }: AccountStatusCardProps) => 
       if (!user?.id) throw new Error('Usuário não encontrado');
 
       console.log('Iniciando desativação da conta para usuário:', user.id);
+      
+      // Garantir que o perfil existe antes de tentar atualizar
+      await ensureProfileExists();
       
       const { data, error } = await supabase
         .from('profiles')

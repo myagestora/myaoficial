@@ -67,19 +67,77 @@ export async function activateUserSubscription(paymentRecord: PaymentRecord): Pr
     }
   }
 
-  // Atualizar o status da assinatura no perfil do usuário
-  const { error: profileError } = await supabaseClient
-    .from('profiles')
-    .update({
-      subscription_status: 'active',
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', paymentRecord.user_id);
+  // Garantir que o perfil existe e está atualizado
+  await ensureProfileExists(paymentRecord.user_id);
+}
 
-  if (profileError) {
-    console.error('Erro ao atualizar perfil:', profileError);
-    // Não falhar o webhook por erro no perfil
+async function ensureProfileExists(userId: string): Promise<void> {
+  console.log('Garantindo que perfil existe para usuário:', userId);
+  
+  // Verificar se o perfil já existe
+  const { data: existingProfile, error: fetchError } = await supabaseClient
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (fetchError && fetchError.code !== 'PGRST116') {
+    console.error('Erro ao buscar perfil:', fetchError);
+    throw fetchError;
+  }
+
+  // Se perfil existe, apenas atualizar o status da assinatura
+  if (existingProfile) {
+    console.log('Perfil encontrado, atualizando status da assinatura');
+    const { error: updateError } = await supabaseClient
+      .from('profiles')
+      .update({
+        subscription_status: 'active',
+        account_status: 'active', // Garantir que a conta também está ativa
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId);
+
+    if (updateError) {
+      console.error('Erro ao atualizar perfil:', updateError);
+      // Não falhar o webhook por erro no perfil, mas logar
+    } else {
+      console.log('Perfil atualizado com sucesso para usuário:', userId);
+    }
   } else {
-    console.log('Perfil atualizado com sucesso para usuário:', paymentRecord.user_id);
+    // Se não existe, buscar dados do usuário e criar perfil
+    console.log('Perfil não encontrado, criando novo perfil...');
+    
+    // Buscar dados básicos do usuário no auth.users
+    const { data: authUser, error: authError } = await supabaseClient.auth.admin.getUserById(userId);
+    
+    if (authError) {
+      console.error('Erro ao buscar dados do usuário:', authError);
+      // Criar perfil com dados mínimos
+    }
+
+    const profileData = {
+      id: userId,
+      email: authUser?.user?.email || null,
+      full_name: authUser?.user?.user_metadata?.full_name || authUser?.user?.user_metadata?.name || null,
+      whatsapp: authUser?.user?.user_metadata?.whatsapp || authUser?.user?.user_metadata?.phone || null,
+      account_status: 'active',
+      subscription_status: 'active',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    const { data: newProfile, error: createError } = await supabaseClient
+      .from('profiles')
+      .insert(profileData)
+      .select()
+      .single();
+
+    if (createError) {
+      console.error('Erro ao criar perfil:', createError);
+      // Não falhar o webhook por erro no perfil, mas logar
+    } else {
+      console.log('Perfil criado com sucesso:', newProfile);
+    }
   }
 }

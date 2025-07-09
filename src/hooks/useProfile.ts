@@ -12,48 +12,68 @@ export const useProfile = () => {
   const queryClient = useQueryClient();
   const [whatsappValue, setWhatsappValue] = useState('');
 
+  // Função helper para criar perfil se não existir
+  const ensureProfileExists = async () => {
+    if (!user?.id) return null;
+
+    console.log('Verificando/criando perfil para usuário:', user.id);
+    
+    // Tentar buscar o perfil existente
+    const { data: existingProfile, error: selectError } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, avatar_url, whatsapp, subscription_status, account_status')
+      .eq('id', user.id)
+      .maybeSingle();
+    
+    if (selectError && selectError.code !== 'PGRST116') {
+      console.error('Erro ao buscar perfil:', selectError);
+      throw selectError;
+    }
+    
+    // Se encontrou o perfil, retornar
+    if (existingProfile) {
+      console.log('Perfil encontrado:', existingProfile);
+      return existingProfile;
+    }
+    
+    // Se não encontrou, criar o perfil
+    console.log('Perfil não encontrado, criando novo perfil...');
+    const profileData = {
+      id: user.id,
+      email: user.email,
+      full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+      whatsapp: user.user_metadata?.whatsapp || user.user_metadata?.phone || '',
+      account_status: 'active',
+      subscription_status: 'inactive'
+    };
+    
+    const { data: newProfile, error: insertError } = await supabase
+      .from('profiles')
+      .insert(profileData)
+      .select('id, full_name, email, avatar_url, whatsapp, subscription_status, account_status')
+      .single();
+    
+    if (insertError) {
+      console.error('Erro ao criar perfil:', insertError);
+      throw insertError;
+    }
+    
+    console.log('Perfil criado com sucesso:', newProfile);
+    return newProfile;
+  };
+
   // Buscar dados do perfil
   const { data: profile, isLoading, error } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
       
-      console.log('Buscando perfil para usuário:', user.id);
-      
       try {
-        // Tentar buscar o perfil existente
-        const { data: existingProfile, error: selectError } = await supabase
-          .from('profiles')
-          .select('id, full_name, email, avatar_url, whatsapp, subscription_status')
-          .eq('id', user.id)
-          .maybeSingle();
-        
-        if (selectError && selectError.code !== 'PGRST116') {
-          console.error('Erro ao buscar perfil:', selectError);
-          throw selectError;
-        }
-        
-        // Se encontrou o perfil, retornar
-        if (existingProfile) {
-          console.log('Perfil encontrado:', existingProfile);
-          return existingProfile;
-        }
-        
-        // Se não encontrou, retornar dados do usuário autenticado
-        console.log('Perfil não encontrado, usando dados do usuário autenticado');
-        const profileFromAuth = {
-          id: user.id,
-          full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
-          email: user.email || '',
-          avatar_url: user.user_metadata?.avatar_url || null,
-          whatsapp: user.user_metadata?.whatsapp || user.user_metadata?.phone || '',
-          subscription_status: 'inactive'
-        };
-        
-        console.log('Usando dados do auth:', profileFromAuth);
-        return profileFromAuth;
+        // Garantir que o perfil existe
+        const profile = await ensureProfileExists();
+        return profile;
       } catch (error) {
-        console.error('Erro na busca do perfil:', error);
+        console.error('Erro na busca/criação do perfil:', error);
         // Em caso de erro, retornar dados básicos do usuário
         return {
           id: user.id,
@@ -61,7 +81,8 @@ export const useProfile = () => {
           email: user.email || '',
           avatar_url: user.user_metadata?.avatar_url || null,
           whatsapp: user.user_metadata?.whatsapp || user.user_metadata?.phone || '',
-          subscription_status: 'inactive'
+          subscription_status: 'inactive',
+          account_status: 'active'
         };
       }
     },
@@ -88,39 +109,41 @@ export const useProfile = () => {
       console.log('Atualizando perfil com dados:', updates);
       
       try {
-        // Tentar fazer upsert (inserir ou atualizar)
-        const { data: upsertedData, error: upsertError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: user.id,
-            email: user.email,
-            ...updates
-          }, {
-            onConflict: 'id'
-          })
-          .select()
-          .maybeSingle();
+        // Garantir que o perfil existe antes de atualizar
+        await ensureProfileExists();
         
-        if (upsertError) {
-          console.error('Erro ao fazer upsert do perfil:', upsertError);
+        // Fazer a atualização
+        const { data: updatedData, error: updateError } = await supabase
+          .from('profiles')
+          .update({
+            ...updates,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id)
+          .select()
+          .single();
+        
+        if (updateError) {
+          console.error('Erro ao atualizar perfil:', updateError);
           
           // Verificar se é erro de violação de unicidade
-          if (upsertError.code === '23505' && upsertError.message.includes('profiles_whatsapp_unique_idx')) {
+          if (updateError.code === '23505' && updateError.message.includes('profiles_whatsapp_unique_idx')) {
             throw new Error('Este número de WhatsApp já está sendo usado por outro usuário.');
           }
           
-          throw upsertError;
+          throw updateError;
         }
         
-        console.log('Perfil atualizado com sucesso:', upsertedData);
-        return upsertedData;
+        console.log('Perfil atualizado com sucesso:', updatedData);
+        return updatedData;
       } catch (error) {
-        console.error('Erro na operação de upsert:', error);
+        console.error('Erro na operação de atualização:', error);
         throw error;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['account-status'] });
       toast({
         title: "Perfil atualizado",
         description: "Suas informações foram salvas com sucesso!",
