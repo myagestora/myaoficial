@@ -49,6 +49,21 @@ export const MonthlyGoalCard = ({ monthlyGoal, onEdit, onDelete }: MonthlyGoalCa
     }
   };
 
+  // Corrigir a formatação da data - criar a data corretamente para evitar problemas de timezone
+  const formatMonthYear = (monthYear: string) => {
+    try {
+      const [year, month] = monthYear.split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1, 1); // month - 1 porque Date usa 0-indexado
+      return date.toLocaleDateString('pt-BR', { 
+        month: 'long', 
+        year: 'numeric' 
+      });
+    } catch (error) {
+      console.error('Erro ao formatar data:', error);
+      return monthYear;
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -64,10 +79,7 @@ export const MonthlyGoalCard = ({ monthlyGoal, onEdit, onDelete }: MonthlyGoalCa
             <div className="flex items-center gap-2 mt-2">
               <Calendar className="h-4 w-4 text-gray-500" />
               <span className="text-sm text-gray-600 dark:text-gray-400">
-                {new Date(monthlyGoal.month_year + '-01').toLocaleDateString('pt-BR', { 
-                  month: 'long', 
-                  year: 'numeric' 
-                })}
+                {formatMonthYear(monthlyGoal.month_year)}
               </span>
             </div>
           </div>

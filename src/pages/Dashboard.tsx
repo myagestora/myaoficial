@@ -113,7 +113,8 @@ const Dashboard = () => {
 
         if (goal.goal_type === 'monthly_budget' && goal.month_year) {
           // Para metas mensais, verificar se o mês está no período
-          const goalDate = new Date(goal.month_year + '-01');
+          const [goalYear, goalMonth] = goal.month_year.split('-').map(Number);
+          const goalDate = new Date(goalYear, goalMonth - 1, 1); // goalMonth - 1 porque Date usa 0-indexado
           const fromMonth = new Date(dateRange.from.getFullYear(), dateRange.from.getMonth(), 1);
           const toMonth = new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), 1);
           
@@ -137,29 +138,33 @@ const Dashboard = () => {
       // Calcular progresso para cada meta
       const goalProgressPromises = relevantGoals.map(async (goal) => {
         if (goal.goal_type === 'monthly_budget' && goal.category_id && goal.month_year) {
-          // Para metas de gastos mensais, calcular baseado nas transações reais
+          // Para metas de gastos mensais, buscar gastos reais do mês
+          const [goalYear, goalMonth] = goal.month_year.split('-').map(Number);
+          const startDate = new Date(goalYear, goalMonth - 1, 1);
+          const endDate = new Date(goalYear, goalMonth, 1);
+
           const { data: transactions } = await supabase
             .from('transactions')
             .select('amount')
             .eq('user_id', user.id)
             .eq('category_id', goal.category_id)
             .eq('type', 'expense')
-            .gte('date', goal.month_year + '-01')
-            .lt('date', new Date(new Date(goal.month_year + '-01').getFullYear(), new Date(goal.month_year + '-01').getMonth() + 1, 1).toISOString().split('T')[0]);
+            .gte('date', startDate.toISOString().split('T')[0])
+            .lt('date', endDate.toISOString().split('T')[0]);
 
           const spentAmount = transactions?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
           const targetAmount = Number(goal.target_amount || 0);
           
           if (targetAmount === 0) return 0;
           
-          // Para gastos, o progresso é quanto foi gasto vs. o orçamento
-          // Se gastou menos que o orçamento, é bom (progresso alto)
-          // Se gastou mais, excedeu o orçamento (progresso > 100%)
-          const progress = (spentAmount / targetAmount) * 100;
+          // Para gastos mensais: se gastou menos que o orçamento = progresso positivo
+          // Calcular como: (orçamento - gasto) / orçamento * 100
+          // Se gastou tudo = 0%, se não gastou nada = 100%
+          const progress = Math.max(0, ((targetAmount - spentAmount) / targetAmount) * 100);
           
           console.log(`Meta mensal ${goal.categories?.name}: Gasto: ${spentAmount}, Orçamento: ${targetAmount}, Progresso: ${progress.toFixed(1)}%`);
           
-          return Math.min(progress, 100); // Limitar a 100% para o cálculo da média
+          return Math.min(progress, 100);
         } else {
           // Para metas de economia, usar current_amount vs target_amount
           const currentAmount = Number(goal.current_amount || 0);

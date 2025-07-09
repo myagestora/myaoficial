@@ -60,7 +60,43 @@ export const useGoals = () => {
         return [];
       }
 
-      return data as Goal[];
+      // Para metas mensais, calcular o current_amount baseado nos gastos reais
+      const goalsWithCalculatedAmounts = await Promise.all(
+        (data || []).map(async (goal) => {
+          if (goal.goal_type === 'monthly_budget' && goal.category_id && goal.month_year) {
+            // Buscar gastos reais da categoria no mês
+            const { data: transactions, error: transError } = await supabase
+              .from('transactions')
+              .select('amount')
+              .eq('user_id', user.id)
+              .eq('category_id', goal.category_id)
+              .eq('type', 'expense')
+              .gte('date', goal.month_year + '-01')
+              .lt('date', new Date(new Date(goal.month_year + '-01').getFullYear(), new Date(goal.month_year + '-01').getMonth() + 1, 1).toISOString().split('T')[0]);
+
+            if (!transError && transactions) {
+              const spentAmount = transactions.reduce((sum, t) => sum + Number(t.amount), 0);
+              
+              // Atualizar o current_amount se for diferente do calculado
+              if (Math.abs(goal.current_amount - spentAmount) > 0.01) {
+                const { error: updateError } = await supabase
+                  .from('goals')
+                  .update({ current_amount: spentAmount })
+                  .eq('id', goal.id);
+
+                if (updateError) {
+                  console.error('Error updating goal current_amount:', updateError);
+                }
+              }
+
+              return { ...goal, current_amount: spentAmount };
+            }
+          }
+          return goal;
+        })
+      );
+
+      return goalsWithCalculatedAmounts as Goal[];
     },
     enabled: !!user?.id
   });
@@ -87,10 +123,29 @@ export const useGoals = () => {
     mutationFn: async (goalData: Omit<Goal, 'id' | 'created_at' | 'updated_at'>) => {
       if (!user?.id) throw new Error('User not authenticated');
 
+      // Para metas mensais, calcular o current_amount baseado nos gastos já existentes
+      let calculatedCurrentAmount = goalData.current_amount || 0;
+      
+      if (goalData.goal_type === 'monthly_budget' && goalData.category_id && goalData.month_year) {
+        const { data: transactions, error: transError } = await supabase
+          .from('transactions')
+          .select('amount')
+          .eq('user_id', user.id)
+          .eq('category_id', goalData.category_id)
+          .eq('type', 'expense')
+          .gte('date', goalData.month_year + '-01')
+          .lt('date', new Date(new Date(goalData.month_year + '-01').getFullYear(), new Date(goalData.month_year + '-01').getMonth() + 1, 1).toISOString().split('T')[0]);
+
+        if (!transError && transactions) {
+          calculatedCurrentAmount = transactions.reduce((sum, t) => sum + Number(t.amount), 0);
+        }
+      }
+
       const { data, error } = await supabase
         .from('goals')
         .insert({
           ...goalData,
+          current_amount: calculatedCurrentAmount,
           user_id: user.id
         })
         .select()
