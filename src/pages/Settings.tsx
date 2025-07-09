@@ -6,10 +6,13 @@ import { SettingsHeader } from '@/components/settings/SettingsHeader';
 import { ProfileTab } from '@/components/settings/ProfileTab';
 import { SecurityTab } from '@/components/settings/SecurityTab';
 import { PreferencesTab } from '@/components/settings/PreferencesTab';
+import { AccountStatusCard } from '@/components/settings/AccountStatusCard';
 import { useProfile } from '@/hooks/useProfile';
 import { usePasswordChange } from '@/hooks/usePasswordChange';
 import { usePreferences } from '@/hooks/usePreferences';
 import { useAuth } from '@/hooks/useAuth';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const SettingsPage = () => {
   const { user } = useAuth();
@@ -30,6 +33,30 @@ const SettingsPage = () => {
     handleAnimationsToggle,
     handleNotificationSoundToggle
   } = usePreferences();
+
+  // Verificar status da conta
+  const { data: accountStatus } = useQuery({
+    queryKey: ['account-status', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { accountActive: true };
+      
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('account_status')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Erro ao verificar status da conta:', error);
+        return { accountActive: true };
+      }
+      
+      return {
+        accountActive: profile?.account_status === 'active' || profile?.account_status === null
+      };
+    },
+    enabled: !!user?.id
+  });
 
   // Atualizar o valor do WhatsApp quando o perfil carregar
   useEffect(() => {
@@ -73,6 +100,11 @@ const SettingsPage = () => {
           title="Configurações" 
           description="Gerencie suas informações pessoais e preferências da conta" 
         />
+
+        {/* Card de status da conta desativada */}
+        <div className="mb-6">
+          <AccountStatusCard accountActive={accountStatus?.accountActive ?? true} />
+        </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
