@@ -58,37 +58,68 @@ const Dashboard = () => {
       const totalExpenses = paidExpenses + pendingExpenses;
       const balance = totalIncome - paidExpenses; // Saldo considerando apenas despesas pagas
 
-      // Buscar metas do usuário (sem filtro de período)
-      const { data: goals } = await supabase
-        .from('goals')
-        .select('current_amount, target_amount')
-        .eq('user_id', user.id);
-
-      // Calcular progresso das metas (média)
-      let goalsProgress = 0;
-      if (goals && goals.length > 0) {
-        const totalProgress = goals.reduce((sum, goal) => {
-          const progress = goal.target_amount > 0 
-            ? (Number(goal.current_amount || 0) / Number(goal.target_amount)) * 100 
-            : 0;
-          return sum + Math.min(progress, 100);
-        }, 0);
-        goalsProgress = Math.round(totalProgress / goals.length);
-      }
-
       return {
         totalIncome,
         totalExpenses,
         paidExpenses,
         pendingExpenses,
-        balance,
-        goalsProgress
+        balance
       };
     },
     enabled: !!user?.id
   });
 
-  if (statsLoading) {
+  // Buscar progresso das metas separadamente
+  const { data: goalsProgress, isLoading: goalsLoading } = useQuery({
+    queryKey: ['goals-progress', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return 0;
+
+      console.log('🎯 Buscando metas do usuário...');
+
+      const { data: goals, error } = await supabase
+        .from('goals')
+        .select('current_amount, target_amount, status, goal_type')
+        .eq('user_id', user.id)
+        .eq('status', 'active'); // Apenas metas ativas
+
+      if (error) {
+        console.error('❌ Erro ao buscar metas:', error);
+        return 0;
+      }
+
+      if (!goals || goals.length === 0) {
+        console.log('📝 Nenhuma meta ativa encontrada');
+        return 0;
+      }
+
+      console.log('📊 Metas encontradas:', goals);
+
+      // Calcular progresso das metas (média)
+      const totalProgress = goals.reduce((sum, goal) => {
+        const currentAmount = Number(goal.current_amount || 0);
+        const targetAmount = Number(goal.target_amount || 0);
+        
+        if (targetAmount === 0) return sum;
+        
+        const progress = (currentAmount / targetAmount) * 100;
+        const limitedProgress = Math.min(progress, 100); // Limitar a 100%
+        
+        console.log(`Meta: ${goal.goal_type} - Progresso: ${limitedProgress.toFixed(1)}%`);
+        
+        return sum + limitedProgress;
+      }, 0);
+
+      const averageProgress = Math.round(totalProgress / goals.length);
+      
+      console.log(`📈 Progresso médio das metas: ${averageProgress}%`);
+      
+      return averageProgress;
+    },
+    enabled: !!user?.id
+  });
+
+  if (statsLoading || goalsLoading) {
     return (
       <div className="p-6 space-y-6">
         <div className="animate-pulse">
@@ -109,9 +140,10 @@ const Dashboard = () => {
     totalExpenses: 0,
     paidExpenses: 0,
     pendingExpenses: 0,
-    balance: 0,
-    goalsProgress: 0
+    balance: 0
   };
+
+  const currentGoalsProgress = goalsProgress || 0;
 
   return (
     <div className="p-6 space-y-6">
@@ -186,7 +218,7 @@ const Dashboard = () => {
             <Target className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">{currentStats.goalsProgress}%</div>
+            <div className="text-2xl font-bold text-purple-600">{currentGoalsProgress}%</div>
             <p className="text-xs text-muted-foreground">Progresso das metas</p>
           </CardContent>
         </Card>
