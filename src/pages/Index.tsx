@@ -226,7 +226,7 @@ const Index = () => {
                   border: 'none'
                 }}
               >
-                Começar Grátis
+                Começar Agora
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </div>
@@ -816,7 +816,7 @@ const Index = () => {
                         } : {}}
                         variant={isPopular ? "default" : "outline"}
                       >
-                        {plan.price_monthly ? '🚀 Assinar Agora' : '✨ Começar Grátis'}
+                        {plan.price_monthly ? '🚀 Assinar Agora' : '✨ Começar Agora'}
                       </Button>
                     </CardContent>
                   </Card>
