@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -61,6 +60,15 @@ const Goals = () => {
 
   const handleDeleteGoal = (id: string) => {
     setDeleteGoalId(id);
+  };
+
+  const handleEditMonthlyGoal = (goal: Goal) => {
+    setEditingGoal(goal);
+    setIsFormOpen(true);
+  };
+
+  const handleDeleteMonthlyGoal = (goal: Goal) => {
+    setDeleteGoalId(goal.id);
   };
 
   const confirmDeleteGoal = () => {
@@ -187,14 +195,19 @@ const Goals = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {monthlyGoalsStatus.map((monthlyGoal) => (
-              <MonthlyGoalCard 
-                key={monthlyGoal.goal_id} 
-                monthlyGoal={monthlyGoal}
-                onEdit={handleEditGoalById}
-                onDelete={handleDeleteGoal}
-              />
-            ))}
+            {monthlyGoalsStatus.map((monthlyGoal) => {
+              const goal = goals.find(g => g.id === monthlyGoal.goal_id);
+              if (!goal) return null;
+              
+              return (
+                <MonthlyGoalCard 
+                  key={monthlyGoal.goal_id} 
+                  goal={goal}
+                  onEdit={handleEditMonthlyGoal}
+                  onDelete={handleDeleteMonthlyGoal}
+                />
+              );
+            })}
           </div>
         </div>
       )}
