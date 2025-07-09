@@ -3,7 +3,7 @@ import * as React from "react"
 import PhoneInputComponent from 'react-phone-number-input'
 import 'react-phone-number-input/style.css'
 import { cn } from "@/lib/utils"
-import { parsePhoneNumber, CountryCode } from 'libphonenumber-js'
+import { parsePhoneNumber, CountryCode, isValidPhoneNumber } from 'libphonenumber-js'
 
 interface PhoneInputProps {
   value?: string
@@ -22,35 +22,54 @@ const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
       }
 
       try {
+        // Verificar se o número é válido e obter informações
         const phoneNumber = parsePhoneNumber(newValue)
         
         if (phoneNumber?.country) {
           const maxLength = getMaxLengthForCountry(phoneNumber.country)
           const nationalNumber = phoneNumber.nationalNumber
           
-          // Se exceder o limite, não aceita a mudança
+          // Bloquear se exceder o limite do país
           if (nationalNumber.length > maxLength) {
-            return
+            return // Não aceita a mudança
           }
         } else {
-          // Se não conseguir detectar o país, usar limite genérico
+          // Para números sem país detectado, aplicar validação rigorosa
           const digitsOnly = newValue.replace(/\D/g, '')
-          // Remove o código do país (primeiros 2-3 dígitos)
-          const nationalDigits = digitsOnly.length > 2 ? digitsOnly.substring(2) : digitsOnly
           
-          // Limite genérico para números nacionais
-          if (nationalDigits.length > 11) {
-            return
+          // Para Brasil (+55), máximo 13 dígitos total (55 + 11 nacionais)
+          if (newValue.startsWith('+55') || newValue.startsWith('55')) {
+            const nationalDigits = digitsOnly.replace(/^55/, '')
+            if (nationalDigits.length > 11) {
+              return // Não aceita se exceder 11 dígitos nacionais
+            }
+          } else {
+            // Para outros países, limite genérico de 15 dígitos total
+            if (digitsOnly.length > 15) {
+              return
+            }
           }
         }
         
         onChange?.(newValue)
       } catch (error) {
-        // Em caso de erro, usar validação simples
+        // Em caso de erro, aplicar validação básica rigorosa
         const digitsOnly = newValue.replace(/\D/g, '')
-        if (digitsOnly.length <= 15) { // Limite internacional máximo
-          onChange?.(newValue)
+        
+        // Verificar se começa com código do Brasil
+        if (digitsOnly.startsWith('55')) {
+          // Brasil: máximo 13 dígitos (55 + 11)
+          if (digitsOnly.length > 13) {
+            return
+          }
+        } else {
+          // Outros países: máximo 15 dígitos
+          if (digitsOnly.length > 15) {
+            return
+          }
         }
+        
+        onChange?.(newValue)
       }
     }
 
@@ -77,7 +96,7 @@ const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
 // Função para obter o comprimento máximo do número nacional por país
 const getMaxLengthForCountry = (country: CountryCode): number => {
   const maxLengths: Record<string, number> = {
-    'BR': 11, // Brasil: 11 dígitos (ex: 11987654321)
+    'BR': 11, // Brasil: 11 dígitos nacionais (ex: 11987654321)
     'US': 10, // EUA: 10 dígitos
     'CA': 10, // Canadá: 10 dígitos
     'GB': 11, // Reino Unido: até 11 dígitos
