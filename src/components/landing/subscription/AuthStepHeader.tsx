@@ -74,7 +74,7 @@ export const AuthStepHeader: React.FC<AuthStepHeaderProps> = ({
         variant="ghost"
         size="sm"
         onClick={onBack}
-        className="absolute top-4 left-4 text-gray-600 hover:text-gray-800 z-10"
+        className="absolute top-4 left-4 text-gray-600 hover:text-gray-800 z-50 bg-white/80 backdrop-blur-sm hover:bg-white/90 border border-gray-200"
       >
         <ArrowLeft className="w-4 h-4 mr-1" />
         Voltar
@@ -85,7 +85,7 @@ export const AuthStepHeader: React.FC<AuthStepHeaderProps> = ({
         variant="ghost"
         size="sm"
         onClick={onClose}
-        className="absolute top-4 right-4 text-gray-600 hover:text-gray-800 z-10"
+        className="absolute top-4 right-4 text-gray-600 hover:text-gray-800 z-50 bg-white/80 backdrop-blur-sm hover:bg-white/90 border border-gray-200"
       >
         ×
       </Button>
