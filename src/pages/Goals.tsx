@@ -51,6 +51,14 @@ const Goals = () => {
     setIsFormOpen(true);
   };
 
+  const handleEditGoalById = (goalId: string) => {
+    const goal = goals.find(g => g.id === goalId);
+    if (goal) {
+      setEditingGoal(goal);
+      setIsFormOpen(true);
+    }
+  };
+
   const handleDeleteGoal = (id: string) => {
     setDeleteGoalId(id);
   };
@@ -180,7 +188,12 @@ const Goals = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {monthlyGoalsStatus.map((monthlyGoal) => (
-              <MonthlyGoalCard key={monthlyGoal.goal_id} monthlyGoal={monthlyGoal} />
+              <MonthlyGoalCard 
+                key={monthlyGoal.goal_id} 
+                monthlyGoal={monthlyGoal}
+                onEdit={handleEditGoalById}
+                onDelete={handleDeleteGoal}
+              />
             ))}
           </div>
         </div>

@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -125,7 +126,7 @@ export const GoalForm = ({ isOpen, onClose, goal, onSubmit }: GoalFormProps) => 
     onClose();
   };
 
-  // Gerar opções de mês/ano para os próximos 12 meses
+  // Gerar opções de mês/ano para os próximos 12 meses (incluindo o mês atual)
   const getMonthYearOptions = () => {
     const options = [];
     const currentDate = new Date();
@@ -158,7 +159,10 @@ export const GoalForm = ({ isOpen, onClose, goal, onSubmit }: GoalFormProps) => 
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="goal_type">Tipo de Meta</Label>
-            <Select onValueChange={(value) => setValue('goal_type', value as 'savings' | 'monthly_budget')}>
+            <Select 
+              value={watch('goal_type')} 
+              onValueChange={(value) => setValue('goal_type', value as 'savings' | 'monthly_budget')}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o tipo de meta" />
               </SelectTrigger>
@@ -228,7 +232,10 @@ export const GoalForm = ({ isOpen, onClose, goal, onSubmit }: GoalFormProps) => 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="category_id">Categoria</Label>
-                <Select onValueChange={(value) => setValue('category_id', value)}>
+                <Select 
+                  value={watch('category_id')} 
+                  onValueChange={(value) => setValue('category_id', value)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione a categoria" />
                   </SelectTrigger>
@@ -253,7 +260,10 @@ export const GoalForm = ({ isOpen, onClose, goal, onSubmit }: GoalFormProps) => 
 
               <div className="space-y-2">
                 <Label htmlFor="month_year">Mês/Ano</Label>
-                <Select onValueChange={(value) => setValue('month_year', value)}>
+                <Select 
+                  value={watch('month_year')} 
+                  onValueChange={(value) => setValue('month_year', value)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o mês" />
                   </SelectTrigger>
@@ -287,7 +297,10 @@ export const GoalForm = ({ isOpen, onClose, goal, onSubmit }: GoalFormProps) => 
           {goal && (
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
-              <Select onValueChange={(value) => setValue('status', value as 'active' | 'completed' | 'paused' | 'cancelled')}>
+              <Select 
+                value={watch('status')} 
+                onValueChange={(value) => setValue('status', value as 'active' | 'completed' | 'paused' | 'cancelled')}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o status" />
                 </SelectTrigger>
