@@ -66,6 +66,7 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
 
   const transactionType = watch('type');
   const isRecurring = watch('is_recurring');
+  const selectedCategoryId = watch('category_id');
 
   // Buscar categorias do banco de dados
   const { data: categories } = useQuery({
@@ -302,7 +303,10 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="category_id">Categoria</Label>
-              <Select onValueChange={(value) => setValue('category_id', value)}>
+              <Select 
+                value={selectedCategoryId || ''} 
+                onValueChange={(value) => setValue('category_id', value)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione a categoria" />
                 </SelectTrigger>
