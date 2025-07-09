@@ -364,7 +364,6 @@ const Index = () => {
               {/* Benefits List */}
               <div className="space-y-4 mb-8">
                 {[
-                  'Você pode enviar áudios e imagens',
                   'Reconhecimento automático de valores e categorias',
                   'Relatórios instantâneos e insights personalizados',
                   'Lembretes inteligentes para suas metas financeiras'
@@ -768,9 +767,9 @@ const Index = () => {
                         <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
                           {plan.price_monthly ? (
                             <>
-                              <span className="text-lg text-gray-500 line-through mr-2">
+                              {/*<span className="text-lg text-gray-500 line-through mr-2">
                                 R${(plan.price_monthly * 2).toFixed(0)}
-                              </span>
+                              </span> */}
                               R${plan.price_monthly}
                               <span className="text-lg text-gray-500">/mês</span>
                             </>
