@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, CreditCard, PieChart, Target, Calendar, FolderOpen, Settings } from 'lucide-react';
@@ -125,7 +126,7 @@ export const Sidebar = ({
     refetchOnWindowFocus: false
   });
   
-  return <div className={cn("pb-12 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700", className)}>
+  return <div className={cn("pb-12 w-64 bg-white border-r border-gray-200", className)}>
       <div className="space-y-4 py-4">
         {/* Header com logo - fundo branco */}
         <div className="px-4 py-6 bg-white">
@@ -143,8 +144,8 @@ export const Sidebar = ({
         </div>
 
         {/* Frase motivacional */}
-        {motivationalPhrase && <div className="px-4 py-3 mx-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <p className="text-sm text-gray-600 dark:text-gray-300 text-center italic">
+        {motivationalPhrase && <div className="px-4 py-3 mx-3 bg-gray-50 rounded-lg">
+            <p className="text-sm text-gray-600 text-center italic">
               "{motivationalPhrase}"
             </p>
           </div>}
@@ -154,7 +155,7 @@ export const Sidebar = ({
           <div className="space-y-1">
             {navigationItems.map(item => <NavLink key={item.name} to={item.href} className={({
             isActive
-          }) => cn("flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors", isActive ? "text-white font-semibold" : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800")} style={({
+          }) => cn("flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors", isActive ? "text-white font-semibold" : "text-gray-600 hover:bg-gray-100")} style={({
             isActive
           }) => ({
             backgroundColor: isActive ? primaryColor || '#222222' : undefined
@@ -165,7 +166,7 @@ export const Sidebar = ({
             
             <NavLink to="/settings" className={({
             isActive
-          }) => cn("flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors", isActive ? "text-white font-semibold" : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800")} style={({
+          }) => cn("flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors", isActive ? "text-white font-semibold" : "text-gray-600 hover:bg-gray-100")} style={({
             isActive
           }) => ({
             backgroundColor: isActive ? primaryColor || '#222222' : undefined
