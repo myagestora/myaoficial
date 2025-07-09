@@ -722,7 +722,6 @@ const Index = () => {
               </p>
             </div>
             
-            {/*<div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto justify-center">*/}
             <div
   className={`grid gap-8 max-w-5xl mx-auto ${
     subscriptionPlans.length === 1
@@ -774,9 +773,9 @@ const Index = () => {
                           {plan.price_monthly ? (
                             <>
                               <span className="text-lg text-gray-500 line-through mr-2">
-                                R${(plan.price_monthly * 2).toFixed(0)}
+                                R$ {(plan.price_monthly * 2).toFixed(2).replace('.', ',')}
                               </span>
-                              R${plan.price_monthly}
+                              R$ {plan.price_monthly.toFixed(2).replace('.', ',')}
                               <span className="text-lg text-gray-500">/mês</span>
                             </>
                           ) : (
