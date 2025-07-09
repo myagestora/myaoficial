@@ -317,7 +317,7 @@ const Index = () => {
                   border: 'none'
                 }}
               >
-                🚀 Começar Gratuitamente
+                🚀 Começar Agora
               </Button>
               <Button 
                 size="lg" 
@@ -718,7 +718,7 @@ const Index = () => {
                 Escolha o Plano Ideal
               </h2>
               <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
-                Comece gratuitamente e evolua conforme suas necessidades
+                Comece agora e evolua conforme suas necessidades
               </p>
               <div className="bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-2xl p-6 mb-8 max-w-2xl mx-auto shadow-2xl">
                 <p className="text-2xl font-bold mb-2">
