@@ -72,7 +72,7 @@ const Login = () => {
           console.error('❌ Erro no cadastro:', error);
           toast({
             title: 'Erro no Cadastro',
-            description: error.message === 'User already registered' 
+            description: error.message === 'Já existe um usuário com esse telefone ou email.' 
               ? 'Já existe um usuário cadastrado com este email.'
               : error.message,
             variant: 'destructive',
