@@ -722,7 +722,12 @@ const Index = () => {
               </p>
             </div>
             
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto justify-center">
+            <div
+  className={`grid gap-8 max-w-5xl mx-auto ${
+    subscriptionPlans.length === 1
+      ? 'grid-cols-1 justify-items-center'
+      : 'md:grid-cols-2 lg:grid-cols-3'
+  }`}>
               {subscriptionPlans.map((plan, index) => {
                 const features = Array.isArray(plan.features) 
                   ? plan.features 
@@ -767,8 +772,10 @@ const Index = () => {
                         <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
                           {plan.price_monthly ? (
                             <>
-       
-                              R${plan.price_monthly}
+                              <span className="text-lg text-gray-500 line-through mr-2">
+                                R$ {(plan.price_monthly * 2).toFixed(2).replace('.', ',')}
+                              </span>
+                              R$ {plan.price_monthly.toFixed(2).replace('.', ',')}
                               <span className="text-lg text-gray-500">/mês</span>
                             </>
                           ) : (
