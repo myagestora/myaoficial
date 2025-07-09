@@ -1,12 +1,15 @@
+
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, CreditCard, PieChart, Target, Calendar, FolderOpen, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+
 interface SidebarProps {
   className?: string;
 }
+
 const navigationItems = [{
   name: 'Dashboard',
   href: '/dashboard',
@@ -32,6 +35,7 @@ const navigationItems = [{
   href: '/categories',
   icon: FolderOpen
 }];
+
 export const Sidebar = ({
   className
 }: SidebarProps) => {
@@ -121,21 +125,17 @@ export const Sidebar = ({
     retry: 1,
     refetchOnWindowFocus: false
   });
+  
   return <div className={cn("pb-12 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700", className)}>
       <div className="space-y-4 py-4">
-        {/* Header com logo e cor primária */}
-        <div style={{
-        backgroundColor: primaryColor || '#222222'
-      }} className="px-4 py-6 text-white bg-slate-50">
+        {/* Header com logo - fundo branco */}
+        <div className="px-4 py-6 bg-white">
           <div className="flex flex-col items-center space-y-3">
             {logoUrl && <img src={logoUrl} alt="Logo" className="h-12 w-auto object-contain" onError={e => {
             console.error('Erro ao carregar logo:', logoUrl);
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';
           }} />}
-            <h1 className="text-lg font-semibold text-center">
-              Mya Gestora
-            </h1>
           </div>
         </div>
 
