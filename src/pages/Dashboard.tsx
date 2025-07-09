@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, TrendingUp, TrendingDown, Target } from 'lucide-react';
@@ -93,7 +94,7 @@ const Dashboard = () => {
           )
         `)
         .eq('user_id', user.id)
-        .eq('status', 'active'); // Apenas metas ativas
+        .eq('status', 'active');
 
       if (error) {
         console.error('❌ Erro ao buscar metas:', error);
@@ -112,9 +113,8 @@ const Dashboard = () => {
         if (!dateRange?.from || !dateRange?.to) return true;
 
         if (goal.goal_type === 'monthly_budget' && goal.month_year) {
-          // Para metas mensais, verificar se o mês está no período
           const [goalYear, goalMonth] = goal.month_year.split('-').map(Number);
-          const goalDate = new Date(goalYear, goalMonth - 1, 1); // goalMonth - 1 porque Date usa 0-indexado
+          const goalDate = new Date(goalYear, goalMonth - 1, 1);
           const fromMonth = new Date(dateRange.from.getFullYear(), dateRange.from.getMonth(), 1);
           const toMonth = new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), 1);
           
@@ -122,12 +122,11 @@ const Dashboard = () => {
         }
 
         if (goal.goal_type === 'savings' && goal.target_date) {
-          // Para metas de economia, verificar se a data alvo está no período
           const targetDate = new Date(goal.target_date);
           return targetDate >= dateRange.from && targetDate <= dateRange.to;
         }
 
-        return true; // Incluir outras metas por padrão
+        return true;
       });
 
       if (relevantGoals.length === 0) {
@@ -157,10 +156,21 @@ const Dashboard = () => {
           
           if (targetAmount === 0) return 0;
           
-          // Para gastos mensais: se gastou menos que o orçamento = progresso positivo
-          // Calcular como: (orçamento - gasto) / orçamento * 100
-          // Se gastou tudo = 0%, se não gastou nada = 100%
-          const progress = Math.max(0, ((targetAmount - spentAmount) / targetAmount) * 100);
+          // Para metas de gastos: calcular como "segurança" dentro da meta
+          // Se gastou R$50 de uma meta de R$100, está 50% "seguro" (ainda pode gastar R$50)
+          // Mas queremos mostrar como progresso positivo quando está dentro da meta
+          const usagePercentage = (spentAmount / targetAmount) * 100;
+          
+          // Se gastou menos que a meta, o progresso é positivo
+          // Se gastou igual ou mais que a meta, o progresso é baixo/negativo
+          let progress;
+          if (spentAmount <= targetAmount) {
+            // Dentro da meta: progresso baseado no quanto "sobrou" da meta
+            progress = Math.max(0, 100 - usagePercentage);
+          } else {
+            // Ultrapassou a meta: progresso muito baixo
+            progress = 0;
+          }
           
           console.log(`Meta mensal ${goal.categories?.name}: Gasto: ${spentAmount}, Orçamento: ${targetAmount}, Progresso: ${progress.toFixed(1)}%`);
           

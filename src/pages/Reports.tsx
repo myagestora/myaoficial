@@ -11,6 +11,7 @@ import { DateRange } from 'react-day-picker';
 import { addDays, startOfMonth, endOfMonth, format } from 'date-fns';
 import { exportToCSV, exportToPDF, ReportData, TransactionData } from '@/utils/exportUtils';
 import { toast } from 'sonner';
+import { GoalsSection } from '@/components/reports/GoalsSection';
 
 const Reports = () => {
   const [reportType, setReportType] = useState('monthly');
@@ -319,6 +320,9 @@ const Reports = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Goals Section */}
+      <GoalsSection dateRange={dateRange} />
 
       {/* Trend Analysis */}
       <Card>
