@@ -16,6 +16,19 @@ const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
   ({ className, onChange, value, ...props }, ref) => {
     const handleChange = (newValue?: string) => {
       console.log('PhoneInput - Valor alterado para:', newValue)
+      
+      // Limitar caracteres baseado no país
+      if (newValue) {
+        // Para Brasil: máximo 15 caracteres (+5511999999999)
+        // Para outros países: máximo 17 caracteres
+        const maxLength = newValue.startsWith('+55') ? 15 : 17
+        
+        if (newValue.length > maxLength) {
+          console.log(`PhoneInput - Valor excede limite de ${maxLength} caracteres, bloqueando`)
+          return // Não chama onChange se exceder o limite
+        }
+      }
+      
       onChange?.(newValue)
     }
 
