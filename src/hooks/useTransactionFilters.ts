@@ -5,8 +5,8 @@ import { DateRange } from 'react-day-picker';
 export const useTransactionFilters = (transactions: any[]) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
-  const [selectedType, setSelectedType] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedType, setSelectedType] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter(transaction => {
@@ -17,10 +17,10 @@ export const useTransactionFilters = (transactions: any[]) => {
         transaction.categories?.name?.toLowerCase().includes(searchTerm.toLowerCase());
 
       // Type filter
-      const matchesType = !selectedType || transaction.type === selectedType;
+      const matchesType = selectedType === 'all' || transaction.type === selectedType;
 
       // Category filter
-      const matchesCategory = !selectedCategory || transaction.category_id === selectedCategory;
+      const matchesCategory = selectedCategory === 'all' || transaction.category_id === selectedCategory;
 
       // Date range filter
       const matchesDateRange = !dateRange?.from || !dateRange?.to || (() => {
@@ -41,15 +41,15 @@ export const useTransactionFilters = (transactions: any[]) => {
 
   const hasActiveFilters = Boolean(
     searchTerm || 
-    selectedType || 
-    selectedCategory || 
+    (selectedType && selectedType !== 'all') || 
+    (selectedCategory && selectedCategory !== 'all') || 
     (dateRange?.from && dateRange?.to)
   );
 
   const clearFilters = () => {
     setSearchTerm('');
-    setSelectedType('');
-    setSelectedCategory('');
+    setSelectedType('all');
+    setSelectedCategory('all');
     setDateRange(undefined);
   };
 

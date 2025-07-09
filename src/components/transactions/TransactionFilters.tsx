@@ -82,7 +82,7 @@ export const TransactionFilters = ({
                   <SelectValue placeholder="Todos os tipos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os tipos</SelectItem>
+                  <SelectItem value="all">Todos os tipos</SelectItem>
                   <SelectItem value="income">
                     <div className="flex items-center gap-2">
                       <ArrowUpCircle className="h-4 w-4 text-green-600" />
@@ -109,7 +109,7 @@ export const TransactionFilters = ({
                   <SelectValue placeholder="Todas as categorias" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as categorias</SelectItem>
+                  <SelectItem value="all">Todas as categorias</SelectItem>
                   {categories.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       <div className="flex items-center gap-2">
@@ -130,12 +130,12 @@ export const TransactionFilters = ({
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Status
               </label>
-              <Select value="" onValueChange={() => {}}>
+              <Select value="all" onValueChange={() => {}}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="normal">Normais</SelectItem>
                   <SelectItem value="recurring">Recorrentes</SelectItem>
                   <SelectItem value="auto">Automáticas</SelectItem>
@@ -156,21 +156,21 @@ export const TransactionFilters = ({
                   />
                 </Badge>
               )}
-              {selectedType && (
+              {selectedType && selectedType !== 'all' && (
                 <Badge variant="secondary" className="gap-1">
                   {selectedType === 'income' ? 'Receitas' : 'Despesas'}
                   <X 
                     className="h-3 w-3 cursor-pointer" 
-                    onClick={() => onTypeChange('')}
+                    onClick={() => onTypeChange('all')}
                   />
                 </Badge>
               )}
-              {selectedCategory && (
+              {selectedCategory && selectedCategory !== 'all' && (
                 <Badge variant="secondary" className="gap-1">
                   {categories.find(c => c.id === selectedCategory)?.name}
                   <X 
                     className="h-3 w-3 cursor-pointer" 
-                    onClick={() => onCategoryChange('')}
+                    onClick={() => onCategoryChange('all')}
                   />
                 </Badge>
               )}
