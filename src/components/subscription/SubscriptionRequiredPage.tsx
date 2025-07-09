@@ -6,8 +6,8 @@ import { SubscriptionFlow } from '@/components/landing/SubscriptionFlow';
 
 export const SubscriptionRequiredPage = () => {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="container mx-auto px-4 py-6 max-w-6xl">
         <Card className="mb-8 border-orange-200 bg-orange-50 dark:bg-orange-900/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-orange-800 dark:text-orange-200">
@@ -24,7 +24,7 @@ export const SubscriptionRequiredPage = () => {
         </Card>
         
         {/* Processo de assinatura integrado diretamente na página */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
           <SubscriptionFlow 
             onClose={() => {
               // Como não é modal, não há necessidade de fechar

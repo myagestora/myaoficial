@@ -7,7 +7,6 @@ import { toast } from '@/hooks/use-toast';
 import { PlanSelectionStep } from './subscription/PlanSelectionStep';
 import { AuthStep } from './subscription/AuthStep';
 import { CheckoutStep } from './subscription/CheckoutStep';
-import { PlanSelectionModal } from './subscription/PlanSelectionModal';
 import { useSubscriptionFlow } from '@/hooks/useSubscriptionFlow';
 
 interface SubscriptionPlan {

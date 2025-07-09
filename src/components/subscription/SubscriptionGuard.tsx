@@ -3,7 +3,6 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { AppLayout } from '@/components/layout/AppLayout';
 import { SubscriptionRequiredPage } from './SubscriptionRequiredPage';
 
 interface SubscriptionGuardProps {
@@ -16,7 +15,24 @@ export const SubscriptionGuard = ({ children }: SubscriptionGuardProps) => {
   const { data: userAccess, isLoading } = useQuery({
     queryKey: ['user-access-check', user?.id],
     queryFn: async () => {
-      if (!user?.id) return { hasActiveSubscription: false };
+      if (!user?.id) return { hasActiveSubscription: false, profileExists: false };
+      
+      // Primeiro verificar se o perfil existe
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      if (profileError) {
+        console.error('Erro ao verificar perfil:', profileError);
+        return { hasActiveSubscription: false, profileExists: false };
+      }
+      
+      if (!profile) {
+        console.log('Perfil não encontrado para usuário:', user.id);
+        return { hasActiveSubscription: false, profileExists: false };
+      }
       
       // Verificar se existe assinatura ativa
       const { data: subscription, error: subError } = await supabase
@@ -31,7 +47,8 @@ export const SubscriptionGuard = ({ children }: SubscriptionGuardProps) => {
       }
       
       return {
-        hasActiveSubscription: !!subscription
+        hasActiveSubscription: !!subscription,
+        profileExists: true
       };
     },
     enabled: !!user?.id
@@ -49,6 +66,13 @@ export const SubscriptionGuard = ({ children }: SubscriptionGuardProps) => {
   // Se não tem usuário logado, não mostra nada (AuthProvider deve redirecionar)
   if (!user) {
     return null;
+  }
+
+  // Se o perfil não existe no banco, limpar sessão e mostrar página de assinatura
+  if (userAccess && !userAccess.profileExists) {
+    console.log('Perfil não existe, limpando sessão');
+    supabase.auth.signOut();
+    return <SubscriptionRequiredPage />;
   }
 
   // Se não tem assinatura ativa, mostra a página de assinatura necessária
