@@ -207,17 +207,11 @@ serve(async (req) => {
       }
 
       case 'expenses': {
-        let requestData = { period: 'month' };
+        // GET request - usar query params se fornecidos
+        const period = url.searchParams.get('period') || 'month';
         
-        if (req.method === 'POST') {
-          requestData = { ...requestData, ...await req.json() };
-        } else {
-          const period = url.searchParams.get('period') || 'month';
-          requestData = { period };
-        }
-
         let dateFilter = {}
-        if (requestData.period === 'month') {
+        if (period === 'month') {
           dateFilter = { gte: monthStart, lte: monthEnd }
         }
 
@@ -235,7 +229,7 @@ serve(async (req) => {
           JSON.stringify({
             total_expenses: totalExpenses,
             transactions: expenses || [],
-            period: requestData.period,
+            period: period,
             currency: 'BRL'
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
