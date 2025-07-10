@@ -118,9 +118,35 @@ const AdminAPI = () => {
   };
 
   const generateCurlCommand = (endpoint: any) => {
-    const fullUrl = `${baseUrl}${endpoint.path.replace('{userId}', 'USER_ID')}`;
+    let fullUrl = `${baseUrl}${endpoint.path.replace('{userId}', 'USER_ID')}`;
     
     if (endpoint.method === 'GET') {
+      // Adicionar parâmetros de URL para requisições GET
+      if (endpoint.params && Object.keys(endpoint.params).length > 0) {
+        const params = new URLSearchParams();
+        Object.entries(endpoint.params).forEach(([key, type]) => {
+          // Remover indicador opcional e definir valores de exemplo
+          const cleanType = (type as string).replace('?', '');
+          let exampleValue = '';
+          
+          if (cleanType === 'number') {
+            exampleValue = key === 'limit' ? '10' : key === 'months' ? '6' : '1';
+          } else if (cleanType === 'string') {
+            if (key === 'period') exampleValue = 'month';
+            else if (key === 'user_id') exampleValue = 'USER_ID';
+            else exampleValue = 'example';
+          }
+          
+          if (exampleValue) {
+            params.append(key, exampleValue);
+          }
+        });
+        
+        if (params.toString()) {
+          fullUrl += `?${params.toString()}`;
+        }
+      }
+      
       let curl = `curl -X GET "${fullUrl}"`;
       if (endpoint.headers?.Authorization) {
         curl += ` \\\n  -H "Authorization: Bearer YOUR_BOT_TOKEN"`;
@@ -133,10 +159,23 @@ const AdminAPI = () => {
       }
       if (endpoint.params) {
         const exampleBody = { ...endpoint.params };
-        // Remove optional parameters indicator
+        // Definir valores de exemplo para o body
         Object.keys(exampleBody).forEach(key => {
-          if (typeof exampleBody[key] === 'string' && exampleBody[key].includes('?')) {
-            exampleBody[key] = exampleBody[key].replace('?', '');
+          const type = exampleBody[key] as string;
+          const cleanType = type.replace('?', '');
+          
+          if (cleanType === 'string') {
+            if (key === 'user_id') exampleBody[key] = 'USER_ID';
+            else if (key === 'type') exampleBody[key] = 'expense';
+            else if (key === 'title') exampleBody[key] = 'Compra no mercado';
+            else if (key === 'category_name') exampleBody[key] = 'Alimentação';
+            else if (key === 'description') exampleBody[key] = 'Compras da semana';
+            else if (key === 'date') exampleBody[key] = '2024-01-15';
+            else if (key === 'whatsapp') exampleBody[key] = '5511999999999';
+            else if (key === 'bot_token') exampleBody[key] = 'YOUR_BOT_TOKEN';
+            else exampleBody[key] = 'example';
+          } else if (cleanType === 'number') {
+            exampleBody[key] = key === 'amount' ? 150.50 : 1;
           }
         });
         curl += ` \\\n  -d '${JSON.stringify(exampleBody, null, 2)}'`;
