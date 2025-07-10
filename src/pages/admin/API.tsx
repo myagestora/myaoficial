@@ -629,16 +629,22 @@ const AdminAPI = () => {
                         {category.endpoints.map((endpoint, idx) => (
                           <Button
                             key={`${category.category}-${idx}`}
-                            variant={selectedEndpoint === endpoint ? "secondary" : "ghost"}
-                            className="w-full justify-start h-auto p-2 pl-6"
+                            variant={selectedEndpoint === endpoint ? "default" : "ghost"}
+                            className={`w-full justify-start h-auto p-2 pl-6 transition-colors ${
+                              selectedEndpoint === endpoint 
+                                ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
+                                : 'hover:bg-muted/50'
+                            }`}
                             onClick={() => setSelectedEndpoint(endpoint)}
                           >
                             <Badge 
                               variant="outline"
                               className={`text-xs mr-2 flex-shrink-0 ${
-                                endpoint.method === 'GET' 
-                                  ? 'border-blue-500 text-blue-700' 
-                                  : 'border-green-500 text-green-700'
+                                selectedEndpoint === endpoint
+                                  ? 'border-primary-foreground/20 text-primary-foreground'
+                                  : endpoint.method === 'GET' 
+                                    ? 'border-blue-500 text-blue-700' 
+                                    : 'border-green-500 text-green-700'
                               }`}
                             >
                               {endpoint.method}
@@ -647,7 +653,11 @@ const AdminAPI = () => {
                               <div className="text-sm font-medium truncate">
                                 {endpoint.path.split('/').pop()}
                               </div>
-                              <div className="text-xs text-muted-foreground truncate">
+                              <div className={`text-xs truncate ${
+                                selectedEndpoint === endpoint 
+                                  ? 'text-primary-foreground/80' 
+                                  : 'text-muted-foreground'
+                              }`}>
                                 {endpoint.description}
                               </div>
                             </div>
