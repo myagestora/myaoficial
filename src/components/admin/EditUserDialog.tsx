@@ -27,6 +27,8 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
   const [isAdmin, setIsAdmin] = useState(
     user.user_roles?.some((role: any) => role.role === 'admin') || false
   );
+  const [selectedSpecialPlan, setSelectedSpecialPlan] = useState('');
+  const [activateSpecialPlan, setActivateSpecialPlan] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: subscriptionPlans } = useQuery({
@@ -43,6 +45,21 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
     }
   });
 
+  const { data: specialPlans } = useQuery({
+    queryKey: ['special-plans'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('id, name, is_special')
+        .eq('is_special', true)
+        .eq('is_active', true)
+        .order('name');
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
   const updateUserMutation = useMutation({
     mutationFn: async (userData: { 
       email: string; 
@@ -51,6 +68,8 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
       subscriptionStatus: string;
       adminOverride: boolean;
       isAdmin: boolean;
+      activateSpecialPlan: boolean;
+      selectedSpecialPlan: string;
     }) => {
       console.log('🔄 Updating user with data:', userData);
       console.log('👤 User ID:', user.id);
@@ -89,60 +108,124 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
         throw subCheckError;
       }
 
-      // Gerenciar assinatura baseado no status
-      if (userData.subscriptionStatus !== 'inactive') {
-        if (!subscriptionPlans || subscriptionPlans.length === 0) {
-          throw new Error('Nenhum plano de assinatura disponível');
+      // Se ativar plano especial, cancelar assinatura atual e criar nova
+      if (userData.activateSpecialPlan && userData.selectedSpecialPlan) {
+        console.log('🎯 Activating special plan');
+        
+        // Cancelar assinatura atual se existir
+        if (existingSubscription) {
+          console.log('❌ Canceling current subscription');
+          const { error: cancelError } = await supabase
+            .from('user_subscriptions')
+            .update({ status: 'canceled' })
+            .eq('user_id', user.id);
+          
+          if (cancelError) {
+            console.error('❌ Cancel subscription error:', cancelError);
+            throw cancelError;
+          }
         }
 
-        const defaultPlan = subscriptionPlans[0];
-        
-        if (existingSubscription) {
-          console.log('📝 Updating existing subscription');
-          // Atualizar assinatura existente
-          const { error: updateSubError } = await supabase
+        // Criar nova assinatura especial
+        console.log('✨ Creating special subscription');
+        const { error: specialSubError } = await supabase
+          .from('user_subscriptions')
+          .insert({
+            user_id: user.id,
+            plan_id: userData.selectedSpecialPlan,
+            status: 'active',
+            frequency: 'monthly',
+            current_period_start: new Date().toISOString(),
+            current_period_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 ano
+          });
+
+        if (specialSubError) {
+          console.error('❌ Special subscription creation error:', specialSubError);
+          throw specialSubError;
+        }
+
+        // Atualizar status no perfil para ativo
+        console.log('📝 Updating profile subscription status to active');
+        const { error: profileUpdateError } = await supabase
+          .from('profiles')
+          .update({ 
+            ...updateData,
+            subscription_status: 'active',
+            admin_override_status: true 
+          })
+          .eq('id', user.id);
+
+        if (profileUpdateError) {
+          console.error('❌ Profile update error:', profileUpdateError);
+          throw profileUpdateError;
+        }
+      } else {
+        // Lógica original para assinatura normal
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update(updateData)
+          .eq('id', user.id);
+
+        if (profileError) {
+          console.error('❌ Profile update error:', profileError);
+          throw profileError;
+        }
+
+        // Gerenciar assinatura baseado no status
+        if (userData.subscriptionStatus !== 'inactive') {
+          if (!subscriptionPlans || subscriptionPlans.length === 0) {
+            throw new Error('Nenhum plano de assinatura disponível');
+          }
+
+          const defaultPlan = subscriptionPlans[0];
+          
+          if (existingSubscription) {
+            console.log('📝 Updating existing subscription');
+            // Atualizar assinatura existente
+            const { error: updateSubError } = await supabase
+              .from('user_subscriptions')
+              .update({
+                status: userData.subscriptionStatus as any,
+                plan_id: defaultPlan.id,
+                current_period_start: existingSubscription.current_period_start || new Date().toISOString(),
+                current_period_end: existingSubscription.current_period_end || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+              })
+              .eq('user_id', user.id);
+
+            if (updateSubError) {
+              console.error('❌ Subscription update error:', updateSubError);
+              throw updateSubError;
+            }
+          } else {
+            console.log('🆕 Creating new subscription');
+            // Criar nova assinatura
+            const { error: createSubError } = await supabase
+              .from('user_subscriptions')
+              .insert({
+                user_id: user.id,
+                plan_id: defaultPlan.id,
+                status: userData.subscriptionStatus as any,
+                current_period_start: new Date().toISOString(),
+                current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+              });
+
+            if (createSubError) {
+              console.error('❌ Subscription creation error:', createSubError);
+              throw createSubError;
+            }
+          }
+        } else if (existingSubscription) {
+          console.log('🗑️ Removing subscription (status inactive)');
+          // Se status for inactive e existir assinatura, remover
+          const { error: deleteSubError } = await supabase
             .from('user_subscriptions')
-            .update({
-              status: userData.subscriptionStatus as any,
-              plan_id: defaultPlan.id,
-              current_period_start: existingSubscription.current_period_start || new Date().toISOString(),
-              current_period_end: existingSubscription.current_period_end || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            })
+            .delete()
             .eq('user_id', user.id);
 
-          if (updateSubError) {
-            console.error('❌ Subscription update error:', updateSubError);
-            throw updateSubError;
+          if (deleteSubError) {
+            console.error('❌ Subscription deletion error:', deleteSubError);
+            throw deleteSubError;
           }
-        } else {
-          console.log('🆕 Creating new subscription');
-          // Criar nova assinatura
-          const { error: createSubError } = await supabase
-            .from('user_subscriptions')
-            .insert({
-              user_id: user.id,
-              plan_id: defaultPlan.id,
-              status: userData.subscriptionStatus as any,
-              current_period_start: new Date().toISOString(),
-              current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            });
-
-          if (createSubError) {
-            console.error('❌ Subscription creation error:', createSubError);
-            throw createSubError;
-          }
-        }
-      } else if (existingSubscription) {
-        console.log('🗑️ Removing subscription (status inactive)');
-        // Se status for inactive e existir assinatura, remover
-        const { error: deleteSubError } = await supabase
-          .from('user_subscriptions')
-          .delete()
-          .eq('user_id', user.id);
-
-        if (deleteSubError) {
-          console.error('❌ Subscription deletion error:', deleteSubError);
-          throw deleteSubError;
         }
       }
 
@@ -218,7 +301,9 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
       whatsapp,
       subscriptionStatus,
       adminOverride,
-      isAdmin
+      isAdmin,
+      activateSpecialPlan,
+      selectedSpecialPlan
     });
   };
 
@@ -301,6 +386,44 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
             <Label htmlFor="isAdmin" className="text-sm font-medium">
               Permissões de Administrador
             </Label>
+          </div>
+
+          <div className="border-t pt-4 space-y-4">
+            <h4 className="font-medium text-sm">Planos Especiais</h4>
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="activateSpecialPlan"
+                checked={activateSpecialPlan}
+                onCheckedChange={(checked) => {
+                  setActivateSpecialPlan(checked as boolean);
+                  if (!checked) {
+                    setSelectedSpecialPlan('');
+                  }
+                }}
+              />
+              <Label htmlFor="activateSpecialPlan" className="text-sm">
+                Ativar plano especial (cancela assinatura atual)
+              </Label>
+            </div>
+
+            {activateSpecialPlan && (
+              <div>
+                <Label htmlFor="specialPlan">Plano Especial</Label>
+                <Select value={selectedSpecialPlan} onValueChange={setSelectedSpecialPlan}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um plano especial" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {specialPlans?.map((plan) => (
+                      <SelectItem key={plan.id} value={plan.id}>
+                        {plan.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end space-x-2">
