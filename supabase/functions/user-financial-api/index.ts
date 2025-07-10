@@ -407,7 +407,7 @@ serve(async (req) => {
           .from('goals')
           .select(`
             id, title, target_amount, current_amount, target_date,
-            goal_type, status, month_year,
+            goal_type, status, month_year, category_id,
             categories (name, color)
           `)
           .eq('user_id', userId)
