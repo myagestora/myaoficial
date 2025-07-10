@@ -347,22 +347,22 @@ serve(async (req) => {
         }, { income: 0, expenses: 0 }) || { income: 0, expenses: 0 }
       }
 
-      const thisMonth = calculateTotals(thisMonthTransactions || [])
-      const lastMonth = calculateTotals(lastMonthTransactions || [])
+      const thisMonthData = calculateTotals(thisMonthTransactions || [])
+      const lastMonthData = calculateTotals(lastMonthTransactions || [])
 
-      const incomeChange = lastMonth.income > 0 ? ((thisMonth.income - lastMonth.income) / lastMonth.income) * 100 : 0
-      const expensesChange = lastMonth.expenses > 0 ? ((thisMonth.expenses - lastMonth.expenses) / lastMonth.expenses) * 100 : 0
+      const incomeChange = lastMonthData.income > 0 ? ((thisMonthData.income - lastMonthData.income) / lastMonthData.income) * 100 : 0
+      const expensesChange = lastMonthData.expenses > 0 ? ((thisMonthData.expenses - lastMonthData.expenses) / lastMonthData.expenses) * 100 : 0
 
       return new Response(
         JSON.stringify({
           current_month: {
-            ...thisMonth,
-            balance: thisMonth.income - thisMonth.expenses,
+            ...thisMonthData,
+            balance: thisMonthData.income - thisMonthData.expenses,
             month_name: currentDate.toLocaleDateString('pt-BR', { year: 'numeric', month: 'long' })
           },
           previous_month: {
-            ...lastMonth,
-            balance: lastMonth.income - lastMonth.expenses,
+            ...lastMonthData,
+            balance: lastMonthData.income - lastMonthData.expenses,
             month_name: new Date(lastMonthYear, lastMonth, 1).toLocaleDateString('pt-BR', { year: 'numeric', month: 'long' })
           },
           comparison: {
