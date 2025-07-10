@@ -16,7 +16,8 @@ export const useSubscriptions = () => {
               name,
               description,
               price_monthly,
-              price_yearly
+              price_yearly,
+              is_special
             ),
             profiles!user_subscriptions_user_id_fkey (
               full_name,
@@ -36,7 +37,8 @@ export const useSubscriptions = () => {
                 name,
                 description,
                 price_monthly,
-                price_yearly
+                price_yearly,
+                is_special
               )
             `)
             .order('created_at', { ascending: false });

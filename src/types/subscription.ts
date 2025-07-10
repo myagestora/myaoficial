@@ -21,6 +21,7 @@ export interface SubscriptionWithProfile {
     description: string | null;
     price_monthly: number | null;
     price_yearly: number | null;
+    is_special: boolean;
   } | null;
   profiles: ProfileData | null;
 }

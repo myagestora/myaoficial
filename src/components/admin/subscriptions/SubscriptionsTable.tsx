@@ -2,6 +2,9 @@
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Crown } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { SubscriptionWithProfile } from '@/types/subscription';
 import { SubscriptionActionsDropdown } from './SubscriptionActionsDropdown';
 
@@ -24,6 +27,34 @@ export const SubscriptionsTable = ({
   onReactivate,
   searchTerm
 }: SubscriptionsTableProps) => {
+  // Buscar cor primária personalizada
+  const { data: primaryColor } = useQuery({
+    queryKey: ['system-config-primary-color'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from('system_config')
+          .select('value')
+          .eq('key', 'primary_color')
+          .maybeSingle();
+        
+        if (error) {
+          console.error('Error fetching primary color:', error);
+          return '#3B82F6'; // cor padrão
+        }
+
+        const colorValue = data?.value;
+        if (typeof colorValue === 'string') {
+          return colorValue.replace(/^"|"$/g, '');
+        }
+        return '#3B82F6';
+      } catch (error) {
+        console.error('Error fetching primary color:', error);
+        return '#3B82F6';
+      }
+    }
+  });
+
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case 'active':
@@ -82,9 +113,34 @@ export const SubscriptionsTable = ({
             <TableCell>
               {subscription.profiles?.email || 'Email não informado'}
             </TableCell>
-            <TableCell>{subscription.subscription_plans?.name}</TableCell>
             <TableCell>
-              <Badge variant={getStatusBadgeVariant(subscription.status)}>
+              {subscription.subscription_plans ? (
+                <Badge 
+                  variant={subscription.subscription_plans.is_special ? 'outline' : 'default'}
+                  className={subscription.subscription_plans.is_special ? 'border-amber-500 text-amber-700' : ''}
+                  style={!subscription.subscription_plans.is_special && primaryColor ? { 
+                    backgroundColor: primaryColor, 
+                    color: 'white',
+                    borderColor: primaryColor
+                  } : {}}
+                >
+                  {subscription.subscription_plans.is_special && <Crown className="h-3 w-3 mr-1" />}
+                  {subscription.subscription_plans.name}
+                </Badge>
+              ) : (
+                '-'
+              )}
+            </TableCell>
+            <TableCell>
+              <Badge 
+                variant={getStatusBadgeVariant(subscription.status)}
+                className={subscription.status === 'active' ? '' : ''}
+                style={subscription.status === 'active' && primaryColor ? { 
+                  backgroundColor: primaryColor, 
+                  color: 'white',
+                  borderColor: primaryColor
+                } : {}}
+              >
                 {getStatusText(subscription.status)}
               </Badge>
             </TableCell>
