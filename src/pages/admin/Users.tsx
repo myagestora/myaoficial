@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,12 +10,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { AddUserDialog } from '@/components/admin/AddUserDialog';
 import { EditUserDialog } from '@/components/admin/EditUserDialog';
 import { DeleteUserDialog } from '@/components/admin/DeleteUserDialog';
+import { UserFilters } from '@/components/admin/UserFilters';
 
 const AdminUsers = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [planFilter, setPlanFilter] = useState('all');
+  const [roleFilter, setRoleFilter] = useState('all');
 
   const { data: users, isLoading } = useQuery({
-    queryKey: ['admin-users', searchTerm],
+    queryKey: ['admin-users', searchTerm, statusFilter, planFilter, roleFilter],
     queryFn: async () => {
       console.log('🔍 Fetching users with search term:', searchTerm);
       
@@ -89,21 +93,6 @@ const AdminUsers = () => {
     return user.user_roles?.some((role: any) => role.role === 'admin') ? 'admin' : 'user';
   };
 
-  const getStatusVariant = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'default';
-      case 'inactive':
-        return 'outline';
-      case 'canceled':
-        return 'destructive';
-      case 'past_due':
-        return 'secondary';
-      default:
-        return 'outline';
-    }
-  };
-
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'active':
@@ -119,6 +108,69 @@ const AdminUsers = () => {
     }
   };
 
+  // Filtrar usuários com base nos filtros aplicados
+  const filteredUsers = useMemo(() => {
+    if (!users) return [];
+
+    return users.filter((user) => {
+      // Filtro por status
+      if (statusFilter !== 'all' && user.subscription_status !== statusFilter) {
+        return false;
+      }
+
+      // Filtro por plano
+      if (planFilter !== 'all') {
+        if (planFilter === 'no_plan' && user.current_plan) {
+          return false;
+        }
+        if (planFilter === 'special' && !user.is_special_plan) {
+          return false;
+        }
+        if (planFilter === 'regular' && (user.is_special_plan || !user.current_plan)) {
+          return false;
+        }
+        if (planFilter !== 'no_plan' && planFilter !== 'special' && planFilter !== 'regular') {
+          if (!user.current_plan || user.current_plan.name !== planFilter) {
+            return false;
+          }
+        }
+      }
+
+      // Filtro por tipo (admin/user)
+      if (roleFilter !== 'all' && getUserRole(user) !== roleFilter) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [users, statusFilter, planFilter, roleFilter]);
+
+  // Obter planos únicos para o filtro
+  const availablePlans = useMemo(() => {
+    if (!users) return [];
+    
+    const plansSet = new Set();
+    const plans: { name: string; is_special: boolean }[] = [];
+    
+    users.forEach(user => {
+      if (user.current_plan && !plansSet.has(user.current_plan.name)) {
+        plansSet.add(user.current_plan.name);
+        plans.push({
+          name: user.current_plan.name,
+          is_special: user.is_special_plan
+        });
+      }
+    });
+    
+    return plans.sort((a, b) => a.name.localeCompare(b.name));
+  }, [users]);
+
+  const handleClearFilters = () => {
+    setStatusFilter('all');
+    setPlanFilter('all');
+    setRoleFilter('all');
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -132,16 +184,28 @@ const AdminUsers = () => {
       <Card>
         <CardHeader>
           <CardTitle>Lista de Usuários</CardTitle>
-          <div className="flex items-center space-x-4">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Buscar usuários..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+          <div className="space-y-4">
+            <div className="flex items-center space-x-4">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Buscar usuários..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
+            <UserFilters
+              statusFilter={statusFilter}
+              planFilter={planFilter}
+              roleFilter={roleFilter}
+              onStatusFilterChange={setStatusFilter}
+              onPlanFilterChange={setPlanFilter}
+              onRoleFilterChange={setRoleFilter}
+              onClearFilters={handleClearFilters}
+              availablePlans={availablePlans}
+            />
           </div>
         </CardHeader>
         <CardContent>
@@ -158,13 +222,12 @@ const AdminUsers = () => {
                   <TableHead>Email</TableHead>
                   <TableHead>Plano</TableHead>
                   <TableHead>Status da Assinatura</TableHead>
-                  <TableHead>Tipo</TableHead>
                   <TableHead>WhatsApp</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users?.map((user) => (
+                {filteredUsers?.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -207,11 +270,6 @@ const AdminUsers = () => {
                         }
                       >
                         {getStatusLabel(user.subscription_status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getUserRole(user) === 'admin' ? 'default' : 'outline'}>
-                        {getUserRole(user) === 'admin' ? 'Admin' : 'Usuário'}
                       </Badge>
                     </TableCell>
                     <TableCell>{user.whatsapp || '-'}</TableCell>
