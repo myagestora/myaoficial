@@ -18,8 +18,8 @@ serve(async (req) => {
 
     const url = new URL(req.url)
     const pathSegments = url.pathname.split('/').filter(Boolean)
-    const userId = pathSegments[1]
-    const endpoint = pathSegments[2]
+    const userId = pathSegments[2] // /user-analytics-api/user/{userId}/...
+    const endpoint = pathSegments[3] // spending-trends, category-breakdown, etc.
 
     if (!userId) {
       return new Response(

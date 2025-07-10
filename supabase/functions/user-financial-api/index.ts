@@ -22,8 +22,8 @@ serve(async (req) => {
     console.log('URL pathname:', url.pathname)
     console.log('Path segments:', pathSegments)
     
-    const userId = pathSegments[1] // /user/{userId}/...
-    const endpoint = pathSegments[2] // balance, transactions, etc.
+    const userId = pathSegments[2] // /user-financial-api/user/{userId}/...
+    const endpoint = pathSegments[3] // balance, transactions, etc.
     
     console.log('Extracted userId:', userId)
     console.log('Endpoint:', endpoint)
