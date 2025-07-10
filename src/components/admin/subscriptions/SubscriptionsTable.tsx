@@ -128,12 +128,12 @@ export const SubscriptionsTable = ({
                   {subscription.subscription_plans.name}
                 </Badge>
               ) : (
-                '-'
+                <span className="text-muted-foreground">Sem plano</span>
               )}
             </TableCell>
             <TableCell>
               <Badge 
-                variant={getStatusBadgeVariant(subscription.status)}
+                variant={subscription.status === 'active' ? 'default' : getStatusBadgeVariant(subscription.status)}
                 className={subscription.status === 'active' ? '' : ''}
                 style={subscription.status === 'active' && primaryColor ? { 
                   backgroundColor: primaryColor, 
