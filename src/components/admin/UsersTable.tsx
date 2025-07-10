@@ -54,7 +54,7 @@ export const UsersTable = ({ users, isLoading }: UsersTableProps) => {
               {user.current_plan ? (
                 <Badge 
                   variant={user.is_special_plan ? 'outline' : 'default'}
-                  className={user.is_special_plan ? 'border-amber-500 text-amber-700' : ''}
+                  className={user.is_special_plan ? 'border-amber-500 text-amber-700' : 'bg-primary text-primary-foreground'}
                 >
                   {user.is_special_plan && <Crown className="h-3 w-3 mr-1" />}
                   {user.current_plan.name}
