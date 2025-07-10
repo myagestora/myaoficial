@@ -176,7 +176,7 @@ const AdminDashboard = () => {
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Painel Administrativo</h1>
-          <p className="text-gray-600 dark:text-gray-400">Visão geral do sistema {appName}</p>
+          <p className="text-gray-600 dark:text-gray-400">Visão geral do sistema</p>
         </div>
         <PeriodFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
       </div>
