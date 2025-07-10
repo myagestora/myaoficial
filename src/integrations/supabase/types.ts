@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_keys: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          key: string
+          last_used: string | null
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          key: string
+          last_used?: string | null
+          name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          key?: string
+          last_used?: string | null
+          name?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           color: string | null
@@ -512,6 +542,10 @@ export type Database = {
           frequency: Database["public"]["Enums"]["recurrence_frequency"]
           interval_count?: number
         }
+        Returns: string
+      }
+      generate_api_key: {
+        Args: Record<PropertyKey, never>
         Returns: string
       }
       get_monthly_goals_status: {

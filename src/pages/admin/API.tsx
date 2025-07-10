@@ -74,33 +74,37 @@ const AdminAPI = () => {
   const { data: apiKeys, isLoading } = useQuery({
     queryKey: ['api-keys'],
     queryFn: async () => {
-      // Simular busca de API keys (você pode implementar uma tabela real)
-      return [
-        {
-          id: '1',
-          name: 'WhatsApp Bot Key',
-          key: 'wba_' + Math.random().toString(36).substring(2, 15),
-          created_at: new Date().toISOString(),
-          last_used: new Date().toISOString(),
-          is_active: true
-        }
-      ] as APIKey[];
+      const { data, error } = await supabase
+        .from('api_keys')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data as APIKey[];
     }
   });
 
   // Gerar nova API key
   const generateKeyMutation = useMutation({
     mutationFn: async (name: string) => {
-      // Simular geração de API key
-      const newKey = {
-        id: Date.now().toString(),
-        name,
-        key: 'wba_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
-        created_at: new Date().toISOString(),
-        last_used: null,
-        is_active: true
-      };
-      return newKey;
+      // Gerar nova API key usando a função do banco
+      const { data: keyData, error: keyError } = await supabase
+        .rpc('generate_api_key');
+      
+      if (keyError) throw keyError;
+      
+      const { data, error } = await supabase
+        .from('api_keys')
+        .insert({
+          name,
+          key: keyData,
+          created_by: (await supabase.auth.getUser()).data.user?.id
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['api-keys'] });
@@ -116,7 +120,12 @@ const AdminAPI = () => {
   // Deletar API key
   const deleteKeyMutation = useMutation({
     mutationFn: async (keyId: string) => {
-      // Simular remoção de API key
+      const { error } = await supabase
+        .from('api_keys')
+        .delete()
+        .eq('id', keyId);
+      
+      if (error) throw error;
       return keyId;
     },
     onSuccess: () => {
