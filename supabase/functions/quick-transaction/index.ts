@@ -14,7 +14,6 @@ interface QuickTransactionRequest {
   category_name?: string;
   description?: string;
   date?: string;
-  bot_token: string;
 }
 
 serve(async (req) => {
@@ -34,6 +33,24 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
+    // Validar bot token do header Authorization
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Authorization header required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const botToken = authHeader.replace('Bearer ', '')
+    const validBotToken = Deno.env.get('WHATSAPP_BOT_TOKEN') || 'your-secure-bot-token'
+    if (botToken !== validBotToken) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid bot token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const { 
       user_id, 
       title, 
@@ -41,18 +58,8 @@ serve(async (req) => {
       type, 
       category_name, 
       description, 
-      date,
-      bot_token 
+      date
     }: QuickTransactionRequest = await req.json()
-
-    // Validar bot token
-    const validBotToken = Deno.env.get('WHATSAPP_BOT_TOKEN') || 'your-secure-bot-token'
-    if (bot_token !== validBotToken) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid bot token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
 
     // Validar dados obrigatórios
     if (!user_id || !title || !amount || !type) {

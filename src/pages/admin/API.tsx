@@ -124,12 +124,14 @@ const AdminAPI = () => {
           method: "GET",
           path: "/user-financial-api/user/{userId}/balance",
           description: "Saldo atual do usuário",
+          headers: { Authorization: "Bearer your-secure-bot-token" },
           response: { balance: "number", total_income: "number", total_expenses: "number" }
         },
         {
           method: "GET",
           path: "/user-financial-api/user/{userId}/transactions",
           description: "Histórico de transações",
+          headers: { Authorization: "Bearer your-secure-bot-token" },
           params: { limit: "number?", period: "string?" },
           response: { transactions: "array", total_count: "number" }
         },
@@ -137,24 +139,28 @@ const AdminAPI = () => {
           method: "GET",
           path: "/user-financial-api/user/{userId}/expenses",
           description: "Resumo de despesas por categoria",
+          headers: { Authorization: "Bearer your-secure-bot-token" },
           response: { total_expenses: "number", by_category: "array" }
         },
         {
           method: "GET",
           path: "/user-financial-api/user/{userId}/income",
           description: "Resumo de receitas",
+          headers: { Authorization: "Bearer your-secure-bot-token" },
           response: { total_income: "number", transactions: "array" }
         },
         {
           method: "GET",
           path: "/user-financial-api/user/{userId}/goals",
           description: "Status das metas financeiras",
+          headers: { Authorization: "Bearer your-secure-bot-token" },
           response: { goals: "array", total_goals: "number" }
         },
         {
           method: "GET",
           path: "/user-financial-api/user/{userId}/summary",
           description: "Resumo financeiro completo",
+          headers: { Authorization: "Bearer your-secure-bot-token" },
           response: { balance: "number", monthly_balance: "number", active_goals: "number" }
         }
       ]
@@ -168,6 +174,7 @@ const AdminAPI = () => {
           method: "GET",
           path: "/user-analytics-api/user/{userId}/spending-trends",
           description: "Tendências de gastos mensais",
+          headers: { Authorization: "Bearer your-secure-bot-token" },
           params: { months: "number?" },
           response: { trends: "array", period_months: "number" }
         },
@@ -175,6 +182,7 @@ const AdminAPI = () => {
           method: "GET",
           path: "/user-analytics-api/user/{userId}/category-breakdown",
           description: "Gastos por categoria",
+          headers: { Authorization: "Bearer your-secure-bot-token" },
           params: { period: "string?" },
           response: { income: "object", expenses: "object" }
         },
@@ -182,6 +190,7 @@ const AdminAPI = () => {
           method: "GET",
           path: "/user-analytics-api/user/{userId}/monthly-comparison",
           description: "Comparação entre meses",
+          headers: { Authorization: "Bearer your-secure-bot-token" },
           response: { current_month: "object", previous_month: "object", comparison: "object" }
         }
       ]
@@ -195,13 +204,13 @@ const AdminAPI = () => {
           method: "POST",
           path: "/quick-transaction",
           description: "Registra transação via WhatsApp",
+          headers: { Authorization: "Bearer your-secure-bot-token" },
           params: { 
             user_id: "string", 
             title: "string", 
             amount: "number", 
             type: "string",
-            category_name: "string?",
-            bot_token: "string"
+            category_name: "string?"
           },
           response: { success: "boolean", transaction: "object", updated_balance: "object" }
         }
@@ -216,6 +225,7 @@ const AdminAPI = () => {
           method: "GET",
           path: "/user-alerts",
           description: "Alertas sobre metas e gastos",
+          headers: { Authorization: "Bearer your-secure-bot-token" },
           params: { user_id: "string" },
           response: { alerts: "array", total_alerts: "number" }
         }
@@ -328,6 +338,15 @@ const AdminAPI = () => {
                       <p className="text-sm text-muted-foreground mb-3">
                         {endpoint.description}
                       </p>
+
+                      {endpoint.headers && (
+                        <div className="mb-3">
+                          <p className="text-sm font-medium mb-1">Headers:</p>
+                          <div className="bg-muted p-2 rounded text-xs">
+                            <pre>{JSON.stringify(endpoint.headers, null, 2)}</pre>
+                          </div>
+                        </div>
+                      )}
 
                       {endpoint.params && (
                         <div className="mb-3">
@@ -499,7 +518,9 @@ async function authenticateUser(whatsapp) {
 
 // Buscar saldo do usuário
 async function getUserBalance(userId) {
-  const response = await fetch(\`\${API_BASE_URL}/user-financial-api/user/\${userId}/balance\`);
+  const response = await fetch(\`\${API_BASE_URL}/user-financial-api/user/\${userId}/balance\`, {
+    headers: { 'Authorization': \`Bearer \${BOT_TOKEN}\` }
+  });
   return response.json();
 }
 
@@ -507,8 +528,11 @@ async function getUserBalance(userId) {
 async function createTransaction(userId, title, amount, type) {
   const response = await fetch(\`\${API_BASE_URL}/quick-transaction\`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ user_id: userId, title, amount, type, bot_token: BOT_TOKEN })
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': \`Bearer \${BOT_TOKEN}\`
+    },
+    body: JSON.stringify({ user_id: userId, title, amount, type })
   });
   return response.json();
 }`}
