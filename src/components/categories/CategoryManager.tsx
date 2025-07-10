@@ -37,11 +37,12 @@ export const CategoryManager = () => {
   });
 
   const { data: categories } = useQuery({
-    queryKey: ['all-categories'],
+    queryKey: ['all-categories', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('categories')
         .select('*')
+        .or(`user_id.is.null,user_id.eq.${user!.id}`)
         .order('is_default', { ascending: false })
         .order('type')
         .order('name');
