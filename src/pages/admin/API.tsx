@@ -282,7 +282,7 @@ const AdminAPI = () => {
           }
         },
         {
-          method: "POST",
+          method: "GET",
           path: "/user-financial-api/user/{userId}/expenses",
           description: "Resumo geral de despesas",
           headers: { Authorization: "Bearer your-secure-bot-token" },
