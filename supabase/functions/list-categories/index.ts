@@ -61,11 +61,8 @@ serve(async (req) => {
 
     let userId;
     
-    // Tentar capturar user_id da URL (GET) ou do body (POST)
-    if (req.method === 'GET') {
-      const url = new URL(req.url);
-      userId = url.searchParams.get('user_id');
-    } else if (req.method === 'POST') {
+    // Capturar user_id do body (POST)
+    if (req.method === 'POST') {
       try {
         const body = await req.json();
         userId = body.user_id;
@@ -80,7 +77,7 @@ serve(async (req) => {
 
     if (!userId) {
       return new Response(
-        JSON.stringify({ error: 'user_id parameter is required (in URL for GET or in body for POST)' }),
+        JSON.stringify({ error: 'user_id parameter is required in request body' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -100,7 +97,7 @@ serve(async (req) => {
       );
     }
 
-    if (req.method === 'GET' || req.method === 'POST') {
+    if (req.method === 'POST') {
       // Buscar categorias padrão (user_id = null) e categorias do usuário (user_id = userId)
       const { data: categories, error: categoriesError } = await supabase
         .from('categories')
