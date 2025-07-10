@@ -47,7 +47,6 @@ const AdminAPI = () => {
   const [newKeyName, setNewKeyName] = useState('');
   const [isCreatingKey, setIsCreatingKey] = useState(false);
   const [selectedEndpoint, setSelectedEndpoint] = useState<any>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Buscar API keys existentes
   const { data: apiKeys, isLoading } = useQuery({
@@ -595,21 +594,10 @@ const AdminAPI = () => {
         <TabsContent value="documentation" className="space-y-6">
           <div className="flex gap-6">
             {/* Menu Lateral */}
-            <div className={`${sidebarOpen ? 'w-80' : 'w-16'} transition-all duration-300 flex-shrink-0`}>
+            <div className="w-80 flex-shrink-0">
               <Card className="h-fit">
                 <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    {sidebarOpen && (
-                      <CardTitle className="text-lg">Endpoints</CardTitle>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSidebarOpen(!sidebarOpen)}
-                    >
-                      <Menu className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <CardTitle className="text-lg">Endpoints</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="space-y-2 p-3">
@@ -620,12 +608,10 @@ const AdminAPI = () => {
                       onClick={() => setSelectedEndpoint(null)}
                     >
                       <Code className="h-4 w-4 flex-shrink-0" />
-                      {sidebarOpen && (
-                        <div className="ml-2 text-left">
-                          <div className="font-medium">Visão Geral</div>
-                          <div className="text-xs text-muted-foreground">Documentação da API</div>
-                        </div>
-                      )}
+                      <div className="ml-2 text-left">
+                        <div className="font-medium">Visão Geral</div>
+                        <div className="text-xs text-muted-foreground">Documentação da API</div>
+                      </div>
                     </Button>
                     
                     <Separator />
@@ -637,9 +623,7 @@ const AdminAPI = () => {
                           <div className={`p-1 rounded ${category.color}`}>
                             <category.icon className="h-3 w-3 text-white" />
                           </div>
-                          {sidebarOpen && (
-                            <span>{category.category}</span>
-                          )}
+                          <span>{category.category}</span>
                         </div>
                         
                         {category.endpoints.map((endpoint, idx) => (
@@ -659,16 +643,14 @@ const AdminAPI = () => {
                             >
                               {endpoint.method}
                             </Badge>
-                            {sidebarOpen && (
-                              <div className="text-left flex-1 min-w-0">
-                                <div className="text-sm font-medium truncate">
-                                  {endpoint.path.split('/').pop()}
-                                </div>
-                                <div className="text-xs text-muted-foreground truncate">
-                                  {endpoint.description}
-                                </div>
+                            <div className="text-left flex-1 min-w-0">
+                              <div className="text-sm font-medium truncate">
+                                {endpoint.path.split('/').pop()}
                               </div>
-                            )}
+                              <div className="text-xs text-muted-foreground truncate">
+                                {endpoint.description}
+                              </div>
+                            </div>
                           </Button>
                         ))}
                       </div>
