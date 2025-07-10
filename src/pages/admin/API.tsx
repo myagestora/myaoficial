@@ -475,7 +475,7 @@ const AdminAPI = () => {
           }
         },
         {
-          method: "GET",
+          method: "POST",
           path: "/user-analytics-api/user/{userId}/monthly-comparison",
           description: "Comparação entre meses",
           headers: { Authorization: "Bearer your-secure-bot-token" },
