@@ -282,6 +282,72 @@ const AdminAPI = () => {
           }
         },
         {
+          method: "POST",
+          path: "/user-financial-api/user/{userId}/expenses-summary",
+          description: "Resumo geral de despesas",
+          headers: { Authorization: "Bearer your-secure-bot-token" },
+          params: { period: "string?" },
+          paramDetails: {
+            period: {
+              type: "string",
+              description: "Período para análise das despesas",
+              example: "month",
+              required: false,
+              options: ["week", "month", "quarter", "year"]
+            }
+          },
+          response: { total_expenses: "number", transactions: "array", period: "string" },
+          exampleRequest: {
+            period: "month"
+          },
+          exampleResponse: {
+            total_expenses: 2249.25,
+            transactions: [
+              {
+                title: "Compra no mercado",
+                amount: 150.50,
+                date: "2024-01-15"
+              },
+              {
+                title: "Conta de luz",
+                amount: 89.75,
+                date: "2024-01-10"
+              }
+            ],
+            period: "month",
+            currency: "BRL"
+          }
+        },
+        {
+          method: "POST",
+          path: "/user-financial-api/user/{userId}/income-by-category",
+          description: "Resumo de receitas por categoria",
+          headers: { Authorization: "Bearer your-secure-bot-token" },
+          params: { period: "string?" },
+          paramDetails: {
+            period: {
+              type: "string",
+              description: "Período para análise das receitas",
+              example: "month",
+              required: false,
+              options: ["week", "month", "quarter", "year"]
+            }
+          },
+          response: { total_income: "number", by_category: "array", period: "string" },
+          exampleRequest: {
+            period: "month"
+          },
+          exampleResponse: {
+            total_income: 3500.00,
+            by_category: [
+              { category: "Salário", total: 3000.00, count: 1, color: "#green" },
+              { category: "Freelance", total: 500.00, count: 2, color: "#blue" }
+            ],
+            period: "month",
+            currency: "BRL"
+          }
+        },
+        {
           method: "GET",
           path: "/user-financial-api/user/{userId}/income",
           description: "Resumo de receitas",
