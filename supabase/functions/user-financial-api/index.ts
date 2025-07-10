@@ -250,7 +250,12 @@ serve(async (req) => {
 
         const { data: expenses } = await supabase
           .from('transactions')
-          .select('amount, date, title')
+          .select(`
+            amount, 
+            date, 
+            title,
+            categories (name, color)
+          `)
           .eq('user_id', userId)
           .eq('type', 'expense')
           .gte('date', monthStart)
