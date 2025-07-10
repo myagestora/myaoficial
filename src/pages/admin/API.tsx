@@ -70,6 +70,9 @@ const AdminAPI = () => {
     }
   });
 
+  // Obter informações da API baseado na configuração
+  const apiInfo = getApiInfo(systemConfig);
+
   // Buscar API keys existentes
   const { data: apiKeys, isLoading } = useQuery({
     queryKey: ['api-keys'],
@@ -551,8 +554,6 @@ const AdminAPI = () => {
     }
   ];
 
-  // Obter informações da API (personalizada ou padrão)
-  const apiInfo = getApiInfo(systemConfig);
 
   return (
     <div className="p-6 space-y-6">

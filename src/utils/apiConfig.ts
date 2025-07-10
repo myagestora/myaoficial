@@ -14,15 +14,15 @@ export const isApiDomain = (): boolean => {
  * Obtém a URL base da API a partir das configurações do sistema
  */
 export const getApiBaseUrl = (systemConfig?: Record<string, string>): string => {
-  // Se as configurações incluem um domínio personalizado da API
-  if (systemConfig?.api_enabled === 'true' && systemConfig?.api_domain) {
-    const domain = systemConfig.api_domain;
+  // Se as configurações incluem um domínio personalizado da API E está habilitado
+  if (systemConfig?.api_enabled === 'true' && systemConfig?.api_domain?.trim()) {
+    const domain = systemConfig.api_domain.trim();
     // Garante que tem protocolo
     const baseUrl = domain.startsWith('http') ? domain : `https://${domain}`;
     return `${baseUrl}/functions/v1`;
   }
   
-  // Fallback para URL do Supabase
+  // Fallback para URL do Supabase (sempre funciona)
   return 'https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1';
 };
 
