@@ -414,7 +414,7 @@ const AdminAPI = () => {
           paramDetails: {
             period: {
               description: "Período para cálculo do resumo",
-              options: ["month", "year", "all"],
+              options: ["month", "week", "year", "all"],
               example: "month",
               required: false
             }

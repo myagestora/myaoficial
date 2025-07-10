@@ -461,6 +461,17 @@ serve(async (req) => {
         if (period === 'month') {
           periodStart = monthStart;
           periodEnd = monthEnd;
+        } else if (period === 'week') {
+          // Calcular início e fim da semana atual (domingo a sábado)
+          const today = new Date();
+          const dayOfWeek = today.getDay(); // 0 = domingo, 6 = sábado
+          const weekStart = new Date(today);
+          weekStart.setDate(today.getDate() - dayOfWeek);
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          
+          periodStart = weekStart.toISOString().split('T')[0];
+          periodEnd = weekEnd.toISOString().split('T')[0];
         } else if (period === 'year') {
           periodStart = `${currentYear}-01-01`;
           periodEnd = `${currentYear}-12-31`;
