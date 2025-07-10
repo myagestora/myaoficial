@@ -617,14 +617,24 @@ const AdminAPI = () => {
                     <Separator />
                     
                     {/* Menu por Categoria */}
-                    {endpoints.map((category) => (
-                      <div key={category.category} className="space-y-1">
-                        <div className="flex items-center gap-2 px-2 py-1 text-sm font-medium text-muted-foreground">
-                          <div className={`p-1 rounded ${category.color}`}>
-                            <category.icon className="h-3 w-3 text-white" />
+                    {endpoints.map((category) => {
+                      // Verificar se algum endpoint desta categoria está selecionado
+                      const isCategoryActive = selectedEndpoint && category.endpoints.includes(selectedEndpoint);
+                      
+                      return (
+                        <div key={category.category} className="space-y-1">
+                          <div className={`flex items-center gap-2 px-2 py-1 text-sm font-medium transition-colors ${
+                            isCategoryActive 
+                              ? 'text-primary bg-primary/10 rounded' 
+                              : 'text-muted-foreground'
+                          }`}>
+                            <div className={`p-1 rounded ${category.color} ${
+                              isCategoryActive ? 'ring-2 ring-primary/30' : ''
+                            }`}>
+                              <category.icon className="h-3 w-3 text-white" />
+                            </div>
+                            <span className={isCategoryActive ? 'font-semibold' : ''}>{category.category}</span>
                           </div>
-                          <span>{category.category}</span>
-                        </div>
                         
                         {category.endpoints.map((endpoint, idx) => (
                           <Button
@@ -662,9 +672,10 @@ const AdminAPI = () => {
                               </div>
                             </div>
                           </Button>
-                        ))}
-                      </div>
-                    ))}
+                         ))}
+                        </div>
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
