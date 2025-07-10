@@ -261,12 +261,20 @@ serve(async (req) => {
           .gte('date', monthStart)
           .lte('date', monthEnd)
 
-        const totalExpenses = expenses?.reduce((sum, t) => sum + Number(t.amount), 0) || 0
+        // Transformar o resultado para incluir category como string
+        const transformedExpenses = expenses?.map(expense => ({
+          amount: expense.amount,
+          date: expense.date,
+          title: expense.title,
+          category: expense.categories?.name || 'Sem categoria'
+        })) || []
+
+        const totalExpenses = transformedExpenses.reduce((sum, t) => sum + Number(t.amount), 0)
 
         return new Response(
           JSON.stringify({
             total_expenses: totalExpenses,
-            transactions: expenses || [],
+            transactions: transformedExpenses,
             period: period,
             currency: 'BRL'
           }),
