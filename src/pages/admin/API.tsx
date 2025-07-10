@@ -677,7 +677,7 @@ const AdminAPI = () => {
                       <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
                         <span>Versão: {apiInfo.version}</span>
                         {systemConfig?.api_enabled === 'true' && (
-                          <span className="text-green-600 font-medium">API Personalizada Ativa</span>
+                          <span className="text-green-600 font-medium">API Ativa</span>
                         )}
                       </div>
                     </CardHeader>
