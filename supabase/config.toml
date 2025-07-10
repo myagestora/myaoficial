@@ -27,5 +27,20 @@ verify_jwt = true
 [functions.mercado-pago-webhook]
 verify_jwt = false
 
+[functions.whatsapp-auth]
+verify_jwt = false
+
+[functions.user-financial-api]
+verify_jwt = false
+
+[functions.user-analytics-api]
+verify_jwt = false
+
+[functions.quick-transaction]
+verify_jwt = false
+
+[functions.user-alerts]
+verify_jwt = false
+
 [auth]
 enabled = true

@@ -1,0 +1,285 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    const url = new URL(req.url)
+    const pathSegments = url.pathname.split('/').filter(Boolean)
+    const userId = pathSegments[1] // /user/{userId}/...
+    const endpoint = pathSegments[2] // balance, transactions, etc.
+
+    // Validar user_id
+    if (!userId) {
+      return new Response(
+        JSON.stringify({ error: 'User ID is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Verificar se usuário existe e está ativo
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, account_status')
+      .eq('id', userId)
+      .eq('account_status', 'active')
+      .single()
+
+    if (!profile) {
+      return new Response(
+        JSON.stringify({ error: 'User not found or inactive' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const currentDate = new Date()
+    const currentMonth = currentDate.getMonth() + 1
+    const currentYear = currentDate.getFullYear()
+    const monthStart = new Date(currentYear, currentMonth - 1, 1).toISOString().split('T')[0]
+    const monthEnd = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0]
+
+    switch (endpoint) {
+      case 'balance': {
+        // Calcular saldo (receitas - despesas)
+        const { data: transactions } = await supabase
+          .from('transactions')
+          .select('amount, type')
+          .eq('user_id', userId)
+
+        const income = transactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0
+        const expenses = transactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0
+        const balance = income - expenses
+
+        return new Response(
+          JSON.stringify({
+            balance,
+            total_income: income,
+            total_expenses: expenses,
+            currency: 'BRL'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      case 'transactions': {
+        const limit = url.searchParams.get('limit') || '10'
+        const period = url.searchParams.get('period') || 'month' // month, week, all
+
+        let dateFilter = {}
+        if (period === 'month') {
+          dateFilter = { gte: monthStart, lte: monthEnd }
+        } else if (period === 'week') {
+          const weekStart = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          dateFilter = { gte: weekStart }
+        }
+
+        let query = supabase
+          .from('transactions')
+          .select(`
+            id, title, description, amount, type, date, created_at,
+            categories (name, color, icon)
+          `)
+          .eq('user_id', userId)
+          .order('date', { ascending: false })
+          .limit(parseInt(limit))
+
+        if (period !== 'all') {
+          query = query.gte('date', Object.values(dateFilter)[0])
+          if (dateFilter.lte) {
+            query = query.lte('date', dateFilter.lte)
+          }
+        }
+
+        const { data: transactions } = await query
+
+        return new Response(
+          JSON.stringify({
+            transactions: transactions || [],
+            period,
+            total_count: transactions?.length || 0
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      case 'expenses': {
+        const period = url.searchParams.get('period') || 'month'
+
+        let dateFilter = {}
+        if (period === 'month') {
+          dateFilter = { gte: monthStart, lte: monthEnd }
+        }
+
+        const { data: expenses } = await supabase
+          .from('transactions')
+          .select(`
+            amount, date,
+            categories (name, color)
+          `)
+          .eq('user_id', userId)
+          .eq('type', 'expense')
+          .gte('date', monthStart)
+          .lte('date', monthEnd)
+
+        // Agrupar por categoria
+        const categoryExpenses = expenses?.reduce((acc, expense) => {
+          const categoryName = expense.categories?.name || 'Sem categoria'
+          if (!acc[categoryName]) {
+            acc[categoryName] = {
+              category: categoryName,
+              color: expense.categories?.color || '#gray',
+              total: 0,
+              count: 0
+            }
+          }
+          acc[categoryName].total += Number(expense.amount)
+          acc[categoryName].count += 1
+          return acc
+        }, {} as Record<string, any>) || {}
+
+        const totalExpenses = Object.values(categoryExpenses).reduce((sum: number, cat: any) => sum + cat.total, 0)
+
+        return new Response(
+          JSON.stringify({
+            total_expenses: totalExpenses,
+            by_category: Object.values(categoryExpenses),
+            period,
+            currency: 'BRL'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      case 'income': {
+        const { data: income } = await supabase
+          .from('transactions')
+          .select('amount, date, title')
+          .eq('user_id', userId)
+          .eq('type', 'income')
+          .gte('date', monthStart)
+          .lte('date', monthEnd)
+
+        const totalIncome = income?.reduce((sum, t) => sum + Number(t.amount), 0) || 0
+
+        return new Response(
+          JSON.stringify({
+            total_income: totalIncome,
+            transactions: income || [],
+            period: 'month',
+            currency: 'BRL'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      case 'goals': {
+        const { data: goals } = await supabase
+          .from('goals')
+          .select(`
+            id, title, target_amount, current_amount, target_date,
+            goal_type, status, month_year,
+            categories (name, color)
+          `)
+          .eq('user_id', userId)
+          .eq('status', 'active')
+
+        // Para metas mensais, calcular progresso atual
+        for (const goal of goals || []) {
+          if (goal.goal_type === 'monthly_budget' && goal.month_year) {
+            const [year, month] = goal.month_year.split('-')
+            const monthStartDate = new Date(parseInt(year), parseInt(month) - 1, 1).toISOString().split('T')[0]
+            const monthEndDate = new Date(parseInt(year), parseInt(month), 0).toISOString().split('T')[0]
+
+            const { data: monthlyExpenses } = await supabase
+              .from('transactions')
+              .select('amount')
+              .eq('user_id', userId)
+              .eq('type', 'expense')
+              .eq('category_id', goal.category_id)
+              .gte('date', monthStartDate)
+              .lte('date', monthEndDate)
+
+            const spentAmount = monthlyExpenses?.reduce((sum, t) => sum + Number(t.amount), 0) || 0
+            goal.current_amount = spentAmount
+            goal.progress_percentage = goal.target_amount > 0 ? (spentAmount / goal.target_amount) * 100 : 0
+            goal.is_exceeded = spentAmount > goal.target_amount
+          }
+        }
+
+        return new Response(
+          JSON.stringify({
+            goals: goals || [],
+            total_goals: goals?.length || 0
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      case 'summary': {
+        // Resumo completo do usuário
+        const { data: transactions } = await supabase
+          .from('transactions')
+          .select('amount, type, date')
+          .eq('user_id', userId)
+
+        const { data: monthlyTransactions } = await supabase
+          .from('transactions')
+          .select('amount, type')
+          .eq('user_id', userId)
+          .gte('date', monthStart)
+          .lte('date', monthEnd)
+
+        const totalIncome = transactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0
+        const totalExpenses = transactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0
+        const monthlyIncome = monthlyTransactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0
+        const monthlyExpenses = monthlyTransactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0
+
+        const { data: activeGoals } = await supabase
+          .from('goals')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('status', 'active')
+
+        return new Response(
+          JSON.stringify({
+            balance: totalIncome - totalExpenses,
+            total_income: totalIncome,
+            total_expenses: totalExpenses,
+            monthly_income: monthlyIncome,
+            monthly_expenses: monthlyExpenses,
+            monthly_balance: monthlyIncome - monthlyExpenses,
+            active_goals: activeGoals?.length || 0,
+            currency: 'BRL',
+            last_updated: new Date().toISOString()
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      default:
+        return new Response(
+          JSON.stringify({ error: 'Endpoint not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+    }
+
+  } catch (error) {
+    console.error('Financial API error:', error)
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+})
