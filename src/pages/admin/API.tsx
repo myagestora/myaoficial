@@ -608,6 +608,8 @@ const AdminAPI = () => {
             }
           },
           response: { success: "boolean", categories: "array", total: "number" },
+          curl: `curl -X GET "https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1/user-categories-api?user_id=12345678-1234-1234-1234-123456789012" \\
+  -H "Authorization: Bearer your-api-key"`,
           exampleRequest: {
             user_id: "12345678-1234-1234-1234-123456789012"
           },
