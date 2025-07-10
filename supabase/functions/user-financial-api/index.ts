@@ -206,6 +206,42 @@ serve(async (req) => {
         )
       }
 
+      case 'expenses-summary': {
+        let requestData = { period: 'month' };
+        
+        if (req.method === 'POST') {
+          requestData = { ...requestData, ...await req.json() };
+        } else {
+          const period = url.searchParams.get('period') || 'month';
+          requestData = { period };
+        }
+
+        let dateFilter = {}
+        if (requestData.period === 'month') {
+          dateFilter = { gte: monthStart, lte: monthEnd }
+        }
+
+        const { data: expenses } = await supabase
+          .from('transactions')
+          .select('amount, date, title')
+          .eq('user_id', userId)
+          .eq('type', 'expense')
+          .gte('date', monthStart)
+          .lte('date', monthEnd)
+
+        const totalExpenses = expenses?.reduce((sum, t) => sum + Number(t.amount), 0) || 0
+
+        return new Response(
+          JSON.stringify({
+            total_expenses: totalExpenses,
+            transactions: expenses || [],
+            period: requestData.period,
+            currency: 'BRL'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
       case 'income': {
         const { data: income } = await supabase
           .from('transactions')
@@ -222,6 +258,56 @@ serve(async (req) => {
             total_income: totalIncome,
             transactions: income || [],
             period: 'month',
+            currency: 'BRL'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      case 'income-by-category': {
+        let requestData = { period: 'month' };
+        
+        if (req.method === 'POST') {
+          requestData = { ...requestData, ...await req.json() };
+        } else {
+          const period = url.searchParams.get('period') || 'month';
+          requestData = { period };
+        }
+
+        const { data: income } = await supabase
+          .from('transactions')
+          .select(`
+            amount, date,
+            categories (name, color)
+          `)
+          .eq('user_id', userId)
+          .eq('type', 'income')
+          .gte('date', monthStart)
+          .lte('date', monthEnd)
+
+        // Agrupar por categoria
+        const categoryIncome = income?.reduce((acc, incomeItem) => {
+          const categoryName = incomeItem.categories?.name || 'Sem categoria'
+          if (!acc[categoryName]) {
+            acc[categoryName] = {
+              category: categoryName,
+              color: incomeItem.categories?.color || '#green',
+              total: 0,
+              count: 0
+            }
+          }
+          acc[categoryName].total += Number(incomeItem.amount)
+          acc[categoryName].count += 1
+          return acc
+        }, {} as Record<string, any>) || {}
+
+        const totalIncome = Object.values(categoryIncome).reduce((sum: number, cat: any) => sum + cat.total, 0)
+
+        return new Response(
+          JSON.stringify({
+            total_income: totalIncome,
+            by_category: Object.values(categoryIncome),
+            period: requestData.period,
             currency: 'BRL'
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
