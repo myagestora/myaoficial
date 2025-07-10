@@ -515,7 +515,8 @@ const AdminAPI = () => {
             title: "string", 
             amount: "number", 
             type: "string",
-            category_name: "string?"
+            category_name: "string?",
+            description: "string?"
           },
           paramDetails: {
             user_id: {
@@ -548,6 +549,12 @@ const AdminAPI = () => {
               description: "Nome da categoria (opcional, será criada se não existir)",
               example: "Alimentação",
               required: false
+            },
+            description: {
+              type: "string",
+              description: "Descrição personalizada da transação (opcional)",
+              example: "Compra no supermercado Pão de Açúcar",
+              required: false
             }
           },
           response: { success: "boolean", transaction: "object", updated_balance: "object" },
@@ -556,7 +563,8 @@ const AdminAPI = () => {
             title: "Compra no mercado",
             amount: -150.50,
             type: "expense",
-            category_name: "Alimentação"
+            category_name: "Alimentação",
+            description: "Compra no supermercado Pão de Açúcar"
           },
           exampleResponse: {
             success: true,
