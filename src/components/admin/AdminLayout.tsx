@@ -23,10 +23,10 @@ const adminNavigation = [
   { name: 'Usuários', href: '/admin/users', icon: Users },
   { name: 'Relatórios', href: '/admin/reports', icon: BarChart3 },
   { name: 'Assinaturas', href: '/admin/subscriptions', icon: CreditCard },
-  { name: 'API', href: '/admin/api', icon: Code2 },
   { name: 'Notificações', href: '/admin/notifications', icon: Bell },
   { name: 'Sistema', href: '/admin/system', icon: Zap },
   { name: 'Configurações', href: '/admin/settings', icon: Settings },
+  { name: 'API', href: '/admin/api', icon: Code2 },
 ];
 
 export const AdminLayout = () => {
