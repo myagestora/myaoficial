@@ -11,7 +11,8 @@ import {
   CreditCard,
   Bell,
   Zap,
-  DollarSign
+  DollarSign,
+  Code2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
@@ -22,6 +23,7 @@ const adminNavigation = [
   { name: 'Usuários', href: '/admin/users', icon: Users },
   { name: 'Relatórios', href: '/admin/reports', icon: BarChart3 },
   { name: 'Assinaturas', href: '/admin/subscriptions', icon: CreditCard },
+  { name: 'API', href: '/admin/api', icon: Code2 },
   { name: 'Notificações', href: '/admin/notifications', icon: Bell },
   { name: 'Sistema', href: '/admin/system', icon: Zap },
   { name: 'Configurações', href: '/admin/settings', icon: Settings },

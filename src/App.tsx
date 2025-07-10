@@ -34,6 +34,7 @@ import AdminReports from "./pages/admin/Reports";
 import AdminNotifications from "./pages/admin/Notifications";
 import AdminSystem from "./pages/admin/System";
 import AdminSubscriptions from "./pages/admin/Subscriptions";
+import AdminAPI from "./pages/admin/API";
 
 const queryClient = new QueryClient();
 
@@ -83,6 +84,7 @@ const App = () => (
                 <Route path="notifications" element={<AdminNotifications />} />
                 <Route path="system" element={<AdminSystem />} />
                 <Route path="subscriptions" element={<AdminSubscriptions />} />
+                <Route path="api" element={<AdminAPI />} />
                 <Route index element={<Navigate to="dashboard" replace />} />
               </Route>
 
