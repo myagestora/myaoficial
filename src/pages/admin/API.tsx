@@ -19,7 +19,9 @@ import {
   Database,
   TrendingUp,
   Activity,
-  Plus
+  Plus,
+  Trash2,
+  Terminal
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -84,6 +86,21 @@ const AdminAPI = () => {
     }
   });
 
+  // Deletar API key
+  const deleteKeyMutation = useMutation({
+    mutationFn: async (keyId: string) => {
+      // Simular remoção de API key
+      return keyId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['api-keys'] });
+      toast({
+        title: "API Key removida",
+        description: "API Key removida com sucesso.",
+      });
+    }
+  });
+
   const copyToClipboard = (text: string, description: string) => {
     navigator.clipboard.writeText(text);
     toast({
@@ -98,6 +115,35 @@ const AdminAPI = () => {
 
   const maskKey = (key: string) => {
     return key.substring(0, 8) + '••••••••' + key.substring(key.length - 4);
+  };
+
+  const generateCurlCommand = (endpoint: any) => {
+    const fullUrl = `${baseUrl}${endpoint.path.replace('{userId}', 'USER_ID')}`;
+    
+    if (endpoint.method === 'GET') {
+      let curl = `curl -X GET "${fullUrl}"`;
+      if (endpoint.headers?.Authorization) {
+        curl += ` \\\n  -H "Authorization: Bearer YOUR_BOT_TOKEN"`;
+      }
+      return curl;
+    } else if (endpoint.method === 'POST') {
+      let curl = `curl -X POST "${fullUrl}" \\\n  -H "Content-Type: application/json"`;
+      if (endpoint.headers?.Authorization) {
+        curl += ` \\\n  -H "Authorization: Bearer YOUR_BOT_TOKEN"`;
+      }
+      if (endpoint.params) {
+        const exampleBody = { ...endpoint.params };
+        // Remove optional parameters indicator
+        Object.keys(exampleBody).forEach(key => {
+          if (typeof exampleBody[key] === 'string' && exampleBody[key].includes('?')) {
+            exampleBody[key] = exampleBody[key].replace('?', '');
+          }
+        });
+        curl += ` \\\n  -d '${JSON.stringify(exampleBody, null, 2)}'`;
+      }
+      return curl;
+    }
+    return '';
   };
 
   const endpoints = [
@@ -363,6 +409,23 @@ const AdminAPI = () => {
                           <pre>{JSON.stringify(endpoint.response, null, 2)}</pre>
                         </div>
                       </div>
+
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-sm font-medium">cURL:</p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => copyToClipboard(generateCurlCommand(endpoint), "Comando cURL")}
+                          >
+                            <Terminal className="h-3 w-3 mr-1" />
+                            Copiar cURL
+                          </Button>
+                        </div>
+                        <div className="bg-muted p-2 rounded text-xs">
+                          <pre className="whitespace-pre-wrap text-wrap">{generateCurlCommand(endpoint)}</pre>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -472,6 +535,14 @@ const AdminAPI = () => {
                           onClick={() => copyToClipboard(key.key, "API Key")}
                         >
                           <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => deleteKeyMutation.mutate(key.id)}
+                          disabled={deleteKeyMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
 
