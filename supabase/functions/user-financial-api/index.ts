@@ -18,8 +18,15 @@ serve(async (req) => {
 
     const url = new URL(req.url)
     const pathSegments = url.pathname.split('/').filter(Boolean)
+    
+    console.log('URL pathname:', url.pathname)
+    console.log('Path segments:', pathSegments)
+    
     const userId = pathSegments[1] // /user/{userId}/...
     const endpoint = pathSegments[2] // balance, transactions, etc.
+    
+    console.log('Extracted userId:', userId)
+    console.log('Endpoint:', endpoint)
 
     // Validar user_id
     if (!userId) {
@@ -30,16 +37,35 @@ serve(async (req) => {
     }
 
     // Verificar se usuário existe e está ativo
-    const { data: profile } = await supabase
+    console.log('Searching for user with ID:', userId)
+    
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('id, account_status')
       .eq('id', userId)
-      .eq('account_status', 'active')
-      .single()
+      .maybeSingle()
+
+    console.log('Profile query result:', { profile, profileError })
+    console.log('Profile account_status:', profile?.account_status)
 
     if (!profile) {
+      console.log('User not found in profiles table')
       return new Response(
-        JSON.stringify({ error: 'User not found or inactive' }),
+        JSON.stringify({ 
+          error: 'User not found or inactive',
+          debug: { userId, profileFound: false }
+        }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (profile.account_status !== 'active') {
+      console.log('User found but not active, status:', profile.account_status)
+      return new Response(
+        JSON.stringify({ 
+          error: 'User not found or inactive',
+          debug: { userId, profileFound: true, status: profile.account_status }
+        }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
