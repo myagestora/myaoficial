@@ -60,11 +60,14 @@ const Transactions = () => {
 
   // Buscar categorias para os filtros
   const { data: categories = [] } = useQuery({
-    queryKey: ['categories-for-filters'],
+    queryKey: ['categories-for-filters', user?.id],
     queryFn: async () => {
+      if (!user?.id) return [];
+      
       const { data, error } = await supabase
         .from('categories')
         .select('id, name, color, type')
+        .or(`user_id.is.null,user_id.eq.${user.id}`)
         .order('name');
       
       if (error) throw error;

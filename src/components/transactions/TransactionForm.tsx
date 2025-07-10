@@ -70,12 +70,15 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
 
   // Buscar categorias do banco de dados
   const { data: categories } = useQuery({
-    queryKey: ['categories', transactionType],
+    queryKey: ['categories', transactionType, user?.id],
     queryFn: async () => {
+      if (!user?.id) return [];
+      
       const { data, error } = await supabase
         .from('categories')
         .select('*')
         .eq('type', transactionType)
+        .or(`user_id.is.null,user_id.eq.${user.id}`)
         .order('is_default', { ascending: false })
         .order('name');
       
