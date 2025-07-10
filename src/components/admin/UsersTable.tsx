@@ -2,6 +2,8 @@ import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Shield, Crown } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { EditUserDialog } from '@/components/admin/EditUserDialog';
 import { DeleteUserDialog } from '@/components/admin/DeleteUserDialog';
 import { getUserRole, getStatusLabel, getStatusClassName } from '@/utils/userUtils';
@@ -12,6 +14,34 @@ interface UsersTableProps {
 }
 
 export const UsersTable = ({ users, isLoading }: UsersTableProps) => {
+  // Buscar cor primária personalizada
+  const { data: primaryColor } = useQuery({
+    queryKey: ['system-config-primary-color'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from('system_config')
+          .select('value')
+          .eq('key', 'primary_color')
+          .maybeSingle();
+        
+        if (error) {
+          console.error('Error fetching primary color:', error);
+          return '#3B82F6'; // cor padrão
+        }
+
+        const colorValue = data?.value;
+        if (typeof colorValue === 'string') {
+          return colorValue.replace(/^"|"$/g, '');
+        }
+        return '#3B82F6';
+      } catch (error) {
+        console.error('Error fetching primary color:', error);
+        return '#3B82F6';
+      }
+    }
+  });
+
   if (isLoading) {
     return (
       <div className="text-center py-8">
@@ -54,7 +84,12 @@ export const UsersTable = ({ users, isLoading }: UsersTableProps) => {
               {user.current_plan ? (
                 <Badge 
                   variant={user.is_special_plan ? 'outline' : 'default'}
-                  className={user.is_special_plan ? 'border-amber-500 text-amber-700' : 'bg-primary text-primary-foreground'}
+                  className={user.is_special_plan ? 'border-amber-500 text-amber-700' : ''}
+                  style={!user.is_special_plan && primaryColor ? { 
+                    backgroundColor: primaryColor, 
+                    color: 'white',
+                    borderColor: primaryColor
+                  } : {}}
                 >
                   {user.is_special_plan && <Crown className="h-3 w-3 mr-1" />}
                   {user.current_plan.name}
