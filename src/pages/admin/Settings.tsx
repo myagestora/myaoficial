@@ -13,6 +13,7 @@ import { MotivationalPhrasesManager } from '@/components/admin/MotivationalPhras
 import { SEOSettings } from '@/components/admin/SEOSettings';
 import { PaymentSettings } from '@/components/admin/PaymentSettings';
 import { APISettings } from '@/components/admin/settings/APISettings';
+import { SpecialUsersManager } from '@/components/admin/settings/SpecialUsersManager';
 
 const AdminSettings = () => {
   const [settings, setSettings] = useState<Record<string, string>>({});
@@ -151,6 +152,7 @@ const AdminSettings = () => {
           <TabsTrigger value="notifications">Notificações</TabsTrigger>
           <TabsTrigger value="seo">SEO</TabsTrigger>
           <TabsTrigger value="phrases">Frases Motivacionais</TabsTrigger>
+          <TabsTrigger value="special-users">Usuários Especiais</TabsTrigger>
         </TabsList>
 
         <TabsContent value="branding" className="space-y-6">
@@ -206,6 +208,10 @@ const AdminSettings = () => {
 
         <TabsContent value="phrases" className="space-y-6">
           <MotivationalPhrasesManager />
+        </TabsContent>
+
+        <TabsContent value="special-users" className="space-y-6">
+          <SpecialUsersManager />
         </TabsContent>
       </Tabs>
 

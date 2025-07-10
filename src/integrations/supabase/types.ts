@@ -299,6 +299,7 @@ export type Database = {
           features: Json | null
           id: string
           is_active: boolean | null
+          is_special: boolean
           name: string
           price_monthly: number | null
           price_yearly: number | null
@@ -310,6 +311,7 @@ export type Database = {
           features?: Json | null
           id?: string
           is_active?: boolean | null
+          is_special?: boolean
           name: string
           price_monthly?: number | null
           price_yearly?: number | null
@@ -321,6 +323,7 @@ export type Database = {
           features?: Json | null
           id?: string
           is_active?: boolean | null
+          is_special?: boolean
           name?: string
           price_monthly?: number | null
           price_yearly?: number | null
