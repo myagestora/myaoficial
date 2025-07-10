@@ -49,33 +49,34 @@ serve(async (req) => {
       .update({ last_used: new Date().toISOString() })
       .eq('key', apiKey);
 
-    const url = new URL(req.url)
-    const pathSegments = url.pathname.split('/').filter(Boolean)
-    const userId = pathSegments[2] // /user-analytics-api/user/{userId}/...
-    const endpoint = pathSegments[3] // spending-trends, category-breakdown, etc.
+    // Parse URL to extract user ID and endpoint
+    const url = new URL(req.url);
+    const pathParts = url.pathname.split('/');
+    const userId = pathParts[pathParts.length - 2]; // /user-analytics-api/user/{userId}/{endpoint}
+    const endpoint = pathParts[pathParts.length - 1];
 
-    if (!userId) {
+    if (!userId || !endpoint) {
       return new Response(
-        JSON.stringify({ error: 'User ID is required' }),
+        JSON.stringify({ error: 'Invalid URL format. Expected: /user/{user_id}/{endpoint}' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Verify user exists
-    const { data: profile, error: profileError } = await supabase
+    // Validate user exists
+    const { data: userData, error: userError } = await supabase
       .from('profiles')
       .select('id')
       .eq('id', userId)
-      .eq('account_status', 'active')
-      .single()
+      .single();
 
-    if (!profile) {
+    if (userError || !userData) {
       return new Response(
-        JSON.stringify({ error: 'User not found or inactive' }),
+        JSON.stringify({ error: 'User not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
+    // =============== SPENDING TRENDS ENDPOINT ===============
     if (endpoint === 'spending-trends') {
       if (req.method !== 'POST') {
         return new Response(
@@ -84,31 +85,23 @@ serve(async (req) => {
         )
       }
 
-      let requestData = { months: 6 };
-      try {
-        const body = await req.json();
-        if (body && typeof body === 'object') {
-          requestData = { ...requestData, ...body };
-        }
-      } catch (e) {
-        // Use defaults if no valid body
-      }
-      
-      // Query transactions for the specified period
-      const startDate = new Date()
-      startDate.setMonth(startDate.getMonth() - requestData.months)
-      const startDateStr = startDate.toISOString().split('T')[0]
+      const body = await req.json();
+      const { period = 6 } = body; // default 6 months
 
-      const { data: transactions, error: transError } = await supabase
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setMonth(endDate.getMonth() - period);
+
+      const { data: transactions, error } = await supabase
         .from('transactions')
         .select('amount, type, date')
         .eq('user_id', userId)
-        .gte('date', startDateStr)
-        .order('date')
+        .gte('date', startDate.toISOString().split('T')[0])
+        .lte('date', endDate.toISOString().split('T')[0]);
 
-      if (transError) {
+      if (error) {
         return new Response(
-          JSON.stringify({ error: 'Database error', details: transError.message }),
+          JSON.stringify({ error: 'Database error' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
@@ -117,8 +110,6 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             message: 'Não há dados de transações para o período solicitado',
-            trends: [],
-            period_months: requestData.months,
             currency: 'BRL'
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -126,40 +117,41 @@ serve(async (req) => {
       }
 
       // Group by month
-      const monthlyData = transactions.reduce((acc, transaction) => {
-        const monthKey = transaction.date.substring(0, 7) // YYYY-MM
+      const monthlyData = transactions.reduce((acc: any, transaction: any) => {
+        const date = new Date(transaction.date);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        
         if (!acc[monthKey]) {
-          acc[monthKey] = { income: 0, expenses: 0, month: monthKey }
+          acc[monthKey] = { income: 0, expenses: 0 };
         }
         
         if (transaction.type === 'income') {
-          acc[monthKey].income += Number(transaction.amount)
+          acc[monthKey].income += Number(transaction.amount);
         } else {
-          acc[monthKey].expenses += Number(transaction.amount)
+          acc[monthKey].expenses += Number(transaction.amount);
         }
         
-        return acc
-      }, {} as Record<string, any>)
+        return acc;
+      }, {});
 
-      const trends = Object.values(monthlyData).map((month: any) => ({
-        ...month,
-        balance: month.income - month.expenses,
-        month_name: new Date(month.month + '-01').toLocaleDateString('pt-BR', { 
-          year: 'numeric', 
-          month: 'long' 
-        })
-      }))
+      const trends = Object.entries(monthlyData)
+        .map(([month, data]: [string, any]) => ({
+          month,
+          ...data,
+          balance: data.income - data.expenses
+        }))
+        .sort((a, b) => a.month.localeCompare(b.month));
 
       return new Response(
         JSON.stringify({
           trends,
-          period_months: requestData.months,
           currency: 'BRL'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
+    // =============== CATEGORY BREAKDOWN ENDPOINT ===============
     if (endpoint === 'category-breakdown') {
       if (req.method !== 'POST') {
         return new Response(
@@ -168,40 +160,38 @@ serve(async (req) => {
         )
       }
 
-      let requestData = { period: 'month' };
-      try {
-        const body = await req.json();
-        if (body && typeof body === 'object') {
-          requestData = { ...requestData, ...body };
-        }
-      } catch (e) {
-        // Use defaults
-      }
-      
-      const currentDate = new Date()
-      let startDate: string
-      
-      if (requestData.period === 'month') {
-        startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString().split('T')[0]
-      } else if (requestData.period === 'quarter') {
-        const quarter = Math.floor(currentDate.getMonth() / 3)
-        startDate = new Date(currentDate.getFullYear(), quarter * 3, 1).toISOString().split('T')[0]
-      } else {
-        startDate = new Date(currentDate.getFullYear(), 0, 1).toISOString().split('T')[0]
+      const body = await req.json();
+      const { period = 'month' } = body; // 'month', 'quarter', 'year'
+
+      let startDate = new Date();
+      const endDate = new Date();
+
+      switch (period) {
+        case 'quarter':
+          startDate.setMonth(endDate.getMonth() - 3);
+          break;
+        case 'year':
+          startDate.setFullYear(endDate.getFullYear() - 1);
+          break;
+        default: // month
+          startDate.setMonth(endDate.getMonth() - 1);
       }
 
-      const { data: transactions, error: transError } = await supabase
+      const { data: transactions, error } = await supabase
         .from('transactions')
         .select(`
-          amount, type,
-          categories (name, color, icon)
+          amount, 
+          type, 
+          category_id,
+          categories!inner(name, color)
         `)
         .eq('user_id', userId)
-        .gte('date', startDate)
+        .gte('date', startDate.toISOString().split('T')[0])
+        .lte('date', endDate.toISOString().split('T')[0]);
 
-      if (transError) {
+      if (error) {
         return new Response(
-          JSON.stringify({ error: 'Database error', details: transError.message }),
+          JSON.stringify({ error: 'Database error' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
@@ -210,75 +200,62 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             message: 'Não há dados de transações para o período solicitado',
-            income: { total: 0, by_category: [] },
-            expenses: { total: 0, by_category: [] },
-            period: requestData.period,
             currency: 'BRL'
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
 
-      // Process income and expenses by category
-      const incomeByCategory = transactions.filter(t => t.type === 'income').reduce((acc, t) => {
-        const categoryName = t.categories?.name || 'Sem categoria'
-        if (!acc[categoryName]) {
-          acc[categoryName] = {
-            category: categoryName,
-            color: t.categories?.color || '#gray',
-            icon: t.categories?.icon || 'folder',
+      // Group by category and type
+      const categoryData = transactions.reduce((acc: any, transaction: any) => {
+        const category = transaction.categories?.name || 'Sem categoria';
+        const type = transaction.type;
+        const amount = Number(transaction.amount);
+        
+        if (!acc[type]) acc[type] = {};
+        if (!acc[type][category]) {
+          acc[type][category] = {
             total: 0,
-            percentage: 0
-          }
+            color: transaction.categories?.color || '#3B82F6'
+          };
         }
-        acc[categoryName].total += Number(t.amount)
-        return acc
-      }, {} as Record<string, any>)
+        
+        acc[type][category].total += amount;
+        return acc;
+      }, {});
 
-      const expensesByCategory = transactions.filter(t => t.type === 'expense').reduce((acc, t) => {
-        const categoryName = t.categories?.name || 'Sem categoria'
-        if (!acc[categoryName]) {
-          acc[categoryName] = {
-            category: categoryName,
-            color: t.categories?.color || '#gray',
-            icon: t.categories?.icon || 'folder',
-            total: 0,
-            percentage: 0
-          }
-        }
-        acc[categoryName].total += Number(t.amount)
-        return acc
-      }, {} as Record<string, any>)
+      // Calculate totals and percentages
+      const incomeTotal = Object.values(categoryData.income || {}).reduce((sum: number, cat: any) => sum + cat.total, 0);
+      const expenseTotal = Object.values(categoryData.expense || {}).reduce((sum: number, cat: any) => sum + cat.total, 0);
 
-      // Calculate percentages
-      const totalIncome = Object.values(incomeByCategory).reduce((sum: number, cat: any) => sum + cat.total, 0)
-      const totalExpenses = Object.values(expensesByCategory).reduce((sum: number, cat: any) => sum + cat.total, 0)
-
-      Object.values(incomeByCategory).forEach((cat: any) => {
-        cat.percentage = totalIncome > 0 ? (cat.total / totalIncome) * 100 : 0
-      })
-
-      Object.values(expensesByCategory).forEach((cat: any) => {
-        cat.percentage = totalExpenses > 0 ? (cat.total / totalExpenses) * 100 : 0
-      })
+      const result = {
+        income: Object.entries(categoryData.income || {}).map(([name, data]: [string, any]) => ({
+          name,
+          total: data.total,
+          percentage: incomeTotal > 0 ? (data.total / incomeTotal) * 100 : 0,
+          color: data.color
+        })),
+        expenses: Object.entries(categoryData.expense || {}).map(([name, data]: [string, any]) => ({
+          name,
+          total: data.total,
+          percentage: expenseTotal > 0 ? (data.total / expenseTotal) * 100 : 0,
+          color: data.color
+        })),
+        totals: {
+          income: incomeTotal,
+          expenses: expenseTotal,
+          balance: incomeTotal - expenseTotal
+        },
+        currency: 'BRL'
+      };
 
       return new Response(
-        JSON.stringify({
-          income: {
-            total: totalIncome,
-            by_category: Object.values(incomeByCategory)
-          },
-          expenses: {
-            total: totalExpenses,
-            by_category: Object.values(expensesByCategory)
-          },
-          period: requestData.period,
-          currency: 'BRL'
-        }),
+        JSON.stringify(result),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
+    // =============== MONTHLY COMPARISON ENDPOINT ===============
     if (endpoint === 'monthly-comparison') {
       if (req.method !== 'POST') {
         return new Response(
@@ -296,10 +273,10 @@ serve(async (req) => {
       const thisMonthEnd = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0]
       
       // Previous month
-      const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1
+      const lastMonthNumber = currentMonth === 0 ? 11 : currentMonth - 1
       const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear
-      const lastMonthStart = new Date(lastMonthYear, lastMonth, 1).toISOString().split('T')[0]
-      const lastMonthEnd = new Date(lastMonthYear, lastMonth + 1, 0).toISOString().split('T')[0]
+      const lastMonthStart = new Date(lastMonthYear, lastMonthNumber, 1).toISOString().split('T')[0]
+      const lastMonthEnd = new Date(lastMonthYear, lastMonthNumber + 1, 0).toISOString().split('T')[0]
 
       // Get current month transactions
       const { data: thisMonthTransactions, error: thisMonthError } = await supabase
@@ -363,7 +340,7 @@ serve(async (req) => {
           previous_month: {
             ...lastMonthData,
             balance: lastMonthData.income - lastMonthData.expenses,
-            month_name: new Date(lastMonthYear, lastMonth, 1).toLocaleDateString('pt-BR', { year: 'numeric', month: 'long' })
+            month_name: new Date(lastMonthYear, lastMonthNumber, 1).toLocaleDateString('pt-BR', { year: 'numeric', month: 'long' })
           },
           comparison: {
             income_change: incomeChange,
