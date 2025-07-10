@@ -11,7 +11,7 @@ interface QuickTransactionRequest {
   title: string;
   amount: number;
   type: 'income' | 'expense';
-  category_name?: string;
+  category_id: string;
   description?: string;
   date?: string;
 }
@@ -71,17 +71,17 @@ serve(async (req) => {
       title, 
       amount, 
       type, 
-      category_name, 
+      category_id, 
       description, 
       date
     }: QuickTransactionRequest = await req.json()
 
     // Validar dados obrigatórios
-    if (!user_id || !title || !amount || !type) {
+    if (!user_id || !title || !amount || !type || !category_id) {
       return new Response(
         JSON.stringify({ 
           error: 'Missing required fields',
-          required: ['user_id', 'title', 'amount', 'type']
+          required: ['user_id', 'title', 'amount', 'type', 'category_id']
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
@@ -102,38 +102,19 @@ serve(async (req) => {
       )
     }
 
-    // Buscar ou criar categoria
-    let categoryId = null
-    if (category_name) {
-      // Primeiro, tentar encontrar categoria existente
-      const { data: existingCategory } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('user_id', user_id)
-        .ilike('name', category_name)
-        .single()
+    // Verificar se categoria existe e pertence ao usuário
+    const { data: category, error: categoryError } = await supabase
+      .from('categories')
+      .select('id, name, type')
+      .eq('id', category_id)
+      .or(`user_id.eq.${user_id},is_default.eq.true`)
+      .single()
 
-      if (existingCategory) {
-        categoryId = existingCategory.id
-      } else {
-        // Criar nova categoria se não existir
-        const { data: newCategory, error: categoryError } = await supabase
-          .from('categories')
-          .insert({
-            name: category_name,
-            user_id: user_id,
-            type: type,
-            is_default: false
-          })
-          .select('id')
-          .single()
-
-        if (categoryError) {
-          console.error('Error creating category:', categoryError)
-        } else {
-          categoryId = newCategory.id
-        }
-      }
+    if (categoryError || !category) {
+      return new Response(
+        JSON.stringify({ error: 'Category not found or not accessible' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     // Criar transação
@@ -148,7 +129,7 @@ serve(async (req) => {
         amount: Math.abs(amount),
         type,
         date: transactionDate,
-        category_id: categoryId
+        category_id: category_id
       })
       .select(`
         id, title, description, amount, type, date,
