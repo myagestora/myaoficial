@@ -82,7 +82,13 @@ serve(async (req) => {
         
         // Se for POST, ler parâmetros do body
         if (req.method === 'POST') {
-          requestData = { ...requestData, ...await req.json() };
+          try {
+            const body = await req.json();
+            requestData = { ...requestData, ...body };
+          } catch (e) {
+            // Se não conseguir fazer parse do JSON, usar valores padrão
+            console.log('Error parsing JSON body, using defaults:', e);
+          }
         } else {
           // Manter compatibilidade com GET usando query params
           const months = parseInt(url.searchParams.get('months') || '6');
@@ -141,7 +147,13 @@ serve(async (req) => {
         
         // Se for POST, ler parâmetros do body
         if (req.method === 'POST') {
-          requestData = { ...requestData, ...await req.json() };
+          try {
+            const body = await req.json();
+            requestData = { ...requestData, ...body };
+          } catch (e) {
+            // Se não conseguir fazer parse do JSON, usar valores padrão
+            console.log('Error parsing JSON body, using defaults:', e);
+          }
         } else {
           // Manter compatibilidade com GET usando query params
           const period = url.searchParams.get('period') || 'month';
