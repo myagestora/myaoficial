@@ -593,7 +593,7 @@ const AdminAPI = () => {
       endpoints: [
         {
           method: "GET",
-          path: "/user-categories-api",
+          path: "/list-categories",
           description: "Lista categorias disponíveis para o usuário (padrões + personalizadas)",
           headers: { Authorization: "Bearer your-api-key" },
           params: {
@@ -608,8 +608,9 @@ const AdminAPI = () => {
             }
           },
           response: { success: "boolean", categories: "array", total: "number" },
-          curl: `curl -X GET "https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1/user-categories-api?user_id=12345678-1234-1234-1234-123456789012" \\
-  -H "Authorization: Bearer your-api-key"`,
+          curl: `curl -X GET "https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1/list-categories?user_id=12345678-1234-1234-1234-123456789012" \\
+  -H "Authorization: Bearer your-api-key" \\
+  -H "Content-Type: application/json"`,
           exampleRequest: {
             user_id: "12345678-1234-1234-1234-123456789012"
           },
