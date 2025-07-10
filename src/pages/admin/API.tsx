@@ -6,6 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { 
   Copy, 
   Key, 
@@ -21,7 +23,9 @@ import {
   Activity,
   Plus,
   Trash2,
-  Terminal
+  Terminal,
+  Menu,
+  ChevronRight
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,6 +46,8 @@ const AdminAPI = () => {
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
   const [newKeyName, setNewKeyName] = useState('');
   const [isCreatingKey, setIsCreatingKey] = useState(false);
+  const [selectedEndpoint, setSelectedEndpoint] = useState<any>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Buscar API keys existentes
   const { data: apiKeys, isLoading } = useQuery({
@@ -175,8 +181,34 @@ const AdminAPI = () => {
           method: "POST",
           path: "/whatsapp-auth",
           description: "Autentica usuário pelo WhatsApp",
-          params: { whatsapp: "string", bot_token: "string" },
-          response: { user_id: "string", session_token: "string", expires_at: "string" }
+          params: { 
+            whatsapp: "string", 
+            bot_token: "string" 
+          },
+          paramDetails: {
+            whatsapp: {
+              type: "string",
+              description: "Número do WhatsApp no formato internacional",
+              example: "5511999999999",
+              required: true
+            },
+            bot_token: {
+              type: "string", 
+              description: "Token de autenticação do bot",
+              example: "your-secure-bot-token",
+              required: true
+            }
+          },
+          response: { user_id: "string", session_token: "string", expires_at: "string" },
+          exampleRequest: {
+            whatsapp: "5511999999999",
+            bot_token: "your-secure-bot-token"
+          },
+          exampleResponse: {
+            user_id: "123e4567-e89b-12d3-a456-426614174000",
+            session_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            expires_at: "2024-01-15T10:30:00Z"
+          }
         }
       ]
     },
@@ -190,15 +222,56 @@ const AdminAPI = () => {
           path: "/user-financial-api/user/{userId}/balance",
           description: "Saldo atual do usuário",
           headers: { Authorization: "Bearer your-secure-bot-token" },
-          response: { balance: "number", total_income: "number", total_expenses: "number" }
+          response: { balance: "number", total_income: "number", total_expenses: "number" },
+          exampleResponse: {
+            balance: 1250.75,
+            total_income: 3500.00,
+            total_expenses: 2249.25
+          }
         },
         {
           method: "POST",
           path: "/user-financial-api/user/{userId}/transactions",
           description: "Histórico de transações",
           headers: { Authorization: "Bearer your-secure-bot-token" },
-          params: { limit: "number?", period: "string?" },
-          response: { transactions: "array", total_count: "number" }
+          params: { 
+            limit: "number?", 
+            period: "string?" 
+          },
+          paramDetails: {
+            limit: {
+              type: "number",
+              description: "Número máximo de transações retornadas",
+              example: 10,
+              required: false,
+              default: 50
+            },
+            period: {
+              type: "string",
+              description: "Período das transações",
+              example: "month",
+              required: false,
+              options: ["week", "month", "quarter", "year", "all"]
+            }
+          },
+          response: { transactions: "array", total_count: "number" },
+          exampleRequest: {
+            limit: 10,
+            period: "month"
+          },
+          exampleResponse: {
+            transactions: [
+              {
+                id: "trans_001",
+                title: "Compra no mercado",
+                amount: -150.50,
+                type: "expense",
+                category: "Alimentação",
+                date: "2024-01-15"
+              }
+            ],
+            total_count: 25
+          }
         },
         {
           method: "POST",
@@ -206,28 +279,76 @@ const AdminAPI = () => {
           description: "Resumo de despesas por categoria",
           headers: { Authorization: "Bearer your-secure-bot-token" },
           params: { period: "string?" },
-          response: { total_expenses: "number", by_category: "array" }
+          paramDetails: {
+            period: {
+              type: "string",
+              description: "Período para análise das despesas",
+              example: "month",
+              required: false,
+              options: ["week", "month", "quarter", "year"]
+            }
+          },
+          response: { total_expenses: "number", by_category: "array" },
+          exampleRequest: {
+            period: "month"
+          },
+          exampleResponse: {
+            total_expenses: 2249.25,
+            by_category: [
+              { category: "Alimentação", amount: 750.00, percentage: 33.3 },
+              { category: "Transporte", amount: 450.00, percentage: 20.0 }
+            ]
+          }
         },
         {
           method: "GET",
           path: "/user-financial-api/user/{userId}/income",
           description: "Resumo de receitas",
           headers: { Authorization: "Bearer your-secure-bot-token" },
-          response: { total_income: "number", transactions: "array" }
+          response: { total_income: "number", transactions: "array" },
+          exampleResponse: {
+            total_income: 3500.00,
+            transactions: [
+              {
+                id: "income_001",
+                title: "Salário",
+                amount: 3500.00,
+                date: "2024-01-01"
+              }
+            ]
+          }
         },
         {
           method: "GET",
           path: "/user-financial-api/user/{userId}/goals",
           description: "Status das metas financeiras",
           headers: { Authorization: "Bearer your-secure-bot-token" },
-          response: { goals: "array", total_goals: "number" }
+          response: { goals: "array", total_goals: "number" },
+          exampleResponse: {
+            goals: [
+              {
+                id: "goal_001",
+                title: "Economizar para viagem",
+                target_amount: 5000.00,
+                current_amount: 1250.75,
+                percentage: 25.0,
+                status: "in_progress"
+              }
+            ],
+            total_goals: 3
+          }
         },
         {
           method: "GET",
           path: "/user-financial-api/user/{userId}/summary",
           description: "Resumo financeiro completo",
           headers: { Authorization: "Bearer your-secure-bot-token" },
-          response: { balance: "number", monthly_balance: "number", active_goals: "number" }
+          response: { balance: "number", monthly_balance: "number", active_goals: "number" },
+          exampleResponse: {
+            balance: 1250.75,
+            monthly_balance: 325.50,
+            active_goals: 2
+          }
         }
       ]
     },
@@ -242,7 +363,28 @@ const AdminAPI = () => {
           description: "Tendências de gastos mensais",
           headers: { Authorization: "Bearer your-secure-bot-token" },
           params: { months: "number?" },
-          response: { trends: "array", period_months: "number" }
+          paramDetails: {
+            months: {
+              type: "number",
+              description: "Número de meses para análise",
+              example: 6,
+              required: false,
+              default: 3,
+              min: 1,
+              max: 24
+            }
+          },
+          response: { trends: "array", period_months: "number" },
+          exampleRequest: {
+            months: 6
+          },
+          exampleResponse: {
+            trends: [
+              { month: "2024-01", total_expenses: 2249.25, trend: "up" },
+              { month: "2023-12", total_expenses: 1980.50, trend: "down" }
+            ],
+            period_months: 6
+          }
         },
         {
           method: "POST",
@@ -250,14 +392,58 @@ const AdminAPI = () => {
           description: "Gastos por categoria",
           headers: { Authorization: "Bearer your-secure-bot-token" },
           params: { period: "string?" },
-          response: { income: "object", expenses: "object" }
+          paramDetails: {
+            period: {
+              type: "string",
+              description: "Período para análise por categoria",
+              example: "month",
+              required: false,
+              options: ["week", "month", "quarter", "year"]
+            }
+          },
+          response: { income: "object", expenses: "object" },
+          exampleRequest: {
+            period: "month"
+          },
+          exampleResponse: {
+            income: {
+              total: 3500.00,
+              categories: [
+                { name: "Salário", amount: 3500.00 }
+              ]
+            },
+            expenses: {
+              total: 2249.25,
+              categories: [
+                { name: "Alimentação", amount: 750.00 },
+                { name: "Transporte", amount: 450.00 }
+              ]
+            }
+          }
         },
         {
           method: "GET",
           path: "/user-analytics-api/user/{userId}/monthly-comparison",
           description: "Comparação entre meses",
           headers: { Authorization: "Bearer your-secure-bot-token" },
-          response: { current_month: "object", previous_month: "object", comparison: "object" }
+          response: { current_month: "object", previous_month: "object", comparison: "object" },
+          exampleResponse: {
+            current_month: {
+              income: 3500.00,
+              expenses: 2249.25,
+              balance: 1250.75
+            },
+            previous_month: {
+              income: 3200.00,
+              expenses: 1980.50,
+              balance: 1219.50
+            },
+            comparison: {
+              income_change: 9.4,
+              expense_change: 13.6,
+              balance_change: 2.5
+            }
+          }
         }
       ]
     },
@@ -278,7 +464,63 @@ const AdminAPI = () => {
             type: "string",
             category_name: "string?"
           },
-          response: { success: "boolean", transaction: "object", updated_balance: "object" }
+          paramDetails: {
+            user_id: {
+              type: "string",
+              description: "ID único do usuário",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+              required: true
+            },
+            title: {
+              type: "string",
+              description: "Título da transação",
+              example: "Compra no mercado",
+              required: true
+            },
+            amount: {
+              type: "number",
+              description: "Valor da transação (positivo para receita, negativo para despesa)",
+              example: -150.50,
+              required: true
+            },
+            type: {
+              type: "string",
+              description: "Tipo da transação",
+              example: "expense",
+              required: true,
+              options: ["income", "expense"]
+            },
+            category_name: {
+              type: "string",
+              description: "Nome da categoria (opcional, será criada se não existir)",
+              example: "Alimentação",
+              required: false
+            }
+          },
+          response: { success: "boolean", transaction: "object", updated_balance: "object" },
+          exampleRequest: {
+            user_id: "123e4567-e89b-12d3-a456-426614174000",
+            title: "Compra no mercado",
+            amount: -150.50,
+            type: "expense",
+            category_name: "Alimentação"
+          },
+          exampleResponse: {
+            success: true,
+            transaction: {
+              id: "trans_001",
+              title: "Compra no mercado",
+              amount: -150.50,
+              type: "expense",
+              category: "Alimentação",
+              date: "2024-01-15"
+            },
+            updated_balance: {
+              balance: 1100.25,
+              total_income: 3500.00,
+              total_expenses: 2399.75
+            }
+          }
         }
       ]
     },
@@ -293,7 +535,39 @@ const AdminAPI = () => {
           description: "Alertas sobre metas e gastos",
           headers: { Authorization: "Bearer your-secure-bot-token" },
           params: { user_id: "string" },
-          response: { alerts: "array", total_alerts: "number" }
+          paramDetails: {
+            user_id: {
+              type: "string",
+              description: "ID único do usuário",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+              required: true
+            }
+          },
+          response: { alerts: "array", total_alerts: "number" },
+          exampleRequest: {
+            user_id: "123e4567-e89b-12d3-a456-426614174000"
+          },
+          exampleResponse: {
+            alerts: [
+              {
+                id: "alert_001",
+                type: "goal_warning",
+                title: "Meta em risco",
+                message: "Você já gastou 80% do limite para alimentação este mês",
+                severity: "warning",
+                created_at: "2024-01-15T10:30:00Z"
+              },
+              {
+                id: "alert_002",
+                type: "spending_spike",
+                title: "Gasto elevado",
+                message: "Seus gastos este mês estão 25% acima da média",
+                severity: "info",
+                created_at: "2024-01-15T09:15:00Z"
+              }
+            ],
+            total_alerts: 2
+          }
         }
       ]
     }
@@ -319,139 +593,306 @@ const AdminAPI = () => {
         </TabsList>
 
         <TabsContent value="documentation" className="space-y-6">
-          {/* Visão Geral */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Code className="h-5 w-5" />
-                Visão Geral da API
-              </CardTitle>
-              <CardDescription>
-                API REST para integração com agentes de IA WhatsApp. Todas as respostas são em formato JSON.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-muted p-4 rounded-lg">
-                <p className="font-medium mb-2">Base URL:</p>
-                <div className="flex items-center gap-2">
-                  <code className="bg-background px-2 py-1 rounded text-sm flex-1">
-                    {baseUrl}
-                  </code>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => copyToClipboard(baseUrl, "Base URL")}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-4 border rounded-lg">
-                  <Shield className="h-8 w-8 text-blue-500 mx-auto mb-2" />
-                  <p className="font-medium">Autenticação</p>
-                  <p className="text-sm text-muted-foreground">Token baseado em bot</p>
-                </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <Database className="h-8 w-8 text-green-500 mx-auto mb-2" />
-                  <p className="font-medium">Dados Financeiros</p>
-                  <p className="text-sm text-muted-foreground">Saldo, transações, metas</p>
-                </div>
-                <div className="text-center p-4 border rounded-lg">
-                  <Zap className="h-8 w-8 text-orange-500 mx-auto mb-2" />
-                  <p className="font-medium">Tempo Real</p>
-                  <p className="text-sm text-muted-foreground">Transações via WhatsApp</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Endpoints por Categoria */}
-          {endpoints.map((category) => (
-            <Card key={category.category}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <div className={`p-2 rounded-lg ${category.color}`}>
-                    <category.icon className="h-4 w-4 text-white" />
+          <div className="flex gap-6">
+            {/* Menu Lateral */}
+            <div className={`${sidebarOpen ? 'w-80' : 'w-12'} transition-all duration-300 flex-shrink-0`}>
+              <Card className="h-[calc(100vh-12rem)] sticky top-6">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    {sidebarOpen && (
+                      <CardTitle className="text-lg">Endpoints</CardTitle>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSidebarOpen(!sidebarOpen)}
+                    >
+                      <Menu className="h-4 w-4" />
+                    </Button>
                   </div>
-                  {category.category}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {category.endpoints.map((endpoint, idx) => (
-                    <div key={idx} className="border rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge 
-                          variant={endpoint.method === 'GET' ? 'secondary' : 'default'}
-                          className={endpoint.method === 'GET' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}
-                        >
-                          {endpoint.method}
-                        </Badge>
-                        <code className="bg-muted px-2 py-1 rounded text-sm flex-1">
-                          {endpoint.path}
-                        </code>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => copyToClipboard(`${baseUrl}${endpoint.path}`, "Endpoint")}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <ScrollArea className="h-[calc(100vh-16rem)]">
+                    <div className="space-y-2 p-3">
+                      {/* Botão Visão Geral */}
+                      <Button
+                        variant={!selectedEndpoint ? "secondary" : "ghost"}
+                        className="w-full justify-start h-auto p-3"
+                        onClick={() => setSelectedEndpoint(null)}
+                      >
+                        <Code className="h-4 w-4 flex-shrink-0" />
+                        {sidebarOpen && (
+                          <span className="ml-2 text-left">Visão Geral</span>
+                        )}
+                      </Button>
                       
-                      <p className="text-sm text-muted-foreground mb-3">
-                        {endpoint.description}
-                      </p>
-
-                      {endpoint.headers && (
-                        <div className="mb-3">
-                          <p className="text-sm font-medium mb-1">Headers:</p>
-                          <div className="bg-muted p-2 rounded text-xs">
-                            <pre>{JSON.stringify(endpoint.headers, null, 2)}</pre>
+                      <Separator />
+                      
+                      {/* Menu por Categoria */}
+                      {endpoints.map((category) => (
+                        <div key={category.category} className="space-y-1">
+                          <div className="flex items-center gap-2 px-2 py-1 text-sm font-medium text-muted-foreground">
+                            <div className={`p-1 rounded ${category.color}`}>
+                              <category.icon className="h-3 w-3 text-white" />
+                            </div>
+                            {sidebarOpen && (
+                              <span>{category.category}</span>
+                            )}
                           </div>
+                          
+                          {sidebarOpen && category.endpoints.map((endpoint, idx) => (
+                            <Button
+                              key={`${category.category}-${idx}`}
+                              variant={selectedEndpoint === endpoint ? "secondary" : "ghost"}
+                              className="w-full justify-start h-auto p-2 pl-6"
+                              onClick={() => setSelectedEndpoint(endpoint)}
+                            >
+                              <Badge 
+                                variant="outline"
+                                className={`text-xs mr-2 ${
+                                  endpoint.method === 'GET' 
+                                    ? 'border-blue-500 text-blue-700' 
+                                    : 'border-green-500 text-green-700'
+                                }`}
+                              >
+                                {endpoint.method}
+                              </Badge>
+                              <span className="text-left text-sm truncate">
+                                {endpoint.path.split('/').pop()}
+                              </span>
+                            </Button>
+                          ))}
                         </div>
-                      )}
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </div>
 
-                      {endpoint.params && (
-                        <div className="mb-3">
-                          <p className="text-sm font-medium mb-1">Parâmetros:</p>
-                          <div className="bg-muted p-2 rounded text-xs">
-                            <pre>{JSON.stringify(endpoint.params, null, 2)}</pre>
-                          </div>
-                        </div>
-                      )}
-
-                      <div>
-                        <p className="text-sm font-medium mb-1">Resposta:</p>
-                        <div className="bg-muted p-2 rounded text-xs">
-                          <pre>{JSON.stringify(endpoint.response, null, 2)}</pre>
-                        </div>
-                      </div>
-
-                      <div className="mt-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm font-medium">cURL:</p>
+            {/* Conteúdo Principal */}
+            <div className="flex-1">
+              {!selectedEndpoint ? (
+                // Visão Geral
+                <div className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Code className="h-5 w-5" />
+                        Visão Geral da API
+                      </CardTitle>
+                      <CardDescription>
+                        API REST para integração com agentes de IA WhatsApp. Todas as respostas são em formato JSON.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="bg-muted p-4 rounded-lg">
+                        <p className="font-medium mb-2">Base URL:</p>
+                        <div className="flex items-center gap-2">
+                          <code className="bg-background px-2 py-1 rounded text-sm flex-1">
+                            {baseUrl}
+                          </code>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => copyToClipboard(generateCurlCommand(endpoint), "Comando cURL")}
+                            onClick={() => copyToClipboard(baseUrl, "Base URL")}
                           >
-                            <Terminal className="h-3 w-3 mr-1" />
-                            Copiar cURL
+                            <Copy className="h-4 w-4" />
                           </Button>
                         </div>
-                        <div className="bg-muted p-2 rounded text-xs">
-                          <pre className="whitespace-pre-wrap text-wrap">{generateCurlCommand(endpoint)}</pre>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="text-center p-4 border rounded-lg">
+                          <Shield className="h-8 w-8 text-blue-500 mx-auto mb-2" />
+                          <p className="font-medium">Autenticação</p>
+                          <p className="text-sm text-muted-foreground">Token baseado em bot</p>
+                        </div>
+                        <div className="text-center p-4 border rounded-lg">
+                          <Database className="h-8 w-8 text-green-500 mx-auto mb-2" />
+                          <p className="font-medium">Dados Financeiros</p>
+                          <p className="text-sm text-muted-foreground">Saldo, transações, metas</p>
+                        </div>
+                        <div className="text-center p-4 border rounded-lg">
+                          <Zap className="h-8 w-8 text-orange-500 mx-auto mb-2" />
+                          <p className="font-medium">Tempo Real</p>
+                          <p className="text-sm text-muted-foreground">Transações via WhatsApp</p>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    </CardContent>
+                  </Card>
+
+                  {/* Resumo de Categorias */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {endpoints.map((category) => (
+                      <Card key={category.category} className="cursor-pointer hover:shadow-md transition-shadow">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2 text-lg">
+                            <div className={`p-2 rounded-lg ${category.color}`}>
+                              <category.icon className="h-4 w-4 text-white" />
+                            </div>
+                            {category.category}
+                            <ChevronRight className="h-4 w-4 ml-auto" />
+                          </CardTitle>
+                          <CardDescription>
+                            {category.endpoints.length} endpoint{category.endpoints.length > 1 ? 's' : ''} disponível{category.endpoints.length > 1 ? 'eis' : ''}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2">
+                            {category.endpoints.map((endpoint, idx) => (
+                              <div key={idx} className="flex items-center gap-2 text-sm">
+                                <Badge 
+                                  variant="outline"
+                                  className={`text-xs ${
+                                    endpoint.method === 'GET' 
+                                      ? 'border-blue-500 text-blue-700' 
+                                      : 'border-green-500 text-green-700'
+                                  }`}
+                                >
+                                  {endpoint.method}
+                                </Badge>
+                                <code className="text-xs text-muted-foreground">
+                                  {endpoint.path.split('/').pop()}
+                                </code>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+              ) : (
+                // Detalhes do Endpoint Selecionado
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge 
+                        variant={selectedEndpoint.method === 'GET' ? 'secondary' : 'default'}
+                        className={selectedEndpoint.method === 'GET' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}
+                      >
+                        {selectedEndpoint.method}
+                      </Badge>
+                      <code className="bg-muted px-2 py-1 rounded text-sm">
+                        {selectedEndpoint.path}
+                      </code>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => copyToClipboard(`${baseUrl}${selectedEndpoint.path}`, "Endpoint")}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <CardTitle>{selectedEndpoint.description}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Headers */}
+                    {selectedEndpoint.headers && (
+                      <div>
+                        <h3 className="text-lg font-medium mb-3">Headers</h3>
+                        <div className="bg-muted p-3 rounded text-sm">
+                          <pre>{JSON.stringify(selectedEndpoint.headers, null, 2)}</pre>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Parâmetros */}
+                    {selectedEndpoint.paramDetails && (
+                      <div>
+                        <h3 className="text-lg font-medium mb-3">Parâmetros</h3>
+                        <div className="space-y-4">
+                          {Object.entries(selectedEndpoint.paramDetails).map(([key, param]: [string, any]) => (
+                            <div key={key} className="border rounded-lg p-4">
+                              <div className="flex items-center gap-2 mb-2">
+                                <code className="bg-muted px-2 py-1 rounded text-sm font-medium">
+                                  {key}
+                                </code>
+                                <Badge variant={param.required ? "default" : "secondary"}>
+                                  {param.required ? "Obrigatório" : "Opcional"}
+                                </Badge>
+                                <Badge variant="outline">{param.type}</Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground mb-2">
+                                {param.description}
+                              </p>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                <div>
+                                  <span className="font-medium">Exemplo:</span>
+                                  <code className="ml-2 bg-muted px-2 py-1 rounded">
+                                    {JSON.stringify(param.example)}
+                                  </code>
+                                </div>
+                                {param.options && (
+                                  <div>
+                                    <span className="font-medium">Opções:</span>
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                      {param.options.map((option: string) => (
+                                        <Badge key={option} variant="outline" className="text-xs">
+                                          {option}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                {param.default && (
+                                  <div>
+                                    <span className="font-medium">Padrão:</span>
+                                    <code className="ml-2 bg-muted px-2 py-1 rounded text-xs">
+                                      {JSON.stringify(param.default)}
+                                    </code>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Exemplo de Requisição */}
+                    {selectedEndpoint.exampleRequest && (
+                      <div>
+                        <h3 className="text-lg font-medium mb-3">Exemplo de Requisição</h3>
+                        <div className="bg-muted p-3 rounded text-sm">
+                          <pre>{JSON.stringify(selectedEndpoint.exampleRequest, null, 2)}</pre>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Exemplo de Resposta */}
+                    {selectedEndpoint.exampleResponse && (
+                      <div>
+                        <h3 className="text-lg font-medium mb-3">Exemplo de Resposta</h3>
+                        <div className="bg-muted p-3 rounded text-sm">
+                          <pre>{JSON.stringify(selectedEndpoint.exampleResponse, null, 2)}</pre>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* cURL */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-lg font-medium">Comando cURL</h3>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => copyToClipboard(generateCurlCommand(selectedEndpoint), "Comando cURL")}
+                        >
+                          <Terminal className="h-3 w-3 mr-1" />
+                          Copiar cURL
+                        </Button>
+                      </div>
+                      <div className="bg-muted p-3 rounded text-sm">
+                        <pre className="whitespace-pre-wrap text-wrap">{generateCurlCommand(selectedEndpoint)}</pre>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="keys" className="space-y-6">
