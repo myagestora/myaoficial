@@ -47,9 +47,12 @@ export const generateApiCurl = (endpoint: any, systemConfig?: Record<string, str
   curl += ` \\\n  -H "Content-Type: application/json"`;
   curl += ` \\\n  -H "Authorization: Bearer YOUR_API_KEY"`;
   
-  // Body para POST/PUT
-  if (['POST', 'PUT', 'PATCH'].includes(endpoint.method) && endpoint.exampleData) {
-    curl += ` \\\n  -d '${JSON.stringify(endpoint.exampleData, null, 2)}'`;
+  // Body para POST/PUT/PATCH - usar exampleRequest se disponível, senão exampleData
+  if (['POST', 'PUT', 'PATCH'].includes(endpoint.method)) {
+    const bodyData = endpoint.exampleRequest || endpoint.exampleData;
+    if (bodyData) {
+      curl += ` \\\n  -d '${JSON.stringify(bodyData, null, 2)}'`;
+    }
   }
   
   return curl;

@@ -168,8 +168,7 @@ const AdminAPI = () => {
           path: "/whatsapp-auth",
           description: "Autentica usuário pelo WhatsApp",
           params: { 
-            whatsapp: "string", 
-            bot_token: "string" 
+            whatsapp: "string"
           },
           paramDetails: {
             whatsapp: {
@@ -177,18 +176,11 @@ const AdminAPI = () => {
               description: "Número do WhatsApp no formato internacional",
               example: "5511999999999",
               required: true
-            },
-            bot_token: {
-              type: "string", 
-              description: "Token de autenticação do bot",
-              example: "your-secure-bot-token",
-              required: true
             }
           },
           response: { user_id: "string", session_token: "string", expires_at: "string" },
           exampleRequest: {
-            whatsapp: "5511999999999",
-            bot_token: "your-secure-bot-token"
+            whatsapp: "5511999999999"
           },
           exampleResponse: {
             user_id: "123e4567-e89b-12d3-a456-426614174000",
