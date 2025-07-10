@@ -453,23 +453,49 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
-        // Resumo completo do usuário
-        const { data: transactions } = await supabase
+        
+        const period = url.searchParams.get('period') || 'month';
+        
+        // Definir filtros de data baseado no período
+        let periodStart, periodEnd;
+        if (period === 'month') {
+          periodStart = monthStart;
+          periodEnd = monthEnd;
+        } else if (period === 'year') {
+          periodStart = `${currentYear}-01-01`;
+          periodEnd = `${currentYear}-12-31`;
+        } else if (period === 'all') {
+          // Sem filtro de data para 'all'
+          periodStart = null;
+          periodEnd = null;
+        } else {
+          // Período inválido, usar mês como padrão
+          periodStart = monthStart;
+          periodEnd = monthEnd;
+        }
+        
+        // Resumo completo do usuário (sempre todos os dados)
+        const { data: allTransactions } = await supabase
           .from('transactions')
           .select('amount, type, date')
           .eq('user_id', userId)
 
-        const { data: monthlyTransactions } = await supabase
+        // Transações do período específico
+        let periodQuery = supabase
           .from('transactions')
           .select('amount, type')
-          .eq('user_id', userId)
-          .gte('date', monthStart)
-          .lte('date', monthEnd)
+          .eq('user_id', userId);
+          
+        if (periodStart && periodEnd) {
+          periodQuery = periodQuery.gte('date', periodStart).lte('date', periodEnd);
+        }
+        
+        const { data: periodTransactions } = await periodQuery;
 
-        const totalIncome = transactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0
-        const totalExpenses = transactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0
-        const monthlyIncome = monthlyTransactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0
-        const monthlyExpenses = monthlyTransactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0
+        const totalIncome = allTransactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0
+        const totalExpenses = allTransactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0
+        const periodIncome = periodTransactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0
+        const periodExpenses = periodTransactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0
 
         const { data: activeGoals } = await supabase
           .from('goals')
@@ -482,9 +508,10 @@ serve(async (req) => {
             balance: totalIncome - totalExpenses,
             total_income: totalIncome,
             total_expenses: totalExpenses,
-            monthly_income: monthlyIncome,
-            monthly_expenses: monthlyExpenses,
-            monthly_balance: monthlyIncome - monthlyExpenses,
+            period_income: periodIncome,
+            period_expenses: periodExpenses,
+            period_balance: periodIncome - periodExpenses,
+            period: period,
             active_goals: activeGoals?.length || 0,
             currency: 'BRL',
             last_updated: new Date().toISOString()

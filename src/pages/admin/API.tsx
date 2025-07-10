@@ -408,11 +408,40 @@ const AdminAPI = () => {
           path: "/user-financial-api/user/{userId}/summary",
           description: "Resumo financeiro completo",
           headers: { Authorization: "Bearer your-secure-bot-token" },
-          response: { balance: "number", monthly_balance: "number", active_goals: "number" },
+          params: { 
+            period: "string" 
+          },
+          paramDetails: {
+            period: {
+              description: "Período para cálculo do resumo",
+              options: ["month", "year", "all"],
+              example: "month",
+              required: false
+            }
+          },
+          response: { 
+            balance: "number", 
+            total_income: "number",
+            total_expenses: "number",
+            period_income: "number",
+            period_expenses: "number", 
+            period_balance: "number",
+            period: "string",
+            active_goals: "number",
+            currency: "string",
+            last_updated: "string"
+          },
           exampleResponse: {
             balance: 1250.75,
-            monthly_balance: 325.50,
-            active_goals: 2
+            total_income: 3500.00,
+            total_expenses: 2249.25,
+            period_income: 800.00,
+            period_expenses: 474.50,
+            period_balance: 325.50,
+            period: "month",
+            active_goals: 2,
+            currency: "BRL",
+            last_updated: "2024-01-15T10:30:00Z"
           }
         }
       ]
