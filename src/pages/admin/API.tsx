@@ -595,8 +595,8 @@ const AdminAPI = () => {
         <TabsContent value="documentation" className="space-y-6">
           <div className="flex gap-6">
             {/* Menu Lateral */}
-            <div className={`${sidebarOpen ? 'w-80' : 'w-12'} transition-all duration-300 flex-shrink-0`}>
-              <Card className="h-[calc(100vh-12rem)] sticky top-6">
+            <div className={`${sidebarOpen ? 'w-80' : 'w-16'} transition-all duration-300 flex-shrink-0`}>
+              <Card className="h-fit">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     {sidebarOpen && (
@@ -612,66 +612,74 @@ const AdminAPI = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                  <ScrollArea className="h-[calc(100vh-16rem)]">
-                    <div className="space-y-2 p-3">
-                      {/* Botão Visão Geral */}
-                      <Button
-                        variant={!selectedEndpoint ? "secondary" : "ghost"}
-                        className="w-full justify-start h-auto p-3"
-                        onClick={() => setSelectedEndpoint(null)}
-                      >
-                        <Code className="h-4 w-4 flex-shrink-0" />
-                        {sidebarOpen && (
-                          <span className="ml-2 text-left">Visão Geral</span>
-                        )}
-                      </Button>
-                      
-                      <Separator />
-                      
-                      {/* Menu por Categoria */}
-                      {endpoints.map((category) => (
-                        <div key={category.category} className="space-y-1">
-                          <div className="flex items-center gap-2 px-2 py-1 text-sm font-medium text-muted-foreground">
-                            <div className={`p-1 rounded ${category.color}`}>
-                              <category.icon className="h-3 w-3 text-white" />
-                            </div>
-                            {sidebarOpen && (
-                              <span>{category.category}</span>
-                            )}
-                          </div>
-                          
-                          {sidebarOpen && category.endpoints.map((endpoint, idx) => (
-                            <Button
-                              key={`${category.category}-${idx}`}
-                              variant={selectedEndpoint === endpoint ? "secondary" : "ghost"}
-                              className="w-full justify-start h-auto p-2 pl-6"
-                              onClick={() => setSelectedEndpoint(endpoint)}
-                            >
-                              <Badge 
-                                variant="outline"
-                                className={`text-xs mr-2 ${
-                                  endpoint.method === 'GET' 
-                                    ? 'border-blue-500 text-blue-700' 
-                                    : 'border-green-500 text-green-700'
-                                }`}
-                              >
-                                {endpoint.method}
-                              </Badge>
-                              <span className="text-left text-sm truncate">
-                                {endpoint.path.split('/').pop()}
-                              </span>
-                            </Button>
-                          ))}
+                  <div className="space-y-2 p-3">
+                    {/* Botão Visão Geral */}
+                    <Button
+                      variant={!selectedEndpoint ? "secondary" : "ghost"}
+                      className="w-full justify-start h-auto p-3"
+                      onClick={() => setSelectedEndpoint(null)}
+                    >
+                      <Code className="h-4 w-4 flex-shrink-0" />
+                      {sidebarOpen && (
+                        <div className="ml-2 text-left">
+                          <div className="font-medium">Visão Geral</div>
+                          <div className="text-xs text-muted-foreground">Documentação da API</div>
                         </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
+                      )}
+                    </Button>
+                    
+                    <Separator />
+                    
+                    {/* Menu por Categoria */}
+                    {endpoints.map((category) => (
+                      <div key={category.category} className="space-y-1">
+                        <div className="flex items-center gap-2 px-2 py-1 text-sm font-medium text-muted-foreground">
+                          <div className={`p-1 rounded ${category.color}`}>
+                            <category.icon className="h-3 w-3 text-white" />
+                          </div>
+                          {sidebarOpen && (
+                            <span>{category.category}</span>
+                          )}
+                        </div>
+                        
+                        {category.endpoints.map((endpoint, idx) => (
+                          <Button
+                            key={`${category.category}-${idx}`}
+                            variant={selectedEndpoint === endpoint ? "secondary" : "ghost"}
+                            className="w-full justify-start h-auto p-2 pl-6"
+                            onClick={() => setSelectedEndpoint(endpoint)}
+                          >
+                            <Badge 
+                              variant="outline"
+                              className={`text-xs mr-2 flex-shrink-0 ${
+                                endpoint.method === 'GET' 
+                                  ? 'border-blue-500 text-blue-700' 
+                                  : 'border-green-500 text-green-700'
+                              }`}
+                            >
+                              {endpoint.method}
+                            </Badge>
+                            {sidebarOpen && (
+                              <div className="text-left flex-1 min-w-0">
+                                <div className="text-sm font-medium truncate">
+                                  {endpoint.path.split('/').pop()}
+                                </div>
+                                <div className="text-xs text-muted-foreground truncate">
+                                  {endpoint.description}
+                                </div>
+                              </div>
+                            )}
+                          </Button>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             </div>
 
             {/* Conteúdo Principal */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               {!selectedEndpoint ? (
                 // Visão Geral
                 <div className="space-y-6">
@@ -725,14 +733,13 @@ const AdminAPI = () => {
                   {/* Resumo de Categorias */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {endpoints.map((category) => (
-                      <Card key={category.category} className="cursor-pointer hover:shadow-md transition-shadow">
+                      <Card key={category.category}>
                         <CardHeader>
                           <CardTitle className="flex items-center gap-2 text-lg">
                             <div className={`p-2 rounded-lg ${category.color}`}>
                               <category.icon className="h-4 w-4 text-white" />
                             </div>
                             {category.category}
-                            <ChevronRight className="h-4 w-4 ml-auto" />
                           </CardTitle>
                           <CardDescription>
                             {category.endpoints.length} endpoint{category.endpoints.length > 1 ? 's' : ''} disponível{category.endpoints.length > 1 ? 'eis' : ''}
@@ -741,10 +748,10 @@ const AdminAPI = () => {
                         <CardContent>
                           <div className="space-y-2">
                             {category.endpoints.map((endpoint, idx) => (
-                              <div key={idx} className="flex items-center gap-2 text-sm">
+                              <div key={idx} className="flex items-start gap-2 text-sm p-2 hover:bg-muted rounded cursor-pointer" onClick={() => setSelectedEndpoint(endpoint)}>
                                 <Badge 
                                   variant="outline"
-                                  className={`text-xs ${
+                                  className={`text-xs flex-shrink-0 ${
                                     endpoint.method === 'GET' 
                                       ? 'border-blue-500 text-blue-700' 
                                       : 'border-green-500 text-green-700'
@@ -752,9 +759,14 @@ const AdminAPI = () => {
                                 >
                                   {endpoint.method}
                                 </Badge>
-                                <code className="text-xs text-muted-foreground">
-                                  {endpoint.path.split('/').pop()}
-                                </code>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium truncate">
+                                    {endpoint.path.split('/').pop()}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {endpoint.description}
+                                  </div>
+                                </div>
                               </div>
                             ))}
                           </div>
