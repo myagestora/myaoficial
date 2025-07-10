@@ -5,10 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Plus, Edit, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, Edit, Trash2, AlertTriangle, Crown, Star } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 export const SubscriptionPlansManager = () => {
   const [isCreatingPlan, setIsCreatingPlan] = useState(false);
@@ -18,7 +20,8 @@ export const SubscriptionPlansManager = () => {
     description: '',
     price_monthly: '',
     price_yearly: '',
-    features: ['']
+    features: [''],
+    is_special: false
   });
   const queryClient = useQueryClient();
 
@@ -66,7 +69,7 @@ export const SubscriptionPlansManager = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscription-plans'] });
       setIsCreatingPlan(false);
-      setNewPlan({ name: '', description: '', price_monthly: '', price_yearly: '', features: [''] });
+      setNewPlan({ name: '', description: '', price_monthly: '', price_yearly: '', features: [''], is_special: false });
       toast({
         title: 'Sucesso',
         description: 'Plano criado com sucesso',
@@ -91,7 +94,7 @@ export const SubscriptionPlansManager = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscription-plans'] });
       setEditingPlan(null);
-      setNewPlan({ name: '', description: '', price_monthly: '', price_yearly: '', features: [''] });
+      setNewPlan({ name: '', description: '', price_monthly: '', price_yearly: '', features: [''], is_special: false });
       toast({
         title: 'Sucesso',
         description: 'Plano atualizado com sucesso',
@@ -176,13 +179,14 @@ export const SubscriptionPlansManager = () => {
       description: plan.description || '',
       price_monthly: plan.price_monthly ? plan.price_monthly.toString() : '',
       price_yearly: plan.price_yearly ? plan.price_yearly.toString() : '',
-      features: featuresArray
+      features: featuresArray,
+      is_special: plan.is_special || false
     });
   };
 
   const cancelEditingPlan = () => {
     setEditingPlan(null);
-    setNewPlan({ name: '', description: '', price_monthly: '', price_yearly: '', features: [''] });
+    setNewPlan({ name: '', description: '', price_monthly: '', price_yearly: '', features: [''], is_special: false });
   };
 
   const addFeature = () => {
@@ -272,6 +276,17 @@ export const SubscriptionPlansManager = () => {
               </Button>
             </div>
 
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isSpecial"
+                checked={newPlan.is_special}
+                onCheckedChange={(checked) => setNewPlan(prev => ({ ...prev, is_special: checked as boolean }))}
+              />
+              <Label htmlFor="isSpecial" className="text-sm">
+                Plano Especial (não aparece na landing page)
+              </Label>
+            </div>
+
             <div className="flex gap-2">
               <Button 
                 onClick={() => {
@@ -316,6 +331,7 @@ export const SubscriptionPlansManager = () => {
               <TableHead>Nome</TableHead>
               <TableHead>Preço Mensal</TableHead>
               <TableHead>Preço Anual</TableHead>
+              <TableHead>Tipo</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Ações</TableHead>
             </TableRow>
@@ -324,9 +340,12 @@ export const SubscriptionPlansManager = () => {
             {plans?.map((plan) => (
               <TableRow key={plan.id}>
                 <TableCell>
-                  <div>
-                    <p className="font-medium">{plan.name}</p>
-                    <p className="text-sm text-muted-foreground">{plan.description}</p>
+                  <div className="flex items-center gap-2">
+                    {plan.is_special && <Crown className="h-4 w-4 text-amber-500" />}
+                    <div>
+                      <p className="font-medium">{plan.name}</p>
+                      <p className="text-sm text-muted-foreground">{plan.description}</p>
+                    </div>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -334,6 +353,11 @@ export const SubscriptionPlansManager = () => {
                 </TableCell>
                 <TableCell>
                   {plan.price_yearly ? `R$ ${plan.price_yearly}` : '-'}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={plan.is_special ? 'outline' : 'default'} className={plan.is_special ? 'border-amber-500 text-amber-700' : ''}>
+                    {plan.is_special ? 'Especial' : 'Normal'}
+                  </Badge>
                 </TableCell>
                 <TableCell>
                   <Badge variant={plan.is_active ? 'default' : 'secondary'}>

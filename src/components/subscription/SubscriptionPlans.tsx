@@ -29,6 +29,7 @@ export const SubscriptionPlans = () => {
         .from('subscription_plans')
         .select('*')
         .eq('is_active', true)
+        .eq('is_special', false) // Excluir planos especiais
         .order('price_monthly', { ascending: true });
       
       if (error) throw error;

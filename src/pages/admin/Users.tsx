@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Search } from 'lucide-react';
+import { Search, Shield, Crown } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { AddUserDialog } from '@/components/admin/AddUserDialog';
@@ -49,15 +49,39 @@ const AdminUsers = () => {
 
       console.log('🔐 User roles fetched:', userRoles);
 
+      // Buscar assinaturas ativas dos usuários
+      const { data: subscriptions, error: subscriptionsError } = await supabase
+        .from('user_subscriptions')
+        .select(`
+          user_id,
+          status,
+          subscription_plans (
+            name,
+            is_special
+          )
+        `)
+        .eq('status', 'active');
+
+      if (subscriptionsError) {
+        console.error('❌ Error fetching subscriptions:', subscriptionsError);
+      }
+
+      console.log('📄 User subscriptions fetched:', subscriptions);
+
       // Combinar os dados
-      const usersWithRoles = profiles?.map(profile => ({
-        ...profile,
-        user_roles: userRoles?.filter(role => role.user_id === profile.id) || []
-      })) || [];
+      const usersWithRolesAndPlans = profiles?.map(profile => {
+        const userSubscription = subscriptions?.find(sub => sub.user_id === profile.id);
+        return {
+          ...profile,
+          user_roles: userRoles?.filter(role => role.user_id === profile.id) || [],
+          current_plan: userSubscription?.subscription_plans || null,
+          is_special_plan: userSubscription?.subscription_plans?.is_special || false
+        };
+      }) || [];
 
-      console.log('👥 Final users with roles:', usersWithRoles);
+      console.log('👥 Final users with roles and plans:', usersWithRolesAndPlans);
 
-      return usersWithRoles;
+      return usersWithRolesAndPlans;
     }
   });
 
@@ -132,52 +156,62 @@ const AdminUsers = () => {
                 <TableRow>
                   <TableHead>Nome</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Data de Cadastro</TableHead>
+                  <TableHead>Plano</TableHead>
+                  <TableHead>Status da Assinatura</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>WhatsApp</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users?.map((user) => {
-                  const isAdmin = getUserRole(user) === 'admin';
-                  const status = user.subscription_status || 'inactive';
-                  
-                  return (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">
-                        {user.full_name || 'Nome não informado'}
-                      </TableCell>
-                      <TableCell>{user.email || 'Email não informado'}</TableCell>
-                      <TableCell>
-                        <Badge variant={isAdmin ? 'destructive' : 'secondary'}>
-                          {isAdmin ? 'Admin' : 'Usuário'}
+                {users?.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {getUserRole(user) === 'admin' && (
+                          <Shield className="h-4 w-4 text-blue-600" />
+                        )}
+                        <div>
+                          <p className="font-medium">{user.full_name || 'Nome não informado'}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(user.created_at).toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>
+                      {user.current_plan ? (
+                        <Badge 
+                          variant={user.is_special_plan ? 'outline' : 'default'}
+                          className={user.is_special_plan ? 'border-amber-500 text-amber-700' : ''}
+                        >
+                          {user.is_special_plan && <Crown className="h-3 w-3 mr-1" />}
+                          {user.current_plan.name}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant={getStatusVariant(status)}>
-                            {getStatusLabel(status)}
-                          </Badge>
-                          {user.admin_override_status && (
-                            <Badge variant="outline" className="text-xs">
-                              Override Admin
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(user.created_at).toLocaleDateString('pt-BR')}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <EditUserDialog user={user} />
-                          <DeleteUserDialog user={user} />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                      ) : (
+                        <span className="text-muted-foreground">Sem plano</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusVariant(user.subscription_status)}>
+                        {getStatusLabel(user.subscription_status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getUserRole(user) === 'admin' ? 'default' : 'outline'}>
+                        {getUserRole(user) === 'admin' ? 'Admin' : 'Usuário'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{user.whatsapp || '-'}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <EditUserDialog user={user} />
+                        <DeleteUserDialog user={user} />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           )}
