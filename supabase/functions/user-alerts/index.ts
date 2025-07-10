@@ -34,10 +34,24 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    const url = new URL(req.url)
-    const userId = url.searchParams.get('user_id')
+    let requestData = { user_id: '' };
+    
+    // Se for POST, ler parâmetros do body
+    if (req.method === 'POST') {
+      requestData = await req.json();
+    } else {
+      // Manter compatibilidade com GET usando query params
+      const userId = url.searchParams.get('user_id');
+      if (!userId) {
+        return new Response(
+          JSON.stringify({ error: 'User ID is required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      requestData.user_id = userId;
+    }
 
-    if (!userId) {
+    if (!requestData.user_id) {
       return new Response(
         JSON.stringify({ error: 'User ID is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -48,7 +62,7 @@ serve(async (req) => {
     const { data: profile } = await supabase
       .from('profiles')
       .select('id, full_name')
-      .eq('id', userId)
+      .eq('id', requestData.user_id)
       .eq('account_status', 'active')
       .single()
 
@@ -73,7 +87,7 @@ serve(async (req) => {
         id, title, target_amount, goal_type, month_year,
         categories (name, color)
       `)
-      .eq('user_id', userId)
+      .eq('user_id', requestData.user_id)
       .eq('status', 'active')
 
     for (const goal of goals || []) {
@@ -88,7 +102,7 @@ serve(async (req) => {
           const { data: expenses } = await supabase
             .from('transactions')
             .select('amount')
-            .eq('user_id', userId)
+            .eq('user_id', requestData.user_id)
             .eq('type', 'expense')
             .eq('category_id', goal.category_id)
             .gte('date', monthStartDate)
@@ -140,7 +154,7 @@ serve(async (req) => {
         amount, date,
         categories (name)
       `)
-      .eq('user_id', userId)
+      .eq('user_id', requestData.user_id)
       .eq('type', 'expense')
       .gte('date', monthStart)
       .lte('date', monthEnd)
@@ -156,7 +170,7 @@ serve(async (req) => {
     const { data: lastMonthExpenses } = await supabase
       .from('transactions')
       .select('amount')
-      .eq('user_id', userId)
+      .eq('user_id', requestData.user_id)
       .eq('type', 'expense')
       .gte('date', lastMonthStart)
       .lte('date', lastMonthEnd)
@@ -186,7 +200,7 @@ serve(async (req) => {
     const { data: allTransactions } = await supabase
       .from('transactions')
       .select('amount, type')
-      .eq('user_id', userId)
+      .eq('user_id', requestData.user_id)
 
     const totalIncome = allTransactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0
     const totalExpenses = allTransactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0
@@ -215,7 +229,7 @@ serve(async (req) => {
         amount, title, date, type,
         categories (name)
       `)
-      .eq('user_id', userId)
+      .eq('user_id', requestData.user_id)
       .gte('date', weekAgo)
       .order('amount', { ascending: false })
 
@@ -243,7 +257,7 @@ serve(async (req) => {
       })
     }
 
-    console.log(`Generated ${alerts.length} alerts for user ${userId}`)
+    console.log(`Generated ${alerts.length} alerts for user ${requestData.user_id}`)
 
     return new Response(
       JSON.stringify({

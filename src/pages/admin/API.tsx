@@ -121,32 +121,6 @@ const AdminAPI = () => {
     let fullUrl = `${baseUrl}${endpoint.path.replace('{userId}', 'USER_ID')}`;
     
     if (endpoint.method === 'GET') {
-      // Adicionar parâmetros de URL para requisições GET
-      if (endpoint.params && Object.keys(endpoint.params).length > 0) {
-        const params = new URLSearchParams();
-        Object.entries(endpoint.params).forEach(([key, type]) => {
-          // Remover indicador opcional e definir valores de exemplo
-          const cleanType = (type as string).replace('?', '');
-          let exampleValue = '';
-          
-          if (cleanType === 'number') {
-            exampleValue = key === 'limit' ? '10' : key === 'months' ? '6' : '1';
-          } else if (cleanType === 'string') {
-            if (key === 'period') exampleValue = 'month';
-            else if (key === 'user_id') exampleValue = 'USER_ID';
-            else exampleValue = 'example';
-          }
-          
-          if (exampleValue) {
-            params.append(key, exampleValue);
-          }
-        });
-        
-        if (params.toString()) {
-          fullUrl += `?${params.toString()}`;
-        }
-      }
-      
       let curl = `curl -X GET "${fullUrl}"`;
       if (endpoint.headers?.Authorization) {
         curl += ` \\\n  -H "Authorization: Bearer YOUR_BOT_TOKEN"`;
@@ -157,6 +131,8 @@ const AdminAPI = () => {
       if (endpoint.headers?.Authorization) {
         curl += ` \\\n  -H "Authorization: Bearer YOUR_BOT_TOKEN"`;
       }
+      
+      // Para POST, os parâmetros vão no body
       if (endpoint.params) {
         const exampleBody = { ...endpoint.params };
         // Definir valores de exemplo para o body
@@ -173,9 +149,13 @@ const AdminAPI = () => {
             else if (key === 'date') exampleBody[key] = '2024-01-15';
             else if (key === 'whatsapp') exampleBody[key] = '5511999999999';
             else if (key === 'bot_token') exampleBody[key] = 'YOUR_BOT_TOKEN';
+            else if (key === 'period') exampleBody[key] = 'month';
             else exampleBody[key] = 'example';
           } else if (cleanType === 'number') {
-            exampleBody[key] = key === 'amount' ? 150.50 : 1;
+            if (key === 'amount') exampleBody[key] = 150.50;
+            else if (key === 'limit') exampleBody[key] = 10;
+            else if (key === 'months') exampleBody[key] = 6;
+            else exampleBody[key] = 1;
           }
         });
         curl += ` \\\n  -d '${JSON.stringify(exampleBody, null, 2)}'`;
@@ -206,14 +186,14 @@ const AdminAPI = () => {
       color: "bg-green-500",
       endpoints: [
         {
-          method: "GET",
+          method: "POST",
           path: "/user-financial-api/user/{userId}/balance",
           description: "Saldo atual do usuário",
           headers: { Authorization: "Bearer your-secure-bot-token" },
           response: { balance: "number", total_income: "number", total_expenses: "number" }
         },
         {
-          method: "GET",
+          method: "POST",
           path: "/user-financial-api/user/{userId}/transactions",
           description: "Histórico de transações",
           headers: { Authorization: "Bearer your-secure-bot-token" },
@@ -221,10 +201,11 @@ const AdminAPI = () => {
           response: { transactions: "array", total_count: "number" }
         },
         {
-          method: "GET",
+          method: "POST",
           path: "/user-financial-api/user/{userId}/expenses",
           description: "Resumo de despesas por categoria",
           headers: { Authorization: "Bearer your-secure-bot-token" },
+          params: { period: "string?" },
           response: { total_expenses: "number", by_category: "array" }
         },
         {
@@ -256,7 +237,7 @@ const AdminAPI = () => {
       color: "bg-purple-500",
       endpoints: [
         {
-          method: "GET",
+          method: "POST",
           path: "/user-analytics-api/user/{userId}/spending-trends",
           description: "Tendências de gastos mensais",
           headers: { Authorization: "Bearer your-secure-bot-token" },
@@ -264,7 +245,7 @@ const AdminAPI = () => {
           response: { trends: "array", period_months: "number" }
         },
         {
-          method: "GET",
+          method: "POST",
           path: "/user-analytics-api/user/{userId}/category-breakdown",
           description: "Gastos por categoria",
           headers: { Authorization: "Bearer your-secure-bot-token" },
@@ -307,7 +288,7 @@ const AdminAPI = () => {
       color: "bg-red-500",
       endpoints: [
         {
-          method: "GET",
+          method: "POST",
           path: "/user-alerts",
           description: "Alertas sobre metas e gastos",
           headers: { Authorization: "Bearer your-secure-bot-token" },

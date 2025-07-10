@@ -63,11 +63,20 @@ serve(async (req) => {
 
     switch (endpoint) {
       case 'spending-trends': {
-        const months = parseInt(url.searchParams.get('months') || '6')
+        let requestData = { months: 6 };
+        
+        // Se for POST, ler parâmetros do body
+        if (req.method === 'POST') {
+          requestData = { ...requestData, ...await req.json() };
+        } else {
+          // Manter compatibilidade com GET usando query params
+          const months = parseInt(url.searchParams.get('months') || '6');
+          requestData = { months };
+        }
         
         // Buscar transações dos últimos X meses
         const startDate = new Date()
-        startDate.setMonth(startDate.getMonth() - months)
+        startDate.setMonth(startDate.getMonth() - requestData.months)
         const startDateStr = startDate.toISOString().split('T')[0]
 
         const { data: transactions } = await supabase
@@ -105,7 +114,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({
             trends,
-            period_months: months,
+            period_months: requestData.months,
             currency: 'BRL'
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -113,13 +122,23 @@ serve(async (req) => {
       }
 
       case 'category-breakdown': {
-        const period = url.searchParams.get('period') || 'month'
+        let requestData = { period: 'month' };
+        
+        // Se for POST, ler parâmetros do body
+        if (req.method === 'POST') {
+          requestData = { ...requestData, ...await req.json() };
+        } else {
+          // Manter compatibilidade com GET usando query params
+          const period = url.searchParams.get('period') || 'month';
+          requestData = { period };
+        }
+        
         const currentDate = new Date()
         
         let startDate: string
-        if (period === 'month') {
+        if (requestData.period === 'month') {
           startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString().split('T')[0]
-        } else if (period === 'quarter') {
+        } else if (requestData.period === 'quarter') {
           const quarter = Math.floor(currentDate.getMonth() / 3)
           startDate = new Date(currentDate.getFullYear(), quarter * 3, 1).toISOString().split('T')[0]
         } else {
@@ -188,7 +207,7 @@ serve(async (req) => {
               total: totalExpenses,
               by_category: Object.values(expensesByCategory)
             },
-            period,
+            period: requestData.period,
             currency: 'BRL'
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

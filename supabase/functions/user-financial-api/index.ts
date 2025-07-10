@@ -92,13 +92,22 @@ serve(async (req) => {
       }
 
       case 'transactions': {
-        const limit = url.searchParams.get('limit') || '10'
-        const period = url.searchParams.get('period') || 'month' // month, week, all
+        let requestData = { limit: 10, period: 'month' };
+        
+        // Se for POST, ler parâmetros do body
+        if (req.method === 'POST') {
+          requestData = { ...requestData, ...await req.json() };
+        } else {
+          // Manter compatibilidade com GET usando query params
+          const limit = url.searchParams.get('limit') || '10';
+          const period = url.searchParams.get('period') || 'month';
+          requestData = { limit: parseInt(limit), period };
+        }
 
         let dateFilter = {}
-        if (period === 'month') {
+        if (requestData.period === 'month') {
           dateFilter = { gte: monthStart, lte: monthEnd }
-        } else if (period === 'week') {
+        } else if (requestData.period === 'week') {
           const weekStart = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
           dateFilter = { gte: weekStart }
         }
@@ -111,9 +120,9 @@ serve(async (req) => {
           `)
           .eq('user_id', userId)
           .order('date', { ascending: false })
-          .limit(parseInt(limit))
+          .limit(requestData.limit)
 
-        if (period !== 'all') {
+        if (requestData.period !== 'all') {
           query = query.gte('date', Object.values(dateFilter)[0])
           if (dateFilter.lte) {
             query = query.lte('date', dateFilter.lte)
@@ -125,7 +134,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({
             transactions: transactions || [],
-            period,
+            period: requestData.period,
             total_count: transactions?.length || 0
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -133,10 +142,19 @@ serve(async (req) => {
       }
 
       case 'expenses': {
-        const period = url.searchParams.get('period') || 'month'
+        let requestData = { period: 'month' };
+        
+        // Se for POST, ler parâmetros do body
+        if (req.method === 'POST') {
+          requestData = { ...requestData, ...await req.json() };
+        } else {
+          // Manter compatibilidade com GET usando query params
+          const period = url.searchParams.get('period') || 'month';
+          requestData = { period };
+        }
 
         let dateFilter = {}
-        if (period === 'month') {
+        if (requestData.period === 'month') {
           dateFilter = { gte: monthStart, lte: monthEnd }
         }
 
@@ -173,7 +191,7 @@ serve(async (req) => {
           JSON.stringify({
             total_expenses: totalExpenses,
             by_category: Object.values(categoryExpenses),
-            period,
+            period: requestData.period,
             currency: 'BRL'
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
