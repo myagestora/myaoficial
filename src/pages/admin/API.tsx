@@ -256,7 +256,7 @@ const AdminAPI = () => {
         },
         {
           method: "POST",
-          path: "/user-financial-api/user/{userId}/expenses",
+          path: "/user-financial-api/user/{userId}/expenses-by-category",
           description: "Resumo de despesas por categoria",
           headers: { Authorization: "Bearer your-secure-bot-token" },
           params: { period: "string?" },
@@ -283,7 +283,7 @@ const AdminAPI = () => {
         },
         {
           method: "POST",
-          path: "/user-financial-api/user/{userId}/expenses-summary",
+          path: "/user-financial-api/user/{userId}/expenses",
           description: "Resumo geral de despesas",
           headers: { Authorization: "Bearer your-secure-bot-token" },
           params: { period: "string?" },

@@ -149,7 +149,7 @@ serve(async (req) => {
         )
       }
 
-      case 'expenses': {
+      case 'expenses-by-category': {
         let requestData = { period: 'month' };
         
         // Se for POST, ler parâmetros do body
@@ -206,7 +206,7 @@ serve(async (req) => {
         )
       }
 
-      case 'expenses-summary': {
+      case 'expenses': {
         let requestData = { period: 'month' };
         
         if (req.method === 'POST') {
