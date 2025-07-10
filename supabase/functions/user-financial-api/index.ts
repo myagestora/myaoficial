@@ -254,7 +254,7 @@ serve(async (req) => {
             amount, 
             date, 
             title,
-            categories (name, color)
+            categories (name)
           `)
           .eq('user_id', userId)
           .eq('type', 'expense')
