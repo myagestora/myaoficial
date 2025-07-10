@@ -25,7 +25,8 @@ import {
   Trash2,
   Terminal,
   Menu,
-  ChevronRight
+  ChevronRight,
+  Tag
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -581,6 +582,60 @@ const AdminAPI = () => {
               total_income: 3500.00,
               total_expenses: 2399.75
             }
+          }
+        }
+      ]
+    },
+    {
+      category: "Categorias",
+      icon: Tag,
+      color: "bg-purple-500",
+      endpoints: [
+        {
+          method: "GET",
+          path: "/user-categories-api",
+          description: "Lista categorias disponíveis para o usuário (padrões + personalizadas)",
+          headers: { Authorization: "Bearer your-api-key" },
+          params: {
+            user_id: "string"
+          },
+          paramDetails: {
+            user_id: {
+              type: "string", 
+              description: "ID do usuário",
+              example: "12345678-1234-1234-1234-123456789012",
+              required: true
+            }
+          },
+          response: { success: "boolean", categories: "array", total: "number" },
+          exampleRequest: {
+            user_id: "12345678-1234-1234-1234-123456789012"
+          },
+          exampleResponse: {
+            success: true,
+            categories: [
+              {
+                id: "cat-001",
+                name: "Alimentação",
+                color: "#10B981",
+                icon: "utensils",
+                type: "expense",
+                is_default: true,
+                user_id: null,
+                created_at: "2024-01-01T00:00:00Z"
+              },
+              {
+                id: "cat-002", 
+                name: "Categoria Personalizada",
+                color: "#3B82F6",
+                icon: "tag",
+                type: "expense",
+                is_default: false,
+                user_id: "12345678-1234-1234-1234-123456789012",
+                created_at: "2024-01-15T10:00:00Z"
+              }
+            ],
+            total: 2
           }
         }
       ]
