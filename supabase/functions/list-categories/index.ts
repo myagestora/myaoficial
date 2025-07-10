@@ -59,12 +59,28 @@ serve(async (req) => {
       .update({ last_used: new Date().toISOString() })
       .eq('key', apiKey);
 
-    const url = new URL(req.url);
-    const userId = url.searchParams.get('user_id');
+    let userId;
+    
+    // Tentar capturar user_id da URL (GET) ou do body (POST)
+    if (req.method === 'GET') {
+      const url = new URL(req.url);
+      userId = url.searchParams.get('user_id');
+    } else if (req.method === 'POST') {
+      try {
+        const body = await req.json();
+        userId = body.user_id;
+      } catch (error) {
+        console.error('Error parsing POST body:', error);
+        return new Response(
+          JSON.stringify({ error: 'Invalid JSON body' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     if (!userId) {
       return new Response(
-        JSON.stringify({ error: 'user_id parameter is required' }),
+        JSON.stringify({ error: 'user_id parameter is required (in URL for GET or in body for POST)' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -84,7 +100,7 @@ serve(async (req) => {
       );
     }
 
-    if (req.method === 'GET') {
+    if (req.method === 'GET' || req.method === 'POST') {
       // Buscar categorias padrão (user_id = null) e categorias do usuário (user_id = userId)
       const { data: categories, error: categoriesError } = await supabase
         .from('categories')
