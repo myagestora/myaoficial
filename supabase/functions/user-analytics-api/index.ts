@@ -78,21 +78,23 @@ serve(async (req) => {
 
     switch (endpoint) {
       case 'spending-trends': {
+        // Permitir apenas método POST
+        if (req.method !== 'POST') {
+          return new Response(
+            JSON.stringify({ error: 'Method not allowed' }),
+            { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+
         let requestData = { months: 6 };
         
-        // Se for POST, ler parâmetros do body
-        if (req.method === 'POST') {
-          try {
-            const body = await req.json();
+        try {
+          const body = await req.json();
+          if (body && typeof body === 'object') {
             requestData = { ...requestData, ...body };
-          } catch (e) {
-            // Se não conseguir fazer parse do JSON, usar valores padrão
-            console.log('Error parsing JSON body, using defaults:', e);
           }
-        } else {
-          // Manter compatibilidade com GET usando query params
-          const months = parseInt(url.searchParams.get('months') || '6');
-          requestData = { months };
+        } catch (e) {
+          console.log('Error parsing JSON body, using defaults');
         }
         
         // Buscar transações dos últimos X meses
@@ -143,21 +145,23 @@ serve(async (req) => {
       }
 
       case 'category-breakdown': {
+        // Permitir apenas método POST
+        if (req.method !== 'POST') {
+          return new Response(
+            JSON.stringify({ error: 'Method not allowed' }),
+            { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+
         let requestData = { period: 'month' };
         
-        // Se for POST, ler parâmetros do body
-        if (req.method === 'POST') {
-          try {
-            const body = await req.json();
+        try {
+          const body = await req.json();
+          if (body && typeof body === 'object') {
             requestData = { ...requestData, ...body };
-          } catch (e) {
-            // Se não conseguir fazer parse do JSON, usar valores padrão
-            console.log('Error parsing JSON body, using defaults:', e);
           }
-        } else {
-          // Manter compatibilidade com GET usando query params
-          const period = url.searchParams.get('period') || 'month';
-          requestData = { period };
+        } catch (e) {
+          console.log('Error parsing JSON body, using defaults');
         }
         
         const currentDate = new Date()
@@ -242,6 +246,14 @@ serve(async (req) => {
       }
 
       case 'monthly-comparison': {
+        // Permitir apenas método POST
+        if (req.method !== 'POST') {
+          return new Response(
+            JSON.stringify({ error: 'Method not allowed' }),
+            { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+
         const currentDate = new Date()
         const currentMonth = currentDate.getMonth()
         const currentYear = currentDate.getFullYear()
@@ -323,7 +335,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Analytics API error:', error)
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: 'Internal server error', details: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
