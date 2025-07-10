@@ -16,6 +16,39 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
+    // Validate API key from Authorization header
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'API key required' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const apiKey = authHeader.replace('Bearer ', '');
+    
+    // Validate API key exists and is active
+    const { data: keyData, error: keyError } = await supabase
+      .from('api_keys')
+      .select('id, is_active')
+      .eq('key', apiKey)
+      .eq('is_active', true)
+      .single();
+
+    if (keyError || !keyData) {
+      console.log('Invalid API key:', apiKey);
+      return new Response(JSON.stringify({ error: 'Invalid API key' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Update last_used timestamp
+    await supabase
+      .from('api_keys')
+      .update({ last_used: new Date().toISOString() })
+      .eq('id', keyData.id);
+
     const url = new URL(req.url)
 
     let requestData = { user_id: '' };
