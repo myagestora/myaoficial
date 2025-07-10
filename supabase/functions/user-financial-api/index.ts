@@ -304,13 +304,31 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
-        const { data: income } = await supabase
+        
+        const period = url.searchParams.get('period') || 'month';
+        
+        let dateFilter = {}
+        if (period === 'month') {
+          dateFilter = { gte: monthStart, lte: monthEnd }
+        } else if (period === 'week') {
+          const weekStart = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          dateFilter = { gte: weekStart }
+        }
+
+        let query = supabase
           .from('transactions')
           .select('amount, date, title')
           .eq('user_id', userId)
           .eq('type', 'income')
-          .gte('date', monthStart)
-          .lte('date', monthEnd)
+
+        if (period !== 'all') {
+          query = query.gte('date', Object.values(dateFilter)[0] as string)
+          if (dateFilter.lte) {
+            query = query.lte('date', dateFilter.lte)
+          }
+        }
+
+        const { data: income } = await query
 
         const totalIncome = income?.reduce((sum, t) => sum + Number(t.amount), 0) || 0
 
@@ -318,7 +336,7 @@ serve(async (req) => {
           JSON.stringify({
             total_income: totalIncome,
             transactions: income || [],
-            period: 'month',
+            period: period,
             currency: 'BRL'
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

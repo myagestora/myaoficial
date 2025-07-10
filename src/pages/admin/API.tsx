@@ -359,17 +359,28 @@ const AdminAPI = () => {
           path: "/user-financial-api/user/{userId}/income",
           description: "Resumo de receitas",
           headers: { Authorization: "Bearer your-secure-bot-token" },
-          response: { total_income: "number", transactions: "array" },
+          params: { period: "string?" },
+          paramDetails: {
+            period: {
+              type: "string",
+              description: "Período para análise das receitas",
+              example: "month",
+              required: false,
+              options: ["week", "month", "all"]
+            }
+          },
+          response: { total_income: "number", transactions: "array", period: "string" },
           exampleResponse: {
             total_income: 3500.00,
             transactions: [
               {
-                id: "income_001",
                 title: "Salário",
                 amount: 3500.00,
                 date: "2024-01-01"
               }
-            ]
+            ],
+            period: "month",
+            currency: "BRL"
           }
         },
         {
