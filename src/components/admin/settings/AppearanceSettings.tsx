@@ -36,8 +36,45 @@ export const AppearanceSettings = ({ settings, onInputChange }: AppearanceSettin
             id="currency_symbol"
             value={settings.currency_symbol || 'R$'}
             onChange={(e) => onInputChange('currency_symbol', e.target.value)}
-            placeholder="R$"
-          />
+          placeholder="R$"
+        />
+        </div>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="primary_color">Cor Primária</Label>
+            <div className="flex gap-2">
+              <Input
+                id="primary_color"
+                type="color"
+                value={settings.primary_color || '#3B82F6'}
+                onChange={(e) => onInputChange('primary_color', e.target.value)}
+                className="w-16 h-10"
+              />
+              <Input
+                value={settings.primary_color || '#3B82F6'}
+                onChange={(e) => onInputChange('primary_color', e.target.value)}
+                placeholder="#3B82F6"
+              />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="secondary_color">Cor Secundária</Label>
+            <div className="flex gap-2">
+              <Input
+                id="secondary_color"
+                type="color"
+                value={settings.secondary_color || '#10B981'}
+                onChange={(e) => onInputChange('secondary_color', e.target.value)}
+                className="w-16 h-10"
+              />
+              <Input
+                value={settings.secondary_color || '#10B981'}
+                onChange={(e) => onInputChange('secondary_color', e.target.value)}
+                placeholder="#10B981"
+              />
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

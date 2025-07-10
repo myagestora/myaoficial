@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-const adminNavigation = [
+const baseAdminNavigation = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { name: 'Usuários', href: '/admin/users', icon: Users },
   { name: 'Relatórios', href: '/admin/reports', icon: BarChart3 },
@@ -26,20 +26,19 @@ const adminNavigation = [
   { name: 'Notificações', href: '/admin/notifications', icon: Bell },
   { name: 'Sistema', href: '/admin/system', icon: Zap },
   { name: 'Configurações', href: '/admin/settings', icon: Settings },
-  { name: 'API', href: '/admin/api', icon: Code2 },
 ];
 
 export const AdminLayout = () => {
   const location = useLocation();
 
-  // Buscar configurações do sistema para logo e nome
+  // Buscar configurações do sistema
   const { data: systemConfig } = useQuery({
     queryKey: ['system-config-admin'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('system_config')
         .select('*')
-        .in('key', ['app_name', 'app_logo']);
+        .in('key', ['app_name', 'app_logo', 'api_enabled']);
       
       if (error) throw error;
       
@@ -56,6 +55,13 @@ export const AdminLayout = () => {
 
   const appName = systemConfig?.app_name || 'MYA Gestora';
   const appLogo = systemConfig?.app_logo;
+  const isApiEnabled = systemConfig?.api_enabled === 'true';
+
+  // Construir navegação dinâmica
+  const adminNavigation = [
+    ...baseAdminNavigation,
+    ...(isApiEnabled ? [{ name: 'API', href: '/admin/api', icon: Code2 }] : [])
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">

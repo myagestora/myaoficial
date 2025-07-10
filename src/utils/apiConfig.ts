@@ -69,9 +69,9 @@ export const getApiInfo = (systemConfig?: Record<string, string>) => {
   }
   
   return {
-    title: systemConfig.api_title || 'WhatsApp Bot API',
-    description: systemConfig.api_description || 'API para integração com WhatsApp Bot',
-    version: systemConfig.api_version || '1.0.0',
+    title: 'WhatsApp Bot API',
+    description: 'API para integração com WhatsApp Bot',
+    version: '1.0.0',
     baseUrl: getApiBaseUrl(systemConfig)
   };
 };
