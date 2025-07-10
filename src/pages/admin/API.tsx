@@ -516,7 +516,7 @@ const AdminAPI = () => {
             title: "string", 
             amount: "number", 
             type: "string",
-            category_name: "string?",
+            category_id: "string",
             description: "string?"
           },
           paramDetails: {
@@ -545,11 +545,11 @@ const AdminAPI = () => {
               required: true,
               options: ["income", "expense"]
             },
-            category_name: {
+            category_id: {
               type: "string",
-              description: "Nome da categoria (opcional, será criada se não existir)",
-              example: "Alimentação",
-              required: false
+              description: "ID da categoria (obrigatório)",
+              example: "cat-001",
+              required: true
             },
             description: {
               type: "string",
@@ -564,7 +564,7 @@ const AdminAPI = () => {
             title: "Compra no mercado",
             amount: -150.50,
             type: "expense",
-            category_name: "Alimentação",
+            category_id: "cat-001",
             description: "Compra no supermercado Pão de Açúcar"
           },
           exampleResponse: {
@@ -1198,14 +1198,14 @@ async function getUserBalance(userId) {
 }
 
 // Registrar transação rápida
-async function createTransaction(userId, title, amount, type) {
+async function createTransaction(userId, title, amount, type, categoryId) {
   const response = await fetch(\`\${API_BASE_URL}/quick-transaction\`, {
     method: 'POST',
     headers: { 
       'Content-Type': 'application/json',
       'Authorization': \`Bearer \${BOT_TOKEN}\`
     },
-    body: JSON.stringify({ user_id: userId, title, amount, type })
+    body: JSON.stringify({ user_id: userId, title, amount, type, category_id: categoryId })
   });
   return response.json();
 }`}
