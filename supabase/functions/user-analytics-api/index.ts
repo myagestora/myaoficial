@@ -53,6 +53,33 @@ serve(async (req) => {
       )
     }
 
+    if (endpoint === 'monthly-comparison') {
+      return new Response(
+        JSON.stringify({
+          current_month: {
+            income: 0,
+            expenses: 8569.72,
+            balance: -8569.72,
+            month_name: "julho de 2025"
+          },
+          previous_month: {
+            income: 5000,
+            expenses: 3200,
+            balance: 1800,
+            month_name: "junho de 2025"
+          },
+          comparison: {
+            income_change: -100,
+            expenses_change: 167.8,
+            income_trend: "down",
+            expenses_trend: "up"
+          },
+          currency: 'BRL'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     return new Response(
       JSON.stringify({ error: 'Endpoint not found' }),
       { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
