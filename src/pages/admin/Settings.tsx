@@ -12,6 +12,7 @@ import { SubscriptionPlansManager } from '@/components/admin/settings/Subscripti
 import { MotivationalPhrasesManager } from '@/components/admin/MotivationalPhrasesManager';
 import { SEOSettings } from '@/components/admin/SEOSettings';
 import { PaymentSettings } from '@/components/admin/PaymentSettings';
+import { APISettings } from '@/components/admin/settings/APISettings';
 
 const AdminSettings = () => {
   const [settings, setSettings] = useState<Record<string, string>>({});
@@ -143,6 +144,7 @@ const AdminSettings = () => {
         <TabsList>
           <TabsTrigger value="branding">Marca</TabsTrigger>
           <TabsTrigger value="appearance">Aparência</TabsTrigger>
+          <TabsTrigger value="api">API</TabsTrigger>
           <TabsTrigger value="plans">Planos</TabsTrigger>
           <TabsTrigger value="payments">Pagamentos</TabsTrigger>
           <TabsTrigger value="notifications">Notificações</TabsTrigger>
@@ -162,6 +164,13 @@ const AdminSettings = () => {
 
         <TabsContent value="appearance" className="space-y-6">
           <AppearanceSettings
+            settings={settings}
+            onInputChange={handleInputChange}
+          />
+        </TabsContent>
+
+        <TabsContent value="api" className="space-y-6">
+          <APISettings
             settings={settings}
             onInputChange={handleInputChange}
           />

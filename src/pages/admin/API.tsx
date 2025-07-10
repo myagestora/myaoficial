@@ -30,6 +30,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getApiBaseUrl, getApiInfo, generateApiCurl } from '@/utils/apiConfig';
 
 interface APIKey {
   id: string;
@@ -47,6 +48,27 @@ const AdminAPI = () => {
   const [newKeyName, setNewKeyName] = useState('');
   const [isCreatingKey, setIsCreatingKey] = useState(false);
   const [selectedEndpoint, setSelectedEndpoint] = useState<any>(null);
+
+  // Buscar configurações do sistema para API personalizada
+  const { data: systemConfig } = useQuery({
+    queryKey: ['system-config'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('system_config')
+        .select('*');
+      
+      if (error) throw error;
+      
+      const configObj: Record<string, string> = {};
+      data.forEach(item => {
+        configObj[item.key] = typeof item.value === 'string' ? 
+          item.value.replace(/^"|"$/g, '') : 
+          JSON.stringify(item.value).replace(/^"|"$/g, '');
+      });
+      
+      return configObj;
+    }
+  });
 
   // Buscar API keys existentes
   const { data: apiKeys, isLoading } = useQuery({
@@ -123,51 +145,7 @@ const AdminAPI = () => {
   };
 
   const generateCurlCommand = (endpoint: any) => {
-    let fullUrl = `${baseUrl}${endpoint.path.replace('{userId}', 'USER_ID')}`;
-    
-    if (endpoint.method === 'GET') {
-      let curl = `curl -X GET "${fullUrl}"`;
-      if (endpoint.headers?.Authorization) {
-        curl += ` \\\n  -H "Authorization: Bearer YOUR_BOT_TOKEN"`;
-      }
-      return curl;
-    } else if (endpoint.method === 'POST') {
-      let curl = `curl -X POST "${fullUrl}" \\\n  -H "Content-Type: application/json"`;
-      if (endpoint.headers?.Authorization) {
-        curl += ` \\\n  -H "Authorization: Bearer YOUR_BOT_TOKEN"`;
-      }
-      
-      // Para POST, os parâmetros vão no body
-      if (endpoint.params) {
-        const exampleBody = { ...endpoint.params };
-        // Definir valores de exemplo para o body
-        Object.keys(exampleBody).forEach(key => {
-          const type = exampleBody[key] as string;
-          const cleanType = type.replace('?', '');
-          
-          if (cleanType === 'string') {
-            if (key === 'user_id') exampleBody[key] = 'USER_ID';
-            else if (key === 'type') exampleBody[key] = 'expense';
-            else if (key === 'title') exampleBody[key] = 'Compra no mercado';
-            else if (key === 'category_name') exampleBody[key] = 'Alimentação';
-            else if (key === 'description') exampleBody[key] = 'Compras da semana';
-            else if (key === 'date') exampleBody[key] = '2024-01-15';
-            else if (key === 'whatsapp') exampleBody[key] = '5511999999999';
-            else if (key === 'bot_token') exampleBody[key] = 'YOUR_BOT_TOKEN';
-            else if (key === 'period') exampleBody[key] = 'month';
-            else exampleBody[key] = 'example';
-          } else if (cleanType === 'number') {
-            if (key === 'amount') exampleBody[key] = 150.50;
-            else if (key === 'limit') exampleBody[key] = 10;
-            else if (key === 'months') exampleBody[key] = 6;
-            else exampleBody[key] = 1;
-          }
-        });
-        curl += ` \\\n  -d '${JSON.stringify(exampleBody, null, 2)}'`;
-      }
-      return curl;
-    }
-    return '';
+    return generateApiCurl(endpoint, systemConfig);
   };
 
   const endpoints = [
@@ -572,7 +550,8 @@ const AdminAPI = () => {
     }
   ];
 
-  const baseUrl = "https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1";
+  // Obter informações da API (personalizada ou padrão)
+  const apiInfo = getApiInfo(systemConfig);
 
   return (
     <div className="p-6 space-y-6">
@@ -690,28 +669,34 @@ const AdminAPI = () => {
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <Code className="h-5 w-5" />
-                        Visão Geral da API
+                        {apiInfo.title}
                       </CardTitle>
                       <CardDescription>
-                        API REST para integração com agentes de IA WhatsApp. Todas as respostas são em formato JSON.
+                        {apiInfo.description}
                       </CardDescription>
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
+                        <span>Versão: {apiInfo.version}</span>
+                        {systemConfig?.api_enabled === 'true' && (
+                          <span className="text-green-600 font-medium">API Personalizada Ativa</span>
+                        )}
+                      </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="bg-muted p-4 rounded-lg">
-                        <p className="font-medium mb-2">Base URL:</p>
-                        <div className="flex items-center gap-2">
-                          <code className="bg-background px-2 py-1 rounded text-sm flex-1">
-                            {baseUrl}
-                          </code>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => copyToClipboard(baseUrl, "Base URL")}
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
+                       <div className="bg-muted p-4 rounded-lg">
+                         <p className="font-medium mb-2">Base URL:</p>
+                         <div className="flex items-center gap-2">
+                           <code className="bg-background px-2 py-1 rounded text-sm flex-1">
+                             {apiInfo.baseUrl}
+                           </code>
+                           <Button
+                             size="sm"
+                             variant="outline"
+                             onClick={() => copyToClipboard(apiInfo.baseUrl, "Base URL")}
+                           >
+                             <Copy className="h-4 w-4" />
+                           </Button>
+                         </div>
+                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="text-center p-4 border rounded-lg">
@@ -795,7 +780,7 @@ const AdminAPI = () => {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => copyToClipboard(`${baseUrl}${selectedEndpoint.path}`, "Endpoint")}
+                        onClick={() => copyToClipboard(`${apiInfo.baseUrl}${selectedEndpoint.path}`, "Endpoint")}
                       >
                         <Copy className="h-4 w-4" />
                       </Button>
@@ -1050,7 +1035,7 @@ const AdminAPI = () => {
                 <Textarea
                   readOnly
                   rows={10}
-                  value={`const API_BASE_URL = '${baseUrl}';
+                  value={`const API_BASE_URL = '${apiInfo.baseUrl}';
 const BOT_TOKEN = 'sua_api_key_aqui';
 
 // Autenticar usuário pelo WhatsApp
