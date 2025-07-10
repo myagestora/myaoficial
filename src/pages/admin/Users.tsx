@@ -196,9 +196,14 @@ const AdminUsers = () => {
                     <TableCell>
                       <Badge 
                         variant="outline"
-                        className={user.subscription_status === 'active' 
-                          ? 'border-green-500 text-green-700 bg-green-50 dark:bg-green-950 dark:text-green-400' 
-                          : 'border-red-500 text-red-700 bg-red-50 dark:bg-red-950 dark:text-red-400'
+                        className={
+                          user.subscription_status === 'active' 
+                            ? 'border-green-500 text-green-700 bg-green-50 dark:bg-green-950 dark:text-green-400'
+                            : user.subscription_status === 'past_due'
+                            ? 'border-yellow-500 text-yellow-700 bg-yellow-50 dark:bg-yellow-950 dark:text-yellow-400'
+                            : user.subscription_status === 'canceled'
+                            ? 'border-gray-500 text-gray-700 bg-gray-50 dark:bg-gray-950 dark:text-gray-400'
+                            : 'border-red-500 text-red-700 bg-red-50 dark:bg-red-950 dark:text-red-400'
                         }
                       >
                         {getStatusLabel(user.subscription_status)}
