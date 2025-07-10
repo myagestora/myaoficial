@@ -55,12 +55,11 @@ export const AdminLayout = () => {
 
   const appName = systemConfig?.app_name || 'MYA Gestora';
   const appLogo = systemConfig?.app_logo;
-  const isApiEnabled = systemConfig?.api_enabled === 'true';
 
-  // Construir navegação dinâmica
+  // Construir navegação dinâmica (sempre incluir API)
   const adminNavigation = [
     ...baseAdminNavigation,
-    ...(isApiEnabled ? [{ name: 'API', href: '/admin/api', icon: Code2 }] : [])
+    { name: 'API', href: '/admin/api', icon: Code2 }
   ];
 
   return (
