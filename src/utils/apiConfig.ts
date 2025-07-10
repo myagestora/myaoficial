@@ -39,7 +39,24 @@ export const getApiEndpointUrl = (endpoint: string, systemConfig?: Record<string
  */
 export const generateApiCurl = (endpoint: any, systemConfig?: Record<string, string>): string => {
   const baseUrl = getApiBaseUrl(systemConfig);
-  const url = `${baseUrl}${endpoint.path}`;
+  let url = `${baseUrl}${endpoint.path}`;
+  
+  // Para endpoints GET, adicionar parâmetros de consulta opcionais
+  if (endpoint.method === 'GET' && endpoint.params) {
+    const queryParams = [];
+    Object.entries(endpoint.params).forEach(([key, type]) => {
+      if (endpoint.paramDetails && endpoint.paramDetails[key]) {
+        const detail = endpoint.paramDetails[key];
+        const exampleValue = detail.example || 
+          (detail.options ? detail.options[0] : 
+          (type === 'string' ? 'example' : '10'));
+        queryParams.push(`${key}=${encodeURIComponent(exampleValue)}`);
+      }
+    });
+    if (queryParams.length > 0) {
+      url += `?${queryParams.join('&')}`;
+    }
+  }
   
   let curl = `curl -X ${endpoint.method} "${url}"`;
   
@@ -47,10 +64,24 @@ export const generateApiCurl = (endpoint: any, systemConfig?: Record<string, str
   curl += ` \\\n  -H "Content-Type: application/json"`;
   curl += ` \\\n  -H "Authorization: Bearer YOUR_API_KEY"`;
   
-  // Body para POST/PUT/PATCH - usar exampleRequest se disponível, senão exampleData
+  // Body para POST/PUT/PATCH - incluir todos os parâmetros (opcionais e obrigatórios)
   if (['POST', 'PUT', 'PATCH'].includes(endpoint.method)) {
-    const bodyData = endpoint.exampleRequest || endpoint.exampleData;
-    if (bodyData) {
+    let bodyData = endpoint.exampleRequest || {};
+    
+    // Se temos parâmetros definidos mas não um exampleRequest completo, criar um
+    if (endpoint.params && (!endpoint.exampleRequest || Object.keys(endpoint.exampleRequest).length === 0)) {
+      bodyData = {};
+      Object.entries(endpoint.params).forEach(([key, type]) => {
+        if (endpoint.paramDetails && endpoint.paramDetails[key]) {
+          const detail = endpoint.paramDetails[key];
+          bodyData[key] = detail.example || 
+            (detail.options ? detail.options[0] : 
+            (typeof type === 'string' && type.includes('string') ? 'example' : 10));
+        }
+      });
+    }
+    
+    if (Object.keys(bodyData).length > 0) {
       curl += ` \\\n  -d '${JSON.stringify(bodyData, null, 2)}'`;
     }
   }
