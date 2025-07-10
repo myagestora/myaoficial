@@ -111,6 +111,14 @@ serve(async (req) => {
 
     switch (endpoint) {
       case 'balance': {
+        // Apenas POST permitido
+        if (req.method !== 'POST') {
+          return new Response(JSON.stringify({ error: 'Method not allowed. Use POST.' }), {
+            status: 405,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
         // Calcular saldo (receitas - despesas)
         const { data: transactions } = await supabase
           .from('transactions')
@@ -133,17 +141,16 @@ serve(async (req) => {
       }
 
       case 'transactions': {
-        let requestData = { limit: 10, period: 'month' };
-        
-        // Se for POST, ler parâmetros do body
-        if (req.method === 'POST') {
-          requestData = { ...requestData, ...await req.json() };
-        } else {
-          // Manter compatibilidade com GET usando query params
-          const limit = url.searchParams.get('limit') || '10';
-          const period = url.searchParams.get('period') || 'month';
-          requestData = { limit: parseInt(limit), period };
+        // Apenas POST permitido
+        if (req.method !== 'POST') {
+          return new Response(JSON.stringify({ error: 'Method not allowed. Use POST.' }), {
+            status: 405,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
         }
+        
+        let requestData = { limit: 10, period: 'month' };
+        requestData = { ...requestData, ...await req.json() };
 
         let dateFilter = {}
         if (requestData.period === 'month') {
@@ -183,16 +190,16 @@ serve(async (req) => {
       }
 
       case 'expenses-by-category': {
-        let requestData = { period: 'month' };
-        
-        // Se for POST, ler parâmetros do body
-        if (req.method === 'POST') {
-          requestData = { ...requestData, ...await req.json() };
-        } else {
-          // Manter compatibilidade com GET usando query params
-          const period = url.searchParams.get('period') || 'month';
-          requestData = { period };
+        // Apenas POST permitido
+        if (req.method !== 'POST') {
+          return new Response(JSON.stringify({ error: 'Method not allowed. Use POST.' }), {
+            status: 405,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
         }
+        
+        let requestData = { period: 'month' };
+        requestData = { ...requestData, ...await req.json() };
 
         let dateFilter = {}
         if (requestData.period === 'month') {
@@ -240,7 +247,14 @@ serve(async (req) => {
       }
 
       case 'expenses': {
-        // GET request - usar query params se fornecidos
+        // Apenas GET permitido
+        if (req.method !== 'GET') {
+          return new Response(JSON.stringify({ error: 'Method not allowed. Use GET.' }), {
+            status: 405,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
         const period = url.searchParams.get('period') || 'month';
         
         let dateFilter = {}
@@ -283,6 +297,13 @@ serve(async (req) => {
       }
 
       case 'income': {
+        // Apenas GET permitido
+        if (req.method !== 'GET') {
+          return new Response(JSON.stringify({ error: 'Method not allowed. Use GET.' }), {
+            status: 405,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
         const { data: income } = await supabase
           .from('transactions')
           .select('amount, date, title')
@@ -305,14 +326,16 @@ serve(async (req) => {
       }
 
       case 'income-by-category': {
-        let requestData = { period: 'month' };
-        
-        if (req.method === 'POST') {
-          requestData = { ...requestData, ...await req.json() };
-        } else {
-          const period = url.searchParams.get('period') || 'month';
-          requestData = { period };
+        // Apenas POST permitido
+        if (req.method !== 'POST') {
+          return new Response(JSON.stringify({ error: 'Method not allowed. Use POST.' }), {
+            status: 405,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
         }
+        
+        let requestData = { period: 'month' };
+        requestData = { ...requestData, ...await req.json() };
 
         const { data: income } = await supabase
           .from('transactions')
@@ -355,6 +378,13 @@ serve(async (req) => {
       }
 
       case 'goals': {
+        // Apenas GET permitido
+        if (req.method !== 'GET') {
+          return new Response(JSON.stringify({ error: 'Method not allowed. Use GET.' }), {
+            status: 405,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
         const { data: goals } = await supabase
           .from('goals')
           .select(`
@@ -398,6 +428,13 @@ serve(async (req) => {
       }
 
       case 'summary': {
+        // Apenas GET permitido
+        if (req.method !== 'GET') {
+          return new Response(JSON.stringify({ error: 'Method not allowed. Use GET.' }), {
+            status: 405,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
         // Resumo completo do usuário
         const { data: transactions } = await supabase
           .from('transactions')

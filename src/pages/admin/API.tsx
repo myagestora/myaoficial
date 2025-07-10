@@ -194,7 +194,7 @@ const AdminAPI = () => {
       ]
     },
     {
-      category: "Dados Financeiros",
+      category: "Dados Financeiros - POST",
       icon: Database,
       color: "bg-green-500",
       endpoints: [
@@ -282,43 +282,6 @@ const AdminAPI = () => {
           }
         },
         {
-          method: "GET",
-          path: "/user-financial-api/user/{userId}/expenses",
-          description: "Resumo geral de despesas",
-          headers: { Authorization: "Bearer your-secure-bot-token" },
-          params: { period: "string?" },
-          paramDetails: {
-            period: {
-              type: "string",
-              description: "Período para análise das despesas",
-              example: "month",
-              required: false,
-              options: ["week", "month", "quarter", "year"]
-            }
-          },
-          response: { total_expenses: "number", transactions: "array", period: "string" },
-          exampleRequest: {
-            period: "month"
-          },
-          exampleResponse: {
-            total_expenses: 2249.25,
-            transactions: [
-              {
-                title: "Compra no mercado",
-                amount: 150.50,
-                date: "2024-01-15"
-              },
-              {
-                title: "Conta de luz",
-                amount: 89.75,
-                date: "2024-01-10"
-              }
-            ],
-            period: "month",
-            currency: "BRL"
-          }
-        },
-        {
           method: "POST",
           path: "/user-financial-api/user/{userId}/income-by-category",
           description: "Resumo de receitas por categoria",
@@ -342,6 +305,49 @@ const AdminAPI = () => {
             by_category: [
               { category: "Salário", total: 3000.00, count: 1, color: "#green" },
               { category: "Freelance", total: 500.00, count: 2, color: "#blue" }
+            ],
+            period: "month",
+            currency: "BRL"
+          }
+        }
+      ]
+    },
+    {
+      category: "Dados Financeiros - GET",
+      icon: Database,
+      color: "bg-blue-500",
+      endpoints: [
+        {
+          method: "GET",
+          path: "/user-financial-api/user/{userId}/expenses",
+          description: "Resumo geral de despesas",
+          headers: { Authorization: "Bearer your-secure-bot-token" },
+          params: { period: "string?" },
+          paramDetails: {
+            period: {
+              type: "string",
+              description: "Período para análise das despesas",
+              example: "month",
+              required: false,
+              options: ["week", "month", "quarter", "year"]
+            }
+          },
+          response: { total_expenses: "number", transactions: "array", period: "string" },
+          exampleResponse: {
+            total_expenses: 2249.25,
+            transactions: [
+              {
+                title: "Compra no mercado",
+                amount: 150.50,
+                date: "2024-01-15",
+                category: "Transporte"
+              },
+              {
+                title: "Conta de luz",
+                amount: 89.75,
+                date: "2024-01-10",
+                category: "Alimentação"
+              }
             ],
             period: "month",
             currency: "BRL"
