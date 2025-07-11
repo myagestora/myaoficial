@@ -106,16 +106,6 @@ export const Header = ({
           </Button>
         </div>
 
-        {/* WhatsApp Contact Highlight */}
-        <div className="hidden sm:flex items-center gap-3 bg-white px-4 py-2 shadow-lg border border-gray-200 rounded-md">
-          <WhatsAppIcon className="text-green-500" size={18} />
-          <div className="flex flex-col">
-            <span className="text-xs text-gray-600 font-medium">Use pelo WhatsApp</span>
-            <a href={`https://wa.me/${whatsappNumber || '5511999999999'}`} target="_blank" rel="noopener noreferrer" className="text-sm text-gray-900 font-semibold hover:text-green-600 transition-colors">
-              {whatsappNumber ? formatPhoneNumber(whatsappNumber) : '(11) 99999-9999'}
-            </a>
-          </div>
-        </div>
 
         <div className="flex items-center gap-3">
           <NotificationBell />

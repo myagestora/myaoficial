@@ -8,6 +8,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { WhatsAppContactSection } from '@/components/ui/WhatsAppContactSection';
 
 interface SidebarProps {
   className?: string;
@@ -347,6 +348,9 @@ export const Sidebar = ({
             </NavLink>
           </div>
         </div>
+
+        {/* WhatsApp Contact Highlight */}
+        <WhatsAppContactSection />
       </div>
 
       {/* Informações da Assinatura e Status da Conta no Rodapé */}
