@@ -89,13 +89,13 @@ export const WhatsAppContactSection = () => {
               Use pelo WhatsApp
             </span>
             <a 
-              href={`https://wa.me/${whatsappNumber || '5511999999999'}`} 
+              href={`https://wa.me/${whatsappNumber || '5531973035490'}`} 
               target="_blank" 
               rel="noopener noreferrer" 
               className="text-sm font-medium hover:font-semibold transition-all duration-200 tracking-wide"
               style={{ color: secondaryColor || '#059669' }}
             >
-              {whatsappNumber ? formatPhoneNumber(whatsappNumber) : '(11) 99999-9999'}
+              {whatsappNumber ? formatPhoneNumber(whatsappNumber) : '(31) 97303-5490'}
             </a>
           </div>
         </div>
