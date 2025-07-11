@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -72,6 +73,12 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
     }) => {
       console.log('🆕 Creating new user via edge function:', userData.email);
       
+      // Get the current user's JWT token for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Usuário não autenticado');
+      }
+
       // Call edge function to create user (which has admin privileges)
       const { data, error } = await supabase.functions.invoke('admin-create-user', {
         body: {
@@ -81,6 +88,9 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
           whatsapp: userData.whatsapp || null,
           subscriptionStatus: userData.subscriptionStatus,
           planId: userData.planId || null
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
         }
       });
 
@@ -90,6 +100,7 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
       }
 
       if (!data?.success) {
+        console.error('❌ Function returned error:', data);
         throw new Error(data?.error || 'Erro ao criar usuário');
       }
 
