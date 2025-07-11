@@ -75,13 +75,11 @@ export const WhatsAppContactSection = () => {
     }} className="border border-gray-200/20 p-4 shadow-lg rounded-lg my-4 mx-4 backdrop-blur-sm bg-slate-100">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-white/20 rounded-full">
-            <FontAwesomeIcon
-  icon={faWhatsapp}
-  className="h-7 w-7"
-  style={{ color: secondaryColor || '#059669' }}
-/>
-
-
+            <MessageCircle 
+              className="h-7 w-7" 
+              fill="currentColor" 
+              style={{ color: secondaryColor || '#059669' }}
+            />
           </div>
           <div className="flex flex-col font-sans">
             <span 
