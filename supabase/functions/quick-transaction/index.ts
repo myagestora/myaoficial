@@ -148,29 +148,32 @@ serve(async (req) => {
       )
     }
 
-    // Buscar saldo atualizado
-    const { data: allTransactions } = await supabase
-      .from('transactions')
-      .select('amount, type')
+    // Buscar meta ativa da categoria se existir
+    const { data: categoryGoal } = await supabase
+      .from('goals')
+      .select('id, title, target_amount, current_amount, status, goal_type, month_year')
       .eq('user_id', user_id)
-
-    const totalIncome = allTransactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0
-    const totalExpenses = allTransactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0
-    const balance = totalIncome - totalExpenses
+      .eq('category_id', category_id)
+      .eq('status', 'active')
+      .eq('goal_type', 'monthly_budget')
+      .eq('month_year', transactionDate.substring(0, 7)) // YYYY-MM format
+      .maybeSingle()
 
     console.log(`Quick transaction created for user ${user_id}: ${type} of R$ ${amount}`)
 
+    const response: any = {
+      success: true,
+      transaction,
+      message: `${type === 'income' ? 'Receita' : 'Despesa'} de R$ ${amount.toFixed(2)} registrada com sucesso!`
+    }
+
+    // Adicionar meta se existir
+    if (categoryGoal) {
+      response.goal = categoryGoal
+    }
+
     return new Response(
-      JSON.stringify({
-        success: true,
-        transaction,
-        updated_balance: {
-          balance,
-          total_income: totalIncome,
-          total_expenses: totalExpenses
-        },
-        message: `${type === 'income' ? 'Receita' : 'Despesa'} de R$ ${amount.toFixed(2)} registrada com sucesso!`
-      }),
+      JSON.stringify(response),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
