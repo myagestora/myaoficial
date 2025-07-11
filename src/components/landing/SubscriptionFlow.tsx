@@ -57,6 +57,7 @@ export const SubscriptionFlow = ({ onClose, selectedPlan: initialSelectedPlan }:
         .from('subscription_plans')
         .select('*')
         .eq('is_active', true)
+        .eq('is_special', false)
         .order('price_monthly', { ascending: true });
       
       if (error) throw error;

@@ -90,30 +90,6 @@ export const AuthStepHeader: React.FC<AuthStepHeaderProps> = ({
         ×
       </Button>
 
-      {/* Logo */}
-      <div className="flex justify-center mb-4">
-        {appLogo && appLogo.trim() !== '' ? (
-          <img 
-            src={appLogo} 
-            alt={appName}
-            className="h-16 w-auto object-contain"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              const fallback = target.parentElement?.querySelector('.logo-fallback') as HTMLElement;
-              if (fallback) {
-                fallback.style.display = 'flex';
-              }
-            }}
-          />
-        ) : null}
-        
-        <div className={`flex items-center justify-center logo-fallback ${appLogo && appLogo.trim() !== '' ? 'hidden' : ''}`}>
-          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
-            <DollarSign className="w-10 h-10 text-white" />
-          </div>
-        </div>
-      </div>
 
       <CardTitle className="text-2xl font-bold">
         {isSignUp ? 'Criar Conta' : 'Entrar'}
