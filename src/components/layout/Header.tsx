@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, Menu, Settings, LogOut, Shield } from 'lucide-react';
+import { Bell, Menu, Settings, LogOut, Shield, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -75,6 +75,22 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
           >
             <Menu className="h-5 w-5" />
           </Button>
+        </div>
+
+        {/* WhatsApp Contact Highlight */}
+        <div className="hidden sm:flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
+          <MessageCircle className="h-4 w-4 text-green-400" />
+          <div className="flex flex-col">
+            <span className="text-xs text-white/80 font-medium">Use pelo WhatsApp</span>
+            <a 
+              href="https://wa.me/5511999999999" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-sm text-white font-semibold hover:text-green-300 transition-colors"
+            >
+              (11) 99999-9999
+            </a>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
