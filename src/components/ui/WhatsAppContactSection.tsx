@@ -71,7 +71,7 @@ export const WhatsAppContactSection = () => {
   };
   return <div className="px-3 pb-2">
       <div style={{
-      backgroundColor: secondaryColor || '#059669'
+      backgroundColor: '#f9f9f9'
     }} className="border border-gray-200/20 p-4 shadow-lg rounded-lg my-4 mx-4 backdrop-blur-sm bg-slate-100">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-white/20 rounded-full">
