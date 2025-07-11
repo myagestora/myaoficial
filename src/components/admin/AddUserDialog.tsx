@@ -70,51 +70,31 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
       subscriptionStatus: string;
       planId: string;
     }) => {
-      console.log('🆕 Creating new user with Supabase Admin API:', userData.email);
+      console.log('🆕 Creating new user via edge function:', userData.email);
       
-      // Step 1: Create user in auth.users using Supabase Admin API
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: userData.email,
-        password: userData.password,
-        user_metadata: {
-          full_name: userData.fullName,
-          whatsapp: userData.whatsapp || null
-        },
-        email_confirm: true // Auto-confirm email for admin-created users
+      // Call edge function to create user (which has admin privileges)
+      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+        body: {
+          email: userData.email,
+          password: userData.password,
+          fullName: userData.fullName,
+          whatsapp: userData.whatsapp || null,
+          subscriptionStatus: userData.subscriptionStatus,
+          planId: userData.planId || null
+        }
       });
 
-      if (authError) {
-        console.error('❌ Auth user creation error:', authError);
-        throw authError;
+      if (error) {
+        console.error('❌ Admin create user error:', error);
+        throw error;
       }
 
-      if (!authData.user) {
-        throw new Error('Falha ao criar usuário na autenticação');
+      if (!data?.success) {
+        throw new Error(data?.error || 'Erro ao criar usuário');
       }
 
-      console.log('✅ Auth user created:', authData.user.id);
-
-      // Step 2: Create profile using the new function
-      const { data: profileData, error: profileError } = await supabase.rpc('admin_create_user_profile', {
-        p_user_id: authData.user.id,
-        p_email: userData.email,
-        p_full_name: userData.fullName,
-        p_whatsapp: userData.whatsapp || null,
-        p_subscription_status: userData.subscriptionStatus,
-        p_plan_id: userData.planId || null
-      });
-
-      if (profileError) {
-        console.error('❌ Profile creation error:', profileError);
-        throw profileError;
-      }
-
-      if (!(profileData as any)?.success) {
-        throw new Error((profileData as any)?.error || 'Erro ao criar perfil do usuário');
-      }
-
-      console.log('✅ User profile created successfully:', profileData);
-      return profileData;
+      console.log('✅ User created successfully:', data);
+      return data;
     },
     onSuccess: () => {
       toast({
