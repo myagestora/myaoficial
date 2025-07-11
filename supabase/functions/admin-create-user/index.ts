@@ -241,7 +241,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (!(profileData as any)?.success) {
+    console.log('📋 Profile creation result:', profileData);
+
+    // Check if profile creation was successful
+    // The function might return a JSON object or boolean true
+    const isProfileSuccess = profileData === true || 
+                            (typeof profileData === 'object' && profileData !== null && (profileData as any).success === true);
+
+    if (!isProfileSuccess) {
       console.error('❌ Profile creation returned failure:', profileData);
       // Clean up auth user
       console.log('🧹 Cleaning up auth user...');
