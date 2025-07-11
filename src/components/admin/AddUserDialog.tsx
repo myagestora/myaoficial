@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -79,6 +78,8 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
         throw new Error('Usuário não autenticado');
       }
 
+      console.log('📞 Calling admin-create-user function...');
+
       // Call edge function to create user (which has admin privileges)
       const { data, error } = await supabase.functions.invoke('admin-create-user', {
         body: {
@@ -93,6 +94,8 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
           Authorization: `Bearer ${session.access_token}`
         }
       });
+
+      console.log('📡 Function response:', { data, error });
 
       if (error) {
         console.error('❌ Edge function invocation error:', error);
@@ -153,6 +156,14 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
       });
       return;
     }
+
+    console.log('🚀 Submitting form with data:', {
+      email,
+      fullName,
+      whatsapp,
+      subscriptionStatus,
+      planId: selectedPlanId
+    });
 
     addUserMutation.mutate({
       email,
