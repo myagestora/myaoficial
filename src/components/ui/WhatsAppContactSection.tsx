@@ -41,7 +41,7 @@ export const WhatsAppContactSection = () => {
     return phone;
   };
   return <div className="px-3 pb-2">
-      <div className="border border-gray-200 rounded-lg p-3 shadow-sm bg-emerald-200">
+      <div className="border border-gray-200 p-3 shadow-sm bg-teal-500 rounded-md">
         <div className="flex items-center gap-3">
           <WhatsAppIcon className="text-green-500" size={20} />
           <div className="flex flex-col">
