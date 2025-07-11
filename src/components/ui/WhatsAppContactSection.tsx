@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { WhatsAppIcon } from '@/components/ui/whatsapp-icon';
+import { MessageCircle } from 'lucide-react';
 export const WhatsAppContactSection = () => {
   // Buscar número do WhatsApp do sistema
   const {
@@ -41,12 +41,14 @@ export const WhatsAppContactSection = () => {
     return phone;
   };
   return <div className="px-3 pb-2">
-      <div className="border border-gray-200 p-3 shadow-sm bg-teal-500 rounded-md py-[5px] my-[20px] mx-[20px] px-[20px]">
+      <div className="border border-gray-200/20 p-4 shadow-lg bg-emerald-600 rounded-lg my-4 mx-4 backdrop-blur-sm">
         <div className="flex items-center gap-3">
-          <WhatsAppIcon className="text-white" size={20} />
-          <div className="flex flex-col">
-            <span className="text-xs text-white font-medium">Use pelo WhatsApp</span>
-            <a href={`https://wa.me/${whatsappNumber || '5511999999999'}`} target="_blank" rel="noopener noreferrer" className="text-sm text-white font-medium hover:font-bold transition-all">
+          <div className="p-2 bg-white/20 rounded-full">
+            <MessageCircle className="text-white h-5 w-5" fill="currentColor" />
+          </div>
+          <div className="flex flex-col font-sans">
+            <span className="text-xs text-white/90 font-medium tracking-wide">Use pelo WhatsApp</span>
+            <a href={`https://wa.me/${whatsappNumber || '5511999999999'}`} target="_blank" rel="noopener noreferrer" className="text-sm text-white font-medium hover:font-semibold transition-all duration-200 tracking-wide">
               {whatsappNumber ? formatPhoneNumber(whatsappNumber) : '(11) 99999-9999'}
             </a>
           </div>
