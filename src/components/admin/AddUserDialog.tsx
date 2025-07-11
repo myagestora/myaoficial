@@ -22,6 +22,7 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
   const [whatsapp, setWhatsapp] = useState('');
   const [password, setPassword] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState('inactive');
+  const [selectedPlanId, setSelectedPlanId] = useState('');
   const [whatsappError, setWhatsappError] = useState('');
   const [validatingWhatsapp, setValidatingWhatsapp] = useState(false);
   const queryClient = useQueryClient();
@@ -67,83 +68,30 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
       fullName: string; 
       whatsapp: string;
       subscriptionStatus: string;
+      planId: string;
     }) => {
-      console.log('🆕 Creating new user:', userData.email);
+      console.log('🆕 Creating new user with admin function:', userData.email);
       
-      // Validar WhatsApp único novamente antes de criar
-      if (userData.whatsapp && userData.whatsapp.trim() !== '') {
-        const whatsappExists = await checkWhatsappExists(userData.whatsapp);
-        if (whatsappExists) {
-          throw new Error('Este número de WhatsApp já está sendo usado por outro usuário.');
-        }
-      }
-      
-      // Criar usuário via Supabase Auth
-      const { data, error } = await supabase.auth.signUp({
-        email: userData.email,
-        password: userData.password,
-        options: {
-          data: {
-            full_name: userData.fullName,
-            whatsapp: userData.whatsapp,
-          },
-          emailRedirectTo: `${window.location.origin}/`
-        }
+      // Usar a nova função admin_create_user
+      const { data, error } = await supabase.rpc('admin_create_user', {
+        p_email: userData.email,
+        p_password: userData.password,
+        p_full_name: userData.fullName,
+        p_whatsapp: userData.whatsapp || null,
+        p_subscription_status: userData.subscriptionStatus,
+        p_plan_id: userData.planId || null
       });
 
-      if (error) throw error;
-
-      if (data.user) {
-        console.log('✅ User created in auth, now creating profile');
-        
-        // Criar/atualizar perfil
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: data.user.id,
-            email: userData.email,
-            full_name: userData.fullName,
-            whatsapp: userData.whatsapp,
-            subscription_status: userData.subscriptionStatus,
-            admin_override_status: true, // Marcar como override do admin
-          });
-
-        if (profileError) {
-          console.error('❌ Profile creation error:', profileError);
-          
-          // Verificar se é erro de violação de unicidade
-          if (profileError.code === '23505' && profileError.message.includes('profiles_whatsapp_unique_idx')) {
-            throw new Error('Este número de WhatsApp já está sendo usado por outro usuário.');
-          }
-          
-          throw profileError;
-        }
-
-        // Se o status não for inactive, criar uma assinatura
-        if (userData.subscriptionStatus !== 'inactive' && subscriptionPlans && subscriptionPlans.length > 0) {
-          console.log('🔗 Creating subscription for user');
-          
-          const defaultPlan = subscriptionPlans[0]; // Usar o primeiro plano ativo
-          
-          const { error: subscriptionError } = await supabase
-            .from('user_subscriptions')
-            .insert({
-              user_id: data.user.id,
-              plan_id: defaultPlan.id,
-              status: userData.subscriptionStatus as any,
-              current_period_start: new Date().toISOString(),
-              current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 dias
-            });
-
-          if (subscriptionError) {
-            console.error('❌ Subscription creation error:', subscriptionError);
-            throw subscriptionError;
-          }
-          
-          console.log('✅ Subscription created successfully');
-        }
+      if (error) {
+        console.error('❌ Admin create user error:', error);
+        throw error;
       }
 
+      if (!(data as any)?.success) {
+        throw new Error((data as any)?.error || 'Erro ao criar usuário');
+      }
+
+      console.log('✅ User created successfully:', data);
       return data;
     },
     onSuccess: () => {
@@ -158,6 +106,7 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
       setWhatsapp('');
       setPassword('');
       setSubscriptionStatus('inactive');
+      setSelectedPlanId('');
       setWhatsappError('');
       onUserAdded?.();
     },
@@ -197,7 +146,8 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
       password,
       fullName,
       whatsapp,
-      subscriptionStatus
+      subscriptionStatus,
+      planId: selectedPlanId
     });
   };
 
@@ -279,6 +229,24 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
               </SelectContent>
             </Select>
           </div>
+
+          {subscriptionStatus !== 'inactive' && subscriptionPlans && subscriptionPlans.length > 0 && (
+            <div>
+              <Label htmlFor="planId">Plano de Assinatura</Label>
+              <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um plano" />
+                </SelectTrigger>
+                <SelectContent>
+                  {subscriptionPlans.map((plan) => (
+                    <SelectItem key={plan.id} value={plan.id}>
+                      {plan.name} {plan.is_special && '(Especial)'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="flex justify-end space-x-2">
             <Button

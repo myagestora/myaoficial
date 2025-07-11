@@ -535,6 +535,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_create_user: {
+        Args: {
+          p_email: string
+          p_password: string
+          p_full_name: string
+          p_whatsapp?: string
+          p_subscription_status?: string
+          p_plan_id?: string
+        }
+        Returns: Json
+      }
+      admin_update_user_email: {
+        Args: { p_user_id: string; p_new_email: string }
+        Returns: Json
+      }
       calculate_monthly_goal_progress: {
         Args: { p_user_id: string; p_category_id: string; p_month_year: string }
         Returns: number

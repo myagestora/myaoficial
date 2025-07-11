@@ -74,9 +74,26 @@ export const EditUserDialog = ({ user, onUserUpdated }: EditUserDialogProps) => 
       console.log('🔄 Updating user with data:', userData);
       console.log('👤 User ID:', user.id);
       
+      // Verificar se o email mudou para usar a função admin_update_user_email
+      if (userData.email !== user.email) {
+        console.log('📧 Email changed, using admin function');
+        const { data: emailResult, error: emailError } = await supabase.rpc('admin_update_user_email', {
+          p_user_id: user.id,
+          p_new_email: userData.email
+        });
+
+        if (emailError) {
+          console.error('❌ Email update error:', emailError);
+          throw emailError;
+        }
+
+        if (!(emailResult as any)?.success) {
+          throw new Error((emailResult as any)?.error || 'Erro ao atualizar email');
+        }
+      }
+      
       // Atualizar perfil
       const updateData = {
-        email: userData.email,
         full_name: userData.fullName,
         whatsapp: userData.whatsapp,
         subscription_status: userData.subscriptionStatus,
