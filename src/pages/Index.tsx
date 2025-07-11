@@ -275,7 +275,7 @@ const Index = () => {
               </span>
             </div>
 
-            <h1 className="text-6xl md:text-7xl font-bold mb-8 leading-tight">
+            <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-8 leading-tight">
               <span className="block text-gray-900 dark:text-white mb-2">
                 Organize suas
               </span>
@@ -374,7 +374,7 @@ const Index = () => {
                   ✨ Gestão Financeira pelo WhatsApp
                 </span>
               </div>
-              <h2 className="text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
                 Suas finanças organizadas 
                 <span className="text-green-600"> em segundos</span>
               </h2>
@@ -903,7 +903,7 @@ const Index = () => {
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-6xl font-bold text-white mb-8 leading-tight">
+            <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-8 leading-tight">
               Pronto para Transformar 
               <span className="block">suas Finanças?</span>
             </h2>
