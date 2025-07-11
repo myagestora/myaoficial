@@ -45,5 +45,8 @@ verify_jwt = false
 [functions.admin-create-user]
 verify_jwt = true
 
+[functions.list-categories]
+verify_jwt = false
+
 [auth]
 enabled = true
