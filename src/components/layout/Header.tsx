@@ -58,33 +58,43 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
 
   // Buscar número do WhatsApp do sistema
   const { data: whatsappNumber } = useQuery({
-    queryKey: ['system-config-whatsapp'],
+    queryKey: ['system-config-support-phone'],
     queryFn: async () => {
       try {
         const { data, error } = await supabase
           .from('system_config')
           .select('value')
-          .eq('key', 'whatsapp_number')
+          .eq('key', 'support_phone')
           .maybeSingle();
         
         if (error) {
-          console.error('Error fetching WhatsApp number:', error);
-          return '5511999999999';
+          console.error('Error fetching support phone:', error);
+          return null;
         }
 
         const numberValue = data?.value;
         if (typeof numberValue === 'string') {
-          return numberValue.replace(/^"|"$/g, '');
+          return numberValue.replace(/^"|"$/g, '').replace(/\+/, '');
         }
-        return numberValue ? JSON.stringify(numberValue).replace(/^"|"$/g, '') : '5511999999999';
+        return numberValue ? JSON.stringify(numberValue).replace(/^"|"$/g, '').replace(/\+/, '') : null;
       } catch (error) {
-        console.error('Error in WhatsApp number query:', error);
-        return '5511999999999';
+        console.error('Error in support phone query:', error);
+        return null;
       }
     },
     retry: 1,
     refetchOnWindowFocus: false,
   });
+
+  const formatPhoneNumber = (phone: string) => {
+    // Remove caracteres não numéricos
+    const cleanPhone = phone.replace(/\D/g, '');
+    // Formato brasileiro: (XX) XXXXX-XXXX
+    if (cleanPhone.length >= 11) {
+      return `(${cleanPhone.slice(2,4)}) ${cleanPhone.slice(4,9)}-${cleanPhone.slice(9)}`;
+    }
+    return phone;
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -119,10 +129,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
               rel="noopener noreferrer"
               className="text-sm text-gray-900 font-semibold hover:text-green-600 transition-colors"
             >
-              {whatsappNumber ? 
-                `(${whatsappNumber.slice(2,4)}) ${whatsappNumber.slice(4,9)}-${whatsappNumber.slice(9)}` : 
-                '(11) 99999-9999'
-              }
+              {whatsappNumber ? formatPhoneNumber(whatsappNumber) : '(11) 99999-9999'}
             </a>
           </div>
         </div>
