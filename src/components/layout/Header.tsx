@@ -1,5 +1,6 @@
 import React from 'react';
-import { Bell, Menu, Settings, LogOut, Shield, MessageCircle } from 'lucide-react';
+import { Bell, Menu, Settings, LogOut, Shield } from 'lucide-react';
+import { WhatsAppIcon } from '@/components/ui/whatsapp-icon';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -55,6 +56,36 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
     refetchOnWindowFocus: false,
   });
 
+  // Buscar número do WhatsApp do sistema
+  const { data: whatsappNumber } = useQuery({
+    queryKey: ['system-config-whatsapp'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from('system_config')
+          .select('value')
+          .eq('key', 'whatsapp_number')
+          .maybeSingle();
+        
+        if (error) {
+          console.error('Error fetching WhatsApp number:', error);
+          return '5511999999999';
+        }
+
+        const numberValue = data?.value;
+        if (typeof numberValue === 'string') {
+          return numberValue.replace(/^"|"$/g, '');
+        }
+        return numberValue ? JSON.stringify(numberValue).replace(/^"|"$/g, '') : '5511999999999';
+      } catch (error) {
+        console.error('Error in WhatsApp number query:', error);
+        return '5511999999999';
+      }
+    },
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/login');
@@ -78,17 +109,20 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
         </div>
 
         {/* WhatsApp Contact Highlight */}
-        <div className="hidden sm:flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
-          <MessageCircle className="h-4 w-4 text-green-400" />
+        <div className="hidden sm:flex items-center gap-3 bg-white rounded-full px-4 py-2 shadow-lg border border-gray-200">
+          <WhatsAppIcon className="text-green-500" size={18} />
           <div className="flex flex-col">
-            <span className="text-xs text-white/80 font-medium">Use pelo WhatsApp</span>
+            <span className="text-xs text-gray-600 font-medium">Use pelo WhatsApp</span>
             <a 
-              href="https://wa.me/5511999999999" 
+              href={`https://wa.me/${whatsappNumber || '5511999999999'}`}
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-sm text-white font-semibold hover:text-green-300 transition-colors"
+              className="text-sm text-gray-900 font-semibold hover:text-green-600 transition-colors"
             >
-              (11) 99999-9999
+              {whatsappNumber ? 
+                `(${whatsappNumber.slice(2,4)}) ${whatsappNumber.slice(4,9)}-${whatsappNumber.slice(9)}` : 
+                '(11) 99999-9999'
+              }
             </a>
           </div>
         </div>
