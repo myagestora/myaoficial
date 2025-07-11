@@ -76,7 +76,7 @@ export const WhatsAppContactSection = () => {
         <div className="flex items-center gap-3">
           <div className="p-2 bg-white/20 rounded-full">
             <MessageCircle 
-              className="h-7 w-7" 
+              className="h-6 w-6" 
               fill="currentColor" 
               style={{ color: secondaryColor || '#059669' }}
             />
