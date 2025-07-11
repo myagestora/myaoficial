@@ -85,8 +85,8 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
       });
 
       if (error) {
-        console.error('❌ Admin create user error:', error);
-        throw error;
+        console.error('❌ Edge function invocation error:', error);
+        throw new Error(`Function error: ${error.message}`);
       }
 
       if (!data?.success) {
