@@ -70,29 +70,51 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
       subscriptionStatus: string;
       planId: string;
     }) => {
-      console.log('🆕 Creating new user with admin function:', userData.email);
+      console.log('🆕 Creating new user with Supabase Admin API:', userData.email);
       
-      // Usar a nova função admin_create_user
-      const { data, error } = await supabase.rpc('admin_create_user', {
+      // Step 1: Create user in auth.users using Supabase Admin API
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: userData.email,
+        password: userData.password,
+        user_metadata: {
+          full_name: userData.fullName,
+          whatsapp: userData.whatsapp || null
+        },
+        email_confirm: true // Auto-confirm email for admin-created users
+      });
+
+      if (authError) {
+        console.error('❌ Auth user creation error:', authError);
+        throw authError;
+      }
+
+      if (!authData.user) {
+        throw new Error('Falha ao criar usuário na autenticação');
+      }
+
+      console.log('✅ Auth user created:', authData.user.id);
+
+      // Step 2: Create profile using the new function
+      const { data: profileData, error: profileError } = await supabase.rpc('admin_create_user_profile', {
+        p_user_id: authData.user.id,
         p_email: userData.email,
-        p_password: userData.password,
         p_full_name: userData.fullName,
         p_whatsapp: userData.whatsapp || null,
         p_subscription_status: userData.subscriptionStatus,
         p_plan_id: userData.planId || null
       });
 
-      if (error) {
-        console.error('❌ Admin create user error:', error);
-        throw error;
+      if (profileError) {
+        console.error('❌ Profile creation error:', profileError);
+        throw profileError;
       }
 
-      if (!(data as any)?.success) {
-        throw new Error((data as any)?.error || 'Erro ao criar usuário');
+      if (!(profileData as any)?.success) {
+        throw new Error((profileData as any)?.error || 'Erro ao criar perfil do usuário');
       }
 
-      console.log('✅ User created successfully:', data);
-      return data;
+      console.log('✅ User profile created successfully:', profileData);
+      return profileData;
     },
     onSuccess: () => {
       toast({

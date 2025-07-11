@@ -535,10 +535,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      admin_create_user: {
+      admin_create_user_profile: {
         Args: {
+          p_user_id: string
           p_email: string
-          p_password: string
           p_full_name: string
           p_whatsapp?: string
           p_subscription_status?: string
