@@ -60,7 +60,6 @@ export const WhatsAppContactSection = () => {
     retry: 1,
     refetchOnWindowFocus: false
   });
-
   const formatPhoneNumber = (phone: string) => {
     // Remove caracteres não numéricos
     const cleanPhone = phone.replace(/\D/g, '');
@@ -71,10 +70,9 @@ export const WhatsAppContactSection = () => {
     return phone;
   };
   return <div className="px-3 pb-2">
-      <div 
-        className="border border-gray-200/20 p-4 shadow-lg rounded-lg my-4 mx-4 backdrop-blur-sm" 
-        style={{ backgroundColor: secondaryColor || '#059669' }}
-      >
+      <div style={{
+      backgroundColor: secondaryColor || '#059669'
+    }} className="border border-gray-200/20 p-4 shadow-lg rounded-lg my-4 mx-4 backdrop-blur-sm bg-slate-100">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-white/20 rounded-full">
             <MessageCircle className="text-white h-5 w-5" fill="currentColor" />
