@@ -46,7 +46,7 @@ export const WhatsAppContactSection = () => {
           <WhatsAppIcon className="text-white" size={20} />
           <div className="flex flex-col">
             <span className="text-xs text-white font-medium">Use pelo WhatsApp</span>
-            <a href={`https://wa.me/${whatsappNumber || '5511999999999'}`} target="_blank" rel="noopener noreferrer" className="text-sm text-white font-semibold hover:font-bold transition-all">
+            <a href={`https://wa.me/${whatsappNumber || '5511999999999'}`} target="_blank" rel="noopener noreferrer" className="text-sm text-white font-medium hover:font-bold transition-all">
               {whatsappNumber ? formatPhoneNumber(whatsappNumber) : '(11) 99999-9999'}
             </a>
           </div>
