@@ -75,11 +75,26 @@ export const WhatsAppContactSection = () => {
     }} className="border border-gray-200/20 p-4 shadow-lg rounded-lg my-4 mx-4 backdrop-blur-sm bg-slate-100">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-white/20 rounded-full">
-            <MessageCircle className="text-white h-5 w-5" fill="currentColor" />
+            <MessageCircle 
+              className="h-5 w-5" 
+              fill="currentColor" 
+              style={{ color: secondaryColor || '#059669' }}
+            />
           </div>
           <div className="flex flex-col font-sans">
-            <span className="text-xs text-white/90 font-medium tracking-wide">Use pelo WhatsApp</span>
-            <a href={`https://wa.me/${whatsappNumber || '5511999999999'}`} target="_blank" rel="noopener noreferrer" className="text-sm text-white font-medium hover:font-semibold transition-all duration-200 tracking-wide">
+            <span 
+              className="text-xs font-medium tracking-wide"
+              style={{ color: secondaryColor || '#059669' }}
+            >
+              Use pelo WhatsApp
+            </span>
+            <a 
+              href={`https://wa.me/${whatsappNumber || '5511999999999'}`} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-sm font-medium hover:font-semibold transition-all duration-200 tracking-wide"
+              style={{ color: secondaryColor || '#059669' }}
+            >
               {whatsappNumber ? formatPhoneNumber(whatsappNumber) : '(11) 99999-9999'}
             </a>
           </div>
