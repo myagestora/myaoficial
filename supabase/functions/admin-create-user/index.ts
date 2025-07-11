@@ -1,302 +1,177 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+}
 
 Deno.serve(async (req) => {
-  console.log('🚀 Function started - Method:', req.method);
-
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    console.log('✅ CORS preflight handled');
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    console.log('📝 Processing POST request...');
-
     // Get environment variables
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-    console.log('🔧 Environment check:', {
-      hasUrl: !!supabaseUrl,
-      hasServiceKey: !!supabaseServiceKey
-    });
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('❌ Missing environment variables');
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Missing environment variables' 
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500
-        }
-      );
-    }
-
-    // Create Supabase client with service role key
+    // Create admin client
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
-        persistSession: false
-      }
-    });
+        persistSession: false,
+      },
+    })
 
-    console.log('✅ Supabase admin client created');
-
-    // Get and verify authorization
-    const authHeader = req.headers.get('Authorization');
-    console.log('🔐 Auth header present:', !!authHeader);
-
+    // Verify admin authorization
+    const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      console.error('❌ No authorization header');
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'No authorization header' 
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 401
-        }
-      );
+        JSON.stringify({ error: 'Missing authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    console.log('🔍 Verifying user token...');
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token)
     
-    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Check if user is admin
+    const { data: isAdmin, error: adminError } = await supabaseAdmin.rpc('is_admin', { _user_id: user.id })
     
-    if (userError || !userData.user) {
-      console.error('❌ Token verification failed:', userError?.message);
+    if (adminError || !isAdmin) {
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Invalid authentication token' 
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 401
-        }
-      );
+        JSON.stringify({ error: 'Access denied: admin privileges required' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
-
-    console.log('✅ User verified:', userData.user.email);
-
-    // Check admin permissions
-    console.log('👮 Checking admin permissions...');
-    const { data: isAdminResult, error: adminError } = await supabaseAdmin
-      .rpc('is_admin', { _user_id: userData.user.id });
-
-    if (adminError) {
-      console.error('❌ Admin check failed:', adminError.message);
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: `Admin verification failed: ${adminError.message}` 
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 403
-        }
-      );
-    }
-
-    if (!isAdminResult) {
-      console.error('❌ User is not admin');
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Access denied: only administrators can create users' 
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 403
-        }
-      );
-    }
-
-    console.log('✅ Admin verification passed');
 
     // Parse request body
-    let body;
-    try {
-      body = await req.json();
-      console.log('📦 Request body parsed:', { 
-        email: body.email, 
-        fullName: body.fullName,
-        hasPassword: !!body.password,
-        subscriptionStatus: body.subscriptionStatus 
-      });
-    } catch (parseError) {
-      console.error('❌ Failed to parse JSON:', parseError);
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Invalid JSON in request body' 
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400
-        }
-      );
-    }
-
-    const { email, password, fullName, whatsapp, subscriptionStatus, planId } = body;
+    const { email, password, fullName, whatsapp, subscriptionStatus = 'inactive', planId } = await req.json()
 
     // Validate required fields
     if (!email || !password || !fullName) {
-      console.error('❌ Missing required fields');
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Missing required fields: email, password, and fullName are required' 
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400
-        }
-      );
+        JSON.stringify({ error: 'Missing required fields: email, password, fullName' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
-    console.log('👤 Creating user in auth...');
+    console.log('🚀 Creating user with email:', email)
 
-    // Create user in auth.users
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    // Create user in auth
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
+      email_confirm: true,
       user_metadata: {
         full_name: fullName,
         whatsapp: whatsapp || null
-      },
-      email_confirm: true
-    });
-
-    if (authError) {
-      console.error('❌ Auth user creation failed:', authError.message);
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: `Failed to create user: ${authError.message}` 
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400
-        }
-      );
-    }
-
-    if (!authData.user) {
-      console.error('❌ No user data returned from auth');
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Failed to create user - no user data returned' 
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500
-        }
-      );
-    }
-
-    console.log('✅ Auth user created:', authData.user.id);
-
-    // Create user profile
-    console.log('📋 Creating user profile...');
-    const { data: profileData, error: profileError } = await supabaseAdmin.rpc('admin_create_user_profile', {
-      p_user_id: authData.user.id,
-      p_email: email,
-      p_full_name: fullName,
-      p_whatsapp: whatsapp || null,
-      p_subscription_status: subscriptionStatus || 'inactive',
-      p_plan_id: planId || null
-    });
-
-    if (profileError) {
-      console.error('❌ Profile creation failed:', profileError.message);
-      // Clean up auth user if profile creation fails
-      console.log('🧹 Cleaning up auth user...');
-      try {
-        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-      } catch (cleanupError) {
-        console.error('⚠️ Failed to cleanup auth user:', cleanupError);
       }
-      
+    })
+
+    if (authError || !authUser.user) {
+      console.error('❌ Auth user creation failed:', authError)
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: `Failed to create user profile: ${profileError.message}` 
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500
-        }
-      );
+        JSON.stringify({ error: authError?.message || 'Failed to create auth user' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
-    console.log('📋 Profile creation result:', profileData);
+    console.log('✅ Auth user created:', authUser.user.id)
 
-    // Check if profile creation was successful
-    // The function might return a JSON object or boolean true
-    const isProfileSuccess = profileData === true || 
-                            (typeof profileData === 'object' && profileData !== null && (profileData as any).success === true);
+    try {
+      // Create profile
+      const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .insert({
+          id: authUser.user.id,
+          email,
+          full_name: fullName,
+          whatsapp: whatsapp || null,
+          subscription_status: subscriptionStatus,
+          admin_override_status: true,
+          account_status: 'active'
+        })
 
-    if (!isProfileSuccess) {
-      console.error('❌ Profile creation returned failure:', profileData);
-      // Clean up auth user
-      console.log('🧹 Cleaning up auth user...');
-      try {
-        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-      } catch (cleanupError) {
-        console.error('⚠️ Failed to cleanup auth user:', cleanupError);
+      if (profileError) {
+        console.error('❌ Profile creation failed:', profileError)
+        // Clean up auth user
+        await supabaseAdmin.auth.admin.deleteUser(authUser.user.id)
+        throw profileError
       }
-      
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: (profileData as any)?.error || 'Failed to create user profile' 
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500
+
+      console.log('✅ Profile created')
+
+      // Create user role
+      const { error: roleError } = await supabaseAdmin
+        .from('user_roles')
+        .insert({
+          user_id: authUser.user.id,
+          role: 'user'
+        })
+
+      if (roleError) {
+        console.error('❌ Role creation failed:', roleError)
+        // Clean up
+        await supabaseAdmin.auth.admin.deleteUser(authUser.user.id)
+        throw roleError
+      }
+
+      console.log('✅ User role created')
+
+      // Create subscription if needed
+      if (planId && subscriptionStatus !== 'inactive') {
+        const { error: subscriptionError } = await supabaseAdmin
+          .from('user_subscriptions')
+          .insert({
+            user_id: authUser.user.id,
+            plan_id: planId,
+            status: subscriptionStatus,
+            current_period_start: new Date().toISOString(),
+            current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            frequency: 'monthly'
+          })
+
+        if (subscriptionError) {
+          console.error('❌ Subscription creation failed:', subscriptionError)
+          // Clean up
+          await supabaseAdmin.auth.admin.deleteUser(authUser.user.id)
+          throw subscriptionError
         }
-      );
+
+        console.log('✅ Subscription created')
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          user_id: authUser.user.id,
+          message: 'Usuário criado com sucesso'
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+
+    } catch (error) {
+      console.error('❌ Error in user creation process:', error)
+      return new Response(
+        JSON.stringify({ error: error.message || 'Failed to create user profile' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
-
-    console.log('✅ User profile created successfully');
-
-    const response = {
-      success: true,
-      user_id: authData.user.id,
-      message: 'User created successfully'
-    };
-
-    console.log('🎉 Returning success response');
-
-    return new Response(JSON.stringify(response), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
 
   } catch (error) {
-    console.error('💥 Unexpected error:', error);
-    
+    console.error('❌ General error:', error)
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : 'An unexpected error occurred'
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
-    );
+      JSON.stringify({ error: error.message || 'Internal server error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
   }
-});
+})
