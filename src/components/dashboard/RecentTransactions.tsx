@@ -122,7 +122,8 @@ export const RecentTransactions = () => {
               {transaction.categories?.name || 'Sem categoria'}
             </div>
             
-            <div className="flex items-start gap-3">
+            {/* Primeira linha: Ícone + Título */}
+            <div className="flex items-center gap-3 mb-3">
               <div className={`p-2 rounded-full flex-shrink-0 ${
                 transaction.type === 'income' 
                   ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400' 
@@ -135,13 +136,13 @@ export const RecentTransactions = () => {
                 )}
               </div>
               
-              {/* Título ocupando máximo de espaço possível */}
-              <h3 className="font-semibold text-base leading-tight flex-1 pr-24">{transaction.title}</h3>
+              {/* Título ocupando máximo de espaço - só evita sobrepor a categoria */}
+              <h3 className="font-semibold text-base leading-tight flex-1 pr-16">{transaction.title}</h3>
             </div>
             
             {/* Descrição ocupando toda a largura do card */}
             {transaction.description && (
-              <div className="mt-2">
+              <div className="mb-3">
                 <p className="text-sm text-muted-foreground">
                   {transaction.description}
                 </p>
@@ -149,7 +150,7 @@ export const RecentTransactions = () => {
             )}
             
             {/* Linha separadora */}
-            <div className="border-t border-gray-200 dark:border-gray-700 mt-3 pt-3">
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
               {/* Linha com valor e data */}
               <div className="flex items-center justify-between">
                 <div className={`font-bold text-lg ${
