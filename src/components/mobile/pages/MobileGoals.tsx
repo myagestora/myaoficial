@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -9,13 +10,16 @@ import {
   TrendingUp,
   AlertTriangle,
   CheckCircle,
-  DollarSign
+  DollarSign,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import { MobilePageWrapper } from '../MobilePageWrapper';
 import { useGoals } from '@/hooks/useGoals';
 
 export const MobileGoals = () => {
-  const { goals, isLoadingGoals } = useGoals();
+  const { goals, isLoadingGoals, deleteGoal } = useGoals();
+  const navigate = useNavigate();
 
   const getProgressPercentage = (current: number, target: number) => {
     return target > 0 ? Math.round((current / target) * 100) : 0;
@@ -92,10 +96,7 @@ export const MobileGoals = () => {
         <Button 
           size="sm" 
           className="flex items-center space-x-2"
-          onClick={() => {
-            // TODO: Implementar modal de criação de meta
-            console.log('Criar nova meta');
-          }}
+          onClick={() => navigate('/goals/nova')}
         >
           <Plus size={16} />
           <span>Nova Meta</span>
@@ -206,8 +207,24 @@ export const MobileGoals = () => {
                       <DollarSign size={14} className="mr-1" />
                       Adicionar Valor
                     </Button>
-                    <Button variant="ghost" size="sm">
-                      Editar
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => navigate(`/goals/editar/${goal.id}`)}
+                    >
+                      <Edit size={14} />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        const confirmed = window.confirm(`Tem certeza que deseja excluir a meta "${goal.title}"? Esta ação não pode ser desfeita.`);
+                        if (confirmed) {
+                          deleteGoal.mutate(goal.id);
+                        }
+                      }}
+                    >
+                      <Trash2 size={14} />
                     </Button>
                   </div>
                 </CardContent>
@@ -216,6 +233,23 @@ export const MobileGoals = () => {
           })
         )}
       </div>
+
+      {/* Estado vazio */}
+      {!isLoadingGoals && goals.length === 0 && (
+        <Card className="mt-6">
+          <CardContent className="p-8 text-center">
+            <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="font-medium text-lg mb-2">Nenhuma meta encontrada</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Comece definindo sua primeira meta financeira
+            </p>
+            <Button onClick={() => navigate('/goals/nova')}>
+              <Plus size={16} className="mr-2" />
+              Nova Meta
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Dicas */}
       <Card className="mt-6 bg-blue-50 border-blue-200">
