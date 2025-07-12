@@ -101,5 +101,45 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    /* Prevent zoom on double tap (iOS Safari) */
+    touch-action: manipulation;
+  }
+
+  /* Mobile-first responsive improvements */
+  html {
+    /* Smooth scrolling for mobile */
+    scroll-behavior: smooth;
+    /* Prevent overscroll bounce on iOS */
+    overscroll-behavior: none;
+  }
+
+  /* Improve touch targets for mobile */
+  button, [role="button"], input, select, textarea {
+    touch-action: manipulation;
+  }
+
+  /* Better mobile dropdown behavior */
+  [data-radix-popper-content-wrapper] {
+    z-index: 9999 !important;
+  }
+
+  /* Mobile-specific optimizations */
+  @media (max-width: 768px) {
+    /* Larger touch targets */
+    button, [role="button"] {
+      min-height: 44px;
+    }
+    
+    /* Better spacing for dropdowns */
+    [data-radix-dropdown-menu-content] {
+      max-width: 90vw;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+    
+    /* Improve scroll on mobile */
+    * {
+      -webkit-overflow-scrolling: touch;
+    }
   }
 }

@@ -114,19 +114,27 @@ export const NotificationBell = () => {
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-9 w-9 p-0 relative text-white hover:bg-white/20">
-          <Bell className="h-4 w-4" />
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="h-9 w-9 sm:h-10 sm:w-10 p-0 relative text-white hover:bg-white/20 touch-manipulation"
+        >
+          <Bell className="h-5 w-5" />
           {unreadNotifications.length > 0 && (
             <Badge 
               variant="destructive" 
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs font-bold"
             >
-              {unreadNotifications.length}
+              {unreadNotifications.length > 9 ? '9+' : unreadNotifications.length}
             </Badge>
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-80 max-h-96 overflow-y-auto" align="end">
+      <DropdownMenuContent 
+        className="w-[90vw] sm:w-80 max-h-[70vh] overflow-y-auto bg-white dark:bg-gray-800 border shadow-lg z-50" 
+        align="end"
+        sideOffset={8}
+      >
         <DropdownMenuLabel className="flex items-center gap-2">
           <Bell className="h-4 w-4" />
           Suas Notificações
