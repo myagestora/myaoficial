@@ -118,7 +118,7 @@ export const RecentTransactions = () => {
         {transactions.map((transaction: any) => (
           <div key={transaction.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 relative overflow-hidden">
             {/* Categoria integrada ao contorno do card */}
-            <div className="absolute top-0 right-0 bg-primary text-primary-foreground text-xs px-3 py-1 rounded-bl-lg rounded-tr-xl">
+            <div className="absolute top-0 right-0 bg-secondary text-secondary-foreground text-xs px-3 py-1 rounded-bl-lg rounded-tr-xl">
               {transaction.categories?.name || 'Sem categoria'}
             </div>
             
@@ -135,13 +135,13 @@ export const RecentTransactions = () => {
                 )}
               </div>
               
-              <div className="flex-1 min-w-0 space-y-3 pr-16">
-                {/* Título em uma linha */}
-                <h3 className="font-semibold text-base leading-tight truncate">{transaction.title}</h3>
+              <div className="flex-1 min-w-0 space-y-2 pr-16">
+                {/* Título completo sem truncate */}
+                <h3 className="font-semibold text-base leading-tight">{transaction.title}</h3>
                 
-                {/* Descrição abaixo */}
+                {/* Descrição ocupando linha toda */}
                 {transaction.description && (
-                  <p className="text-sm text-muted-foreground line-clamp-2">
+                  <p className="text-sm text-muted-foreground">
                     {transaction.description}
                   </p>
                 )}
