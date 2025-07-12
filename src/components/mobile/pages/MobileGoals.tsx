@@ -12,46 +12,28 @@ import {
   DollarSign
 } from 'lucide-react';
 import { MobilePageWrapper } from '../MobilePageWrapper';
-import { useNavigate } from 'react-router-dom';
+import { useGoals } from '@/hooks/useGoals';
 
 export const MobileGoals = () => {
-  const navigate = useNavigate();
+  const { goals, isLoadingGoals } = useGoals();
 
-  const goals = [
-    {
-      id: 1,
-      title: 'Delivery',
-      category: 'Alimentação',
-      target: 200,
-      current: 0,
-      progress: 0,
-      status: 'on_track',
-      type: 'monthly_budget',
-      color: '#F44336'
-    },
-    {
-      id: 2,
-      title: 'Academia',
-      category: 'Saúde',
-      target: 150,
-      current: 120,
-      progress: 80,
-      status: 'warning',
-      type: 'monthly_budget',
-      color: '#2196F3'
-    },
-    {
-      id: 3,
-      title: 'Reserva de Emergência',
-      category: 'Poupança',
-      target: 10000,
-      current: 7500,
-      progress: 75,
-      status: 'on_track',
-      type: 'savings',
-      color: '#4CAF50'
+  const getProgressPercentage = (current: number, target: number) => {
+    return target > 0 ? Math.round((current / target) * 100) : 0;
+  };
+
+  const getStatusFromProgress = (current: number, target: number, goalType: string) => {
+    const percentage = getProgressPercentage(current, target);
+    
+    if (goalType === 'monthly_budget') {
+      if (percentage > 100) return 'exceeded';
+      if (percentage >= 80) return 'warning';
+      return 'on_track';
+    } else {
+      if (percentage >= 100) return 'completed';
+      if (percentage >= 80) return 'warning';
+      return 'on_track';
     }
-  ];
+  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -121,15 +103,19 @@ export const MobileGoals = () => {
         <CardContent className="space-y-3">
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center">
-              <p className="text-2xl font-bold text-primary">3</p>
+              <p className="text-2xl font-bold text-primary">{goals.length}</p>
               <p className="text-xs text-muted-foreground">Total</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">1</p>
+              <p className="text-2xl font-bold text-green-600">
+                {goals.filter(g => getStatusFromProgress(g.current_amount, g.target_amount, g.goal_type) === 'on_track').length}
+              </p>
               <p className="text-xs text-muted-foreground">No prazo</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-yellow-600">1</p>
+              <p className="text-2xl font-bold text-yellow-600">
+                {goals.filter(g => getStatusFromProgress(g.current_amount, g.target_amount, g.goal_type) === 'warning').length}
+              </p>
               <p className="text-xs text-muted-foreground">Atenção</p>
             </div>
           </div>
@@ -138,72 +124,90 @@ export const MobileGoals = () => {
 
       {/* Lista de metas */}
       <div className="space-y-4">
-        {goals.map((goal) => (
-          <Card key={goal.id} className="hover:shadow-sm transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div 
-                    className="w-4 h-4 rounded-full" 
-                    style={{ backgroundColor: goal.color }}
-                  />
-                  <div>
-                    <CardTitle className="text-base">{goal.title}</CardTitle>
-                    <p className="text-sm text-muted-foreground">{goal.category}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Badge variant="secondary" className={getStatusColor(goal.status)}>
-                    {getStatusIcon(goal.status)}
-                    <span className="ml-1 text-xs">{getStatusText(goal.status)}</span>
-                  </Badge>
-                </div>
-              </div>
-            </CardHeader>
+        {isLoadingGoals ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-4">
+                <div className="h-20 bg-muted rounded" />
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          goals.map((goal) => {
+            const progress = getProgressPercentage(goal.current_amount, goal.target_amount);
+            const status = getStatusFromProgress(goal.current_amount, goal.target_amount, goal.goal_type);
+            const categoryColor = goal.categories?.color || '#3B82F6';
             
-            <CardContent className="space-y-3">
-              {/* Progresso visual */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">
-                    {formatCurrency(goal.current)} de {formatCurrency(goal.target)}
-                  </span>
-                  <span className="text-sm font-semibold text-primary">
-                    {goal.progress}%
-                  </span>
-                </div>
-                <Progress 
-                  value={goal.progress} 
-                  className="h-2"
-                  style={{
-                    backgroundColor: `${goal.color}20`
-                  }}
-                />
-              </div>
+            return (
+              <Card key={goal.id} className="hover:shadow-sm transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div 
+                        className="w-4 h-4 rounded-full" 
+                        style={{ backgroundColor: categoryColor }}
+                      />
+                      <div>
+                        <CardTitle className="text-base">{goal.title}</CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                          {goal.categories?.name || 'Sem categoria'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant="secondary" className={getStatusColor(status)}>
+                        {getStatusIcon(status)}
+                        <span className="ml-1 text-xs">{getStatusText(status)}</span>
+                      </Badge>
+                    </div>
+                  </div>
+                </CardHeader>
+                
+                <CardContent className="space-y-3">
+                  {/* Progresso visual */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">
+                        {formatCurrency(goal.current_amount)} de {formatCurrency(goal.target_amount)}
+                      </span>
+                      <span className="text-sm font-semibold text-primary">
+                        {progress}%
+                      </span>
+                    </div>
+                    <Progress 
+                      value={progress} 
+                      className="h-2"
+                      style={{
+                        backgroundColor: `${categoryColor}20`
+                      }}
+                    />
+                  </div>
 
-              {/* Informações adicionais */}
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">
-                  {goal.type === 'monthly_budget' ? 'Orçamento Mensal' : 'Meta de Poupança'}
-                </span>
-                <span className="font-medium">
-                  Restam {formatCurrency(goal.target - goal.current)}
-                </span>
-              </div>
+                  {/* Informações adicionais */}
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">
+                      {goal.goal_type === 'monthly_budget' ? 'Orçamento Mensal' : 'Meta de Poupança'}
+                    </span>
+                    <span className="font-medium">
+                      Restam {formatCurrency(goal.target_amount - goal.current_amount)}
+                    </span>
+                  </div>
 
-              {/* Ações */}
-              <div className="flex space-x-2 pt-2">
-                <Button variant="outline" size="sm" className="flex-1">
-                  <DollarSign size={14} className="mr-1" />
-                  Adicionar Valor
-                </Button>
-                <Button variant="ghost" size="sm">
-                  Editar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                  {/* Ações */}
+                  <div className="flex space-x-2 pt-2">
+                    <Button variant="outline" size="sm" className="flex-1">
+                      <DollarSign size={14} className="mr-1" />
+                      Adicionar Valor
+                    </Button>
+                    <Button variant="ghost" size="sm">
+                      Editar
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
       </div>
 
       {/* Dicas */}

@@ -13,9 +13,15 @@ import {
   PieChart
 } from 'lucide-react';
 import { MobilePageWrapper } from '../MobilePageWrapper';
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export const MobileReports = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('month');
+  const { user } = useAuth();
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -24,20 +30,123 @@ export const MobileReports = () => {
     }).format(value);
   };
 
-  const categories = [
-    { name: 'Alimentação', amount: 1250.00, percentage: 35, color: '#F44336' },
-    { name: 'Transporte', amount: 850.00, percentage: 24, color: '#2196F3' },
-    { name: 'Saúde', amount: 650.00, percentage: 18, color: '#4CAF50' },
-    { name: 'Lazer', amount: 450.00, percentage: 13, color: '#FF9800' },
-    { name: 'Outros', amount: 350.00, percentage: 10, color: '#9C27B0' }
-  ];
+  // Buscar dados de transações
+  const { data: transactions = [], isLoading } = useQuery({
+    queryKey: ['transactions-reports', user?.id, selectedPeriod],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      
+      let dateFrom, dateTo;
+      const now = new Date();
+      
+      switch (selectedPeriod) {
+        case 'week':
+          dateFrom = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          dateTo = now;
+          break;
+        case 'quarter':
+          dateFrom = subMonths(now, 3);
+          dateTo = now;
+          break;
+        case 'year':
+          dateFrom = subMonths(now, 12);
+          dateTo = now;
+          break;
+        default: // month
+          dateFrom = startOfMonth(now);
+          dateTo = endOfMonth(now);
+      }
 
-  const monthlyData = [
-    { month: 'Out', income: 8500, expense: 3200 },
-    { month: 'Nov', income: 8500, expense: 3800 },
-    { month: 'Dez', income: 9200, expense: 4100 },
-    { month: 'Jan', income: 8500, expense: 3550 }
-  ];
+      const { data, error } = await supabase
+        .from('transactions')
+        .select(`
+          *,
+          categories (
+            name,
+            color
+          )
+        `)
+        .eq('user_id', user.id)
+        .gte('date', dateFrom.toISOString().split('T')[0])
+        .lte('date', dateTo.toISOString().split('T')[0])
+        .order('date', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id
+  });
+
+  // Calcular dados dos últimos meses
+  const { data: monthlyData = [] } = useQuery({
+    queryKey: ['monthly-reports', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      
+      const months = [];
+      const now = new Date();
+      
+      for (let i = 3; i >= 0; i--) {
+        const date = subMonths(now, i);
+        const startDate = startOfMonth(date);
+        const endDate = endOfMonth(date);
+        
+        const { data, error } = await supabase
+          .from('transactions')
+          .select('type, amount')
+          .eq('user_id', user.id)
+          .gte('date', startDate.toISOString().split('T')[0])
+          .lte('date', endDate.toISOString().split('T')[0]);
+        
+        if (!error && data) {
+          const income = data.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+          const expense = data.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+          
+          months.push({
+            month: format(date, 'MMM', { locale: ptBR }),
+            income,
+            expense
+          });
+        }
+      }
+      
+      return months;
+    },
+    enabled: !!user?.id
+  });
+
+  // Calcular dados por categoria
+  const expenses = transactions.filter(t => t.type === 'expense');
+  const totalExpenses = expenses.reduce((sum, t) => sum + t.amount, 0);
+  
+  const categoriesData = expenses.reduce((acc, transaction) => {
+    const categoryName = transaction.categories?.name || 'Sem categoria';
+    const categoryColor = transaction.categories?.color || '#9C27B0';
+    
+    if (!acc[categoryName]) {
+      acc[categoryName] = {
+        name: categoryName,
+        amount: 0,
+        color: categoryColor
+      };
+    }
+    
+    acc[categoryName].amount += transaction.amount;
+    return acc;
+  }, {} as Record<string, { name: string; amount: number; color: string }>);
+
+  const categories = Object.values(categoriesData)
+    .map(cat => ({
+      ...cat,
+      percentage: totalExpenses > 0 ? Math.round((cat.amount / totalExpenses) * 100) : 0
+    }))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 5);
+
+  // Calcular totais do período atual
+  const income = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+  const expenseTotal = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+  const balance = income - expenseTotal;
 
   return (
     <MobilePageWrapper>
@@ -80,11 +189,10 @@ export const MobileReports = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-green-700 mb-1">Total Receitas</p>
-                <p className="text-lg font-bold text-green-800">{formatCurrency(8500)}</p>
+                <p className="text-lg font-bold text-green-800">{formatCurrency(income)}</p>
               </div>
               <TrendingUp className="h-8 w-8 text-green-600" />
             </div>
-            <p className="text-xs text-green-600 mt-2">+5% vs mês anterior</p>
           </CardContent>
         </Card>
 
@@ -93,11 +201,10 @@ export const MobileReports = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-red-700 mb-1">Total Despesas</p>
-                <p className="text-lg font-bold text-red-800">{formatCurrency(3550)}</p>
+                <p className="text-lg font-bold text-red-800">{formatCurrency(expenseTotal)}</p>
               </div>
               <TrendingDown className="h-8 w-8 text-red-600" />
             </div>
-            <p className="text-xs text-red-600 mt-2">+12% vs mês anterior</p>
           </CardContent>
         </Card>
       </div>
@@ -108,12 +215,14 @@ export const MobileReports = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground mb-1">Saldo Líquido</p>
-              <p className="text-2xl font-bold text-primary">{formatCurrency(4950)}</p>
+              <p className={`text-2xl font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {formatCurrency(Math.abs(balance))}
+              </p>
             </div>
             <DollarSign className="h-8 w-8 text-primary" />
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            Economia de 58% da sua renda
+            {income > 0 ? `${Math.round((balance / income) * 100)}% da sua renda` : 'Sem receitas no período'}
           </p>
         </CardContent>
       </Card>
@@ -127,32 +236,44 @@ export const MobileReports = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {categories.map((category, index) => (
-            <div key={index} className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
+          {isLoading ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="h-8 bg-muted rounded mb-2" />
+              </div>
+            ))
+          ) : categories.length === 0 ? (
+            <p className="text-center text-muted-foreground py-4">
+              Nenhuma despesa encontrada no período
+            </p>
+          ) : (
+            categories.map((category, index) => (
+              <div key={index} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: category.color }}
+                    />
+                    <span className="text-sm font-medium">{category.name}</span>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold">{formatCurrency(category.amount)}</p>
+                    <p className="text-xs text-muted-foreground">{category.percentage}%</p>
+                  </div>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
                   <div 
-                    className="w-3 h-3 rounded-full" 
-                    style={{ backgroundColor: category.color }}
+                    className="h-2 rounded-full transition-all duration-300" 
+                    style={{ 
+                      width: `${category.percentage}%`,
+                      backgroundColor: category.color 
+                    }}
                   />
-                  <span className="text-sm font-medium">{category.name}</span>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold">{formatCurrency(category.amount)}</p>
-                  <p className="text-xs text-muted-foreground">{category.percentage}%</p>
                 </div>
               </div>
-              <div className="w-full bg-muted rounded-full h-2">
-                <div 
-                  className="h-2 rounded-full transition-all duration-300" 
-                  style={{ 
-                    width: `${category.percentage}%`,
-                    backgroundColor: category.color 
-                  }}
-                />
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </CardContent>
       </Card>
 

@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { InstallPrompt } from './InstallPrompt';
-import { TransactionForm } from '@/components/transactions/TransactionForm';
+
 
 interface MobileAppLayoutProps {
   children?: React.ReactNode;
@@ -40,7 +40,6 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [showTransactionForm, setShowTransactionForm] = useState(false);
 
   const currentPath = location.pathname;
 
@@ -84,57 +83,46 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
           />
         </div>
         
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10"
-            onClick={() => setShowTransactionForm(true)}
-          >
-            <Plus size={20} />
-          </Button>
-          
-          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-10 w-10">
-                <Menu size={20} />
+        <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-10 w-10">
+              <Menu size={20} />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-72 z-50 bg-background">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold">Menu</h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <X size={20} />
               </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-72 z-50">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold">Menu</h2>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsMenuOpen(false)}
+            </div>
+            
+            <nav className="space-y-2">
+              {moreItems.map((item) => (
+                <button
+                  key={item.path}
+                  onClick={() => {
+                    navigate(item.path);
+                    setIsMenuOpen(false);
+                  }}
+                  className={cn(
+                    "flex items-center space-x-3 w-full p-3 rounded-lg transition-colors",
+                    currentPath === item.path
+                      ? "bg-primary/10 text-primary"
+                      : "text-foreground hover:bg-muted"
+                  )}
                 >
-                  <X size={20} />
-                </Button>
-              </div>
-              
-              <nav className="space-y-2">
-                {moreItems.map((item) => (
-                  <button
-                    key={item.path}
-                    onClick={() => {
-                      navigate(item.path);
-                      setIsMenuOpen(false);
-                    }}
-                    className={cn(
-                      "flex items-center space-x-3 w-full p-3 rounded-lg transition-colors",
-                      currentPath === item.path
-                        ? "bg-primary/10 text-primary"
-                        : "text-foreground hover:bg-muted"
-                    )}
-                  >
-                    <item.icon size={20} />
-                    <span className="font-medium">{item.label}</span>
-                  </button>
-                ))}
-              </nav>
-            </SheetContent>
-          </Sheet>
-        </div>
+                  <item.icon size={20} />
+                  <span className="font-medium">{item.label}</span>
+                </button>
+              ))}
+            </nav>
+          </SheetContent>
+        </Sheet>
       </header>
 
       {/* Main Content */}
@@ -158,27 +146,6 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
         </div>
       </nav>
 
-      {/* Transaction Form Modal */}
-      {showTransactionForm && (
-        <div className="fixed inset-0 z-50 bg-background">
-          <div className="flex items-center justify-between p-4 border-b">
-            <h2 className="text-lg font-semibold">Nova Transação</h2>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowTransactionForm(false)}
-            >
-              <X size={20} />
-            </Button>
-          </div>
-          <div className="p-4">
-            <TransactionForm 
-              isOpen={showTransactionForm}
-              onClose={() => setShowTransactionForm(false)}
-            />
-          </div>
-        </div>
-      )}
 
       {/* Install Prompt */}
       <InstallPrompt />
