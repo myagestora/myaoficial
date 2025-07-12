@@ -116,15 +116,16 @@ export const RecentTransactions = () => {
     >
       <div className="space-y-3">
         {transactions.map((transaction: any) => (
-          <div key={transaction.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 relative overflow-hidden">
+          <div key={transaction.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 relative">
             {/* Categoria integrada ao contorno do card */}
-            <div className="absolute top-0 right-0 bg-secondary text-secondary-foreground text-xs px-3 py-1 rounded-bl-lg rounded-tr-xl">
+            <div className="absolute top-0 right-0 bg-secondary text-secondary-foreground text-xs px-3 py-1 rounded-bl-lg rounded-tr-xl z-10">
               {transaction.categories?.name || 'Sem categoria'}
             </div>
             
-            {/* Primeira linha: Ícone + Título */}
-            <div className="flex items-center gap-3 mb-3">
-              <div className={`p-2 rounded-full flex-shrink-0 ${
+            {/* Container principal com grid */}
+            <div className="grid grid-cols-[auto_1fr] gap-3 items-start">
+              {/* Ícone */}
+              <div className={`p-2 rounded-full ${
                 transaction.type === 'income' 
                   ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400' 
                   : 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400'
@@ -136,22 +137,26 @@ export const RecentTransactions = () => {
                 )}
               </div>
               
-              {/* Título ocupando máximo de espaço - só evita sobrepor a categoria */}
-              <h3 className="font-semibold text-base leading-tight flex-1 pr-16">{transaction.title}</h3>
+              {/* Área do conteúdo */}
+              <div className="min-w-0 space-y-2">
+                {/* Título - ocupando toda largura disponível */}
+                <div className="pr-20">
+                  <h3 className="font-semibold text-base leading-tight break-words">{transaction.title}</h3>
+                </div>
+                
+                {/* Descrição - ocupando largura total */}
+                {transaction.description && (
+                  <div className="pr-0">
+                    <p className="text-sm text-muted-foreground break-words">
+                      {transaction.description}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
             
-            {/* Descrição ocupando toda a largura do card */}
-            {transaction.description && (
-              <div className="mb-3">
-                <p className="text-sm text-muted-foreground">
-                  {transaction.description}
-                </p>
-              </div>
-            )}
-            
-            {/* Linha separadora */}
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
-              {/* Linha com valor e data */}
+            {/* Linha separadora e valores */}
+            <div className="border-t border-gray-200 dark:border-gray-700 mt-4 pt-3">
               <div className="flex items-center justify-between">
                 <div className={`font-bold text-lg ${
                   transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
