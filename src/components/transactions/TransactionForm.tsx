@@ -255,17 +255,17 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader className="pb-4">
-          <DialogTitle className="text-lg md:text-xl font-semibold">
+      <DialogContent className="max-w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-semibold">
             {isEditing ? 'Editar Transação' : 'Nova Transação'}
           </DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground">
+          <DialogDescription className="text-muted-foreground">
             Preencha os dados da transação abaixo.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="type" className="text-sm font-medium">Tipo</Label>
@@ -439,19 +439,19 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
             )}
           </div>
 
-          <DialogFooter className="flex flex-col gap-3 sm:flex-row sm:gap-2 pt-4 border-t">
+          <DialogFooter className="flex flex-col gap-2 sm:flex-row pt-4">
             <Button 
               type="button" 
               variant="outline" 
               onClick={onClose}
-              className="w-full sm:w-auto min-h-[44px] order-2 sm:order-1"
+              className="w-full sm:w-auto min-h-[44px]"
             >
               Cancelar
             </Button>
             <Button 
               type="submit" 
               disabled={isSubmitting}
-              className="w-full sm:w-auto min-h-[44px] order-1 sm:order-2"
+              className="w-full sm:w-auto min-h-[44px]"
             >
               {isSubmitting ? 'Salvando...' : (isEditing ? 'Atualizar' : 'Salvar')}
             </Button>
