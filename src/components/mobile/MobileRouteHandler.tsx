@@ -4,11 +4,9 @@ import { MobileDashboard } from './pages/MobileDashboard';
 import { MobileTransactions } from './pages/MobileTransactions';
 import { MobileGoals } from './pages/MobileGoals';
 import { MobileReports } from './pages/MobileReports';
-
-// Importações das páginas padrão para reutilizar a lógica
-import Settings from '@/pages/Settings';
-import Scheduled from '@/pages/Scheduled';
-import Categories from '@/pages/Categories';
+import { MobileScheduled } from './pages/MobileScheduled';
+import { MobileCategories } from './pages/MobileCategories';
+import { MobileSettings } from './pages/MobileSettings';
 
 export const MobileRouteHandler = () => {
   const location = useLocation();
@@ -25,11 +23,11 @@ export const MobileRouteHandler = () => {
     case '/reports':
       return <MobileReports />;
     case '/settings':
-      return <Settings />; // Usando o componente original por enquanto
+      return <MobileSettings />;
     case '/scheduled':
-      return <Scheduled />; // Usando o componente original por enquanto
+      return <MobileScheduled />;
     case '/categories':
-      return <Categories />; // Usando o componente original por enquanto
+      return <MobileCategories />;
     default:
       return <MobileDashboard />; // Fallback para dashboard
   }

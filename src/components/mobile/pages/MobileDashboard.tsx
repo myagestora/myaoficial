@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -12,12 +12,40 @@ import {
   CreditCard
 } from 'lucide-react';
 import { MobilePageWrapper } from '../MobilePageWrapper';
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { useGoals } from '@/hooks/useGoals';
 
 export const MobileDashboard = () => {
   const [showValues, setShowValues] = useState(true);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { goals } = useGoals();
+
+  // Buscar estatísticas reais do usuário
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ['dashboard-stats', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
+      const { data: transactions, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('date', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
+      
+      if (error) throw error;
+      
+      const income = transactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0) || 0;
+      const expenses = transactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0) || 0;
+      const balance = income - expenses;
+      
+      return { income, expenses, balance, recentTransactions: transactions?.slice(-3) || [] };
+    },
+    enabled: !!user?.id
+  });
 
   const formatCurrency = (value: number) => {
     if (!showValues) return '****';
@@ -46,10 +74,10 @@ export const MobileDashboard = () => {
         </CardHeader>
         <CardContent className="pt-0">
           <div className="text-2xl font-bold text-primary">
-            {formatCurrency(5432.10)}
+            {isLoading ? '...' : formatCurrency(stats?.balance || 0)}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            +2.5% em relação ao mês passado
+            Saldo atual do mês
           </p>
         </CardContent>
       </Card>
@@ -84,7 +112,7 @@ export const MobileDashboard = () => {
           </CardHeader>
           <CardContent className="pt-0">
             <div className="text-lg font-semibold text-green-600">
-              {formatCurrency(8500.00)}
+              {isLoading ? '...' : formatCurrency(stats?.income || 0)}
             </div>
             <p className="text-xs text-muted-foreground">Este mês</p>
           </CardContent>
@@ -99,7 +127,7 @@ export const MobileDashboard = () => {
           </CardHeader>
           <CardContent className="pt-0">
             <div className="text-lg font-semibold text-red-600">
-              {formatCurrency(3067.90)}
+              {isLoading ? '...' : formatCurrency(stats?.expenses || 0)}
             </div>
             <p className="text-xs text-muted-foreground">Este mês</p>
           </CardContent>
@@ -115,24 +143,46 @@ export const MobileDashboard = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">Delivery</span>
-              <span className="text-sm text-muted-foreground">0% de R$ 200</span>
+          {goals && goals.length > 0 ? (
+            <>
+              {goals.slice(0, 2).map((goal) => (
+                <div key={goal.id} className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">{goal.title}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {Math.round(((goal.current_amount || 0) / goal.target_amount) * 100)}% de {formatCurrency(goal.target_amount)}
+                    </span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-2">
+                    <div 
+                      className="bg-primary h-2 rounded-full" 
+                      style={{ width: `${Math.min(100, ((goal.current_amount || 0) / goal.target_amount) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full"
+                onClick={() => navigate('/goals')}
+              >
+                Ver todas as metas
+              </Button>
+            </>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-sm text-muted-foreground mb-3">Nenhuma meta definida</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigate('/goals')}
+              >
+                Criar primeira meta
+              </Button>
             </div>
-            <div className="w-full bg-muted rounded-full h-2">
-              <div className="bg-red-500 h-2 rounded-full" style={{ width: '0%' }}></div>
-            </div>
-          </div>
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="w-full"
-            onClick={() => navigate('/goals')}
-          >
-            Ver todas as metas
-          </Button>
+          )}
         </CardContent>
       </Card>
 
@@ -142,31 +192,54 @@ export const MobileDashboard = () => {
           <CardTitle className="text-base">Transações Recentes</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {[1, 2, 3].map((item) => (
-            <div key={item} className="flex items-center justify-between py-2 border-b last:border-b-0">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                  <DollarSign size={14} className="text-primary" />
+          {stats?.recentTransactions && stats.recentTransactions.length > 0 ? (
+            <>
+              {stats.recentTransactions.map((transaction) => (
+                <div key={transaction.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      transaction.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                    }`}>
+                      <DollarSign size={14} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{transaction.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(transaction.date).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-sm font-semibold ${
+                      transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium">Supermercado</p>
-                  <p className="text-xs text-muted-foreground">Hoje, 14:30</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-semibold text-red-600">-R$ 89,50</p>
-              </div>
+              ))}
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full mt-3"
+                onClick={() => navigate('/transactions')}
+              >
+                Ver todas as transações
+              </Button>
+            </>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-sm text-muted-foreground mb-3">Nenhuma transação encontrada</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigate('/transactions')}
+              >
+                Adicionar primeira transação
+              </Button>
             </div>
-          ))}
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="w-full mt-3"
-            onClick={() => navigate('/transactions')}
-          >
-            Ver todas as transações
-          </Button>
+          )}
         </CardContent>
       </Card>
     </MobilePageWrapper>

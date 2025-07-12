@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { InstallPrompt } from './InstallPrompt';
+import { TransactionForm } from '@/components/transactions/TransactionForm';
 
 interface MobileAppLayoutProps {
   children?: React.ReactNode;
@@ -39,6 +40,7 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showTransactionForm, setShowTransactionForm] = useState(false);
 
   const currentPath = location.pathname;
 
@@ -60,8 +62,8 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
           "flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-200",
           "min-h-[60px] flex-1",
           isActive 
-            ? "bg-primary/10 text-primary" 
-            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            ? "bg-primary-foreground/20 text-primary-foreground" 
+            : "text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
         )}
       >
         <Icon size={20} className="mb-1" />
@@ -73,14 +75,13 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 relative z-40">
         <div className="flex items-center space-x-3">
           <img 
             src="https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png" 
             alt="Mya Gestora" 
-            className="h-8 w-8"
+            className="h-10 w-10 object-contain"
           />
-          <h1 className="text-lg font-semibold">Mya Gestora</h1>
         </div>
         
         <div className="flex items-center space-x-2">
@@ -88,7 +89,7 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
             variant="ghost"
             size="icon"
             className="h-10 w-10"
-            onClick={() => navigate('/transactions')}
+            onClick={() => setShowTransactionForm(true)}
           >
             <Plus size={20} />
           </Button>
@@ -99,7 +100,7 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
                 <Menu size={20} />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-72">
+            <SheetContent side="right" className="w-72 z-50">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-semibold">Menu</h2>
                 <Button
@@ -144,7 +145,7 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t p-2">
+      <nav className="fixed bottom-0 left-0 right-0 bg-primary backdrop-blur supports-[backdrop-filter]:bg-primary border-t border-primary-foreground/20 p-2 z-40">
         <div className="flex items-center justify-around max-w-md mx-auto">
           {navigationItems.map((item) => (
             <NavItem
@@ -156,6 +157,28 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
           ))}
         </div>
       </nav>
+
+      {/* Transaction Form Modal */}
+      {showTransactionForm && (
+        <div className="fixed inset-0 z-50 bg-background">
+          <div className="flex items-center justify-between p-4 border-b">
+            <h2 className="text-lg font-semibold">Nova Transação</h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowTransactionForm(false)}
+            >
+              <X size={20} />
+            </Button>
+          </div>
+          <div className="p-4">
+            <TransactionForm 
+              isOpen={showTransactionForm}
+              onClose={() => setShowTransactionForm(false)}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Install Prompt */}
       <InstallPrompt />

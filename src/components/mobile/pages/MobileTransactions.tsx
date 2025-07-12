@@ -10,54 +10,76 @@ import {
   TrendingUp,
   TrendingDown,
   Calendar,
-  CreditCard
+  CreditCard,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import { MobilePageWrapper } from '../MobilePageWrapper';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export const MobileTransactions = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('todas');
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  const transactions = [
-    {
-      id: 1,
-      title: 'Supermercado Extra',
-      category: 'Alimentação',
-      amount: -89.50,
-      type: 'expense',
-      date: '2025-01-12',
-      time: '14:30'
+  // Buscar transações reais
+  const { data: transactions = [], isLoading } = useQuery({
+    queryKey: ['transactions', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('transactions')
+        .select(`
+          *,
+          categories (
+            name,
+            color
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('date', { ascending: false })
+        .limit(50);
+      
+      if (error) throw error;
+      return data || [];
     },
-    {
-      id: 2,
-      title: 'Salário',
-      category: 'Salário',
-      amount: 5000.00,
-      type: 'income',
-      date: '2025-01-10',
-      time: '09:00'
+    enabled: !!user?.id
+  });
+
+  // Mutation para deletar transação
+  const deleteTransactionMutation = useMutation({
+    mutationFn: async (transactionId: string) => {
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', transactionId);
+      
+      if (error) throw error;
     },
-    {
-      id: 3,
-      title: 'Conta de Luz',
-      category: 'Contas',
-      amount: -156.78,
-      type: 'expense',
-      date: '2025-01-09',
-      time: '16:45'
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      toast({
+        title: "Transação excluída",
+        description: "A transação foi removida com sucesso.",
+      });
     },
-    {
-      id: 4,
-      title: 'Freelance',
-      category: 'Renda Extra',
-      amount: 800.00,
-      type: 'income',
-      date: '2025-01-08',
-      time: '20:30'
+    onError: (error) => {
+      toast({
+        title: "Erro ao excluir transação",
+        description: "Ocorreu um erro ao tentar excluir a transação.",
+        variant: "destructive",
+      });
     }
-  ];
+  });
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -67,15 +89,17 @@ export const MobileTransactions = () => {
   };
 
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit'
-    });
+    try {
+      return format(new Date(date), 'dd/MM', { locale: ptBR });
+    } catch {
+      return date;
+    }
   };
 
   const filteredTransactions = transactions.filter(transaction => {
+    const categoryName = transaction.categories?.name || '';
     const matchesSearch = transaction.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         transaction.category.toLowerCase().includes(searchTerm.toLowerCase());
+                         categoryName.toLowerCase().includes(searchTerm.toLowerCase());
     
     if (selectedFilter === 'todas') return matchesSearch;
     if (selectedFilter === 'receitas') return matchesSearch && transaction.type === 'income';
@@ -83,6 +107,10 @@ export const MobileTransactions = () => {
     
     return matchesSearch;
   });
+
+  // Calcular estatísticas
+  const income = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+  const expenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
 
   return (
     <MobilePageWrapper>
@@ -103,7 +131,7 @@ export const MobileTransactions = () => {
               <TrendingUp className="h-4 w-4 text-green-600" />
               <div>
                 <p className="text-xs text-green-700">Receitas</p>
-                <p className="text-sm font-semibold text-green-800">R$ 5.800,00</p>
+                <p className="text-sm font-semibold text-green-800">{formatCurrency(income)}</p>
               </div>
             </div>
           </CardContent>
@@ -115,7 +143,7 @@ export const MobileTransactions = () => {
               <TrendingDown className="h-4 w-4 text-red-600" />
               <div>
                 <p className="text-xs text-red-700">Despesas</p>
-                <p className="text-sm font-semibold text-red-800">R$ 246,28</p>
+                <p className="text-sm font-semibold text-red-800">{formatCurrency(expenses)}</p>
               </div>
             </div>
           </CardContent>
@@ -155,51 +183,93 @@ export const MobileTransactions = () => {
 
       {/* Lista de transações */}
       <div className="space-y-3">
-        {filteredTransactions.map((transaction) => (
-          <Card key={transaction.id} className="hover:shadow-sm transition-shadow">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    transaction.type === 'income' 
-                      ? 'bg-green-100 text-green-600' 
-                      : 'bg-red-100 text-red-600'
-                  }`}>
-                    {transaction.type === 'income' ? 
-                      <TrendingUp size={18} /> : 
-                      <TrendingDown size={18} />
-                    }
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{transaction.title}</p>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <Badge variant="secondary" className="text-xs">
-                        {transaction.category}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground flex items-center">
-                        <Calendar size={12} className="mr-1" />
-                        {formatDate(transaction.date)} • {transaction.time}
-                      </span>
+        {isLoading ? (
+          Array.from({ length: 5 }).map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-4">
+                <div className="h-16 bg-muted rounded" />
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          filteredTransactions.map((transaction) => (
+            <Card key={transaction.id} className="hover:shadow-sm transition-shadow">
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        transaction.type === 'income' 
+                          ? 'bg-green-100 text-green-600' 
+                          : 'bg-red-100 text-red-600'
+                      }`}>
+                        {transaction.type === 'income' ? 
+                          <TrendingUp size={18} /> : 
+                          <TrendingDown size={18} />
+                        }
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">{transaction.title}</p>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <Badge variant="secondary" className="text-xs">
+                            {transaction.categories?.name || 'Sem categoria'}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground flex items-center">
+                            <Calendar size={12} className="mr-1" />
+                            {formatDate(transaction.date)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className={`font-semibold ${
+                        transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                      </p>
                     </div>
                   </div>
+                  
+                  {/* Ações */}
+                  <div className="flex space-x-2 pt-2 border-t">
+                    <Button variant="outline" size="sm" className="flex-1">
+                      <Edit size={14} className="mr-1" />
+                      Editar
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => deleteTransactionMutation.mutate(transaction.id)}
+                      disabled={deleteTransactionMutation.isPending}
+                    >
+                      <Trash2 size={14} />
+                    </Button>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className={`font-semibold ${
-                    transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
 
-      {/* Botão para carregar mais */}
-      <Button variant="outline" className="w-full mt-4">
-        Carregar mais transações
-      </Button>
+      {filteredTransactions.length === 0 && !isLoading && (
+        <Card className="mt-6">
+          <CardContent className="p-8 text-center">
+            <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="font-medium text-lg mb-2">Nenhuma transação encontrada</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              {searchTerm || selectedFilter !== 'todas' 
+                ? 'Tente ajustar os filtros ou termo de busca'
+                : 'Comece adicionando sua primeira transação'
+              }
+            </p>
+            <Button>
+              <Plus size={16} className="mr-2" />
+              Nova Transação
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </MobilePageWrapper>
   );
 };
