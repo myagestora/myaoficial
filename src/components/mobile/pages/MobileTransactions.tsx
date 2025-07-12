@@ -26,6 +26,7 @@ import { ptBR } from 'date-fns/locale';
 export const MobileTransactions = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('todas');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -56,12 +57,18 @@ export const MobileTransactions = () => {
     enabled: !!user?.id
   });
 
-  // Função para deletar transação com confirmação
-  const deleteTransaction = async (transactionId: string, transactionTitle: string) => {
-    const confirmed = window.confirm(`Tem certeza que deseja excluir a transação "${transactionTitle}"? Esta ação não pode ser desfeita.`);
-    
-    if (!confirmed) return;
+  // Função para confirmar exclusão
+  const confirmDelete = (transactionId: string) => {
+    setDeletingId(transactionId);
+  };
 
+  // Função para cancelar exclusão
+  const cancelDelete = () => {
+    setDeletingId(null);
+  };
+
+  // Função para deletar transação
+  const deleteTransaction = async (transactionId: string) => {
     try {
       const { error } = await supabase
         .from('transactions')
@@ -70,6 +77,7 @@ export const MobileTransactions = () => {
       
       if (error) throw error;
       
+      setDeletingId(null);
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       toast({
         title: "Transação excluída",
@@ -237,25 +245,52 @@ export const MobileTransactions = () => {
                     </div>
                   </div>
                   
-                  {/* Ações */}
-                  <div className="flex space-x-2 pt-2 border-t">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1"
-                      onClick={() => navigate(`/transactions/editar/${transaction.id}`)}
-                    >
-                      <Edit size={14} className="mr-1" />
-                      Editar
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => deleteTransaction(transaction.id, transaction.title)}
-                    >
-                      <Trash2 size={14} />
-                    </Button>
-                  </div>
+                   {/* Ações */}
+                   {deletingId === transaction.id ? (
+                     // Confirmação inline
+                     <div className="space-y-3 pt-2 border-t">
+                       <p className="text-sm text-center text-muted-foreground">
+                         Deseja realmente excluir esta transação?
+                       </p>
+                       <div className="flex space-x-2">
+                         <Button 
+                           variant="destructive" 
+                           size="sm" 
+                           className="flex-1"
+                           onClick={() => deleteTransaction(transaction.id)}
+                         >
+                           Confirmar
+                         </Button>
+                         <Button 
+                           variant="outline" 
+                           size="sm" 
+                           className="flex-1"
+                           onClick={cancelDelete}
+                         >
+                           Cancelar
+                         </Button>
+                       </div>
+                     </div>
+                   ) : (
+                     <div className="flex space-x-2 pt-2 border-t">
+                       <Button 
+                         variant="outline" 
+                         size="sm" 
+                         className="flex-1"
+                         onClick={() => navigate(`/transactions/editar/${transaction.id}`)}
+                       >
+                         <Edit size={14} className="mr-1" />
+                         Editar
+                       </Button>
+                       <Button 
+                         variant="outline" 
+                         size="sm"
+                         onClick={() => confirmDelete(transaction.id)}
+                       >
+                         <Trash2 size={14} />
+                       </Button>
+                     </div>
+                   )}
                 </div>
               </CardContent>
             </Card>

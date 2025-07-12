@@ -60,7 +60,7 @@ export const MobileTransactionForm = () => {
   const selectedCategoryId = watch('category_id');
 
   // Buscar transação para edição
-  const { data: transaction } = useQuery({
+  const { data: transaction, isLoading: loadingTransaction } = useQuery({
     queryKey: ['transaction', id],
     queryFn: async () => {
       if (!id) return null;
@@ -75,12 +75,13 @@ export const MobileTransactionForm = () => {
           )
         `)
         .eq('id', id)
-        .single();
+        .eq('user_id', user?.id)
+        .maybeSingle();
       
       if (error) throw error;
       return data;
     },
-    enabled: !!id,
+    enabled: !!id && !!user?.id,
   });
 
   // Buscar categorias do banco de dados
@@ -229,31 +230,49 @@ export const MobileTransactionForm = () => {
 
   // Preencher formulário quando transação for carregada
   useEffect(() => {
-    if (transaction) {
-      setValue('title', transaction.title);
-      setValue('amount', Number(transaction.amount));
-      setValue('type', transaction.type);
-      setValue('date', transaction.date);
-      setValue('description', transaction.description || '');
-      setValue('is_recurring', transaction.is_recurring || false);
-      
-      if (transaction.is_recurring) {
-        setValue('recurrence_frequency', transaction.recurrence_frequency);
-        setValue('recurrence_interval', transaction.recurrence_interval || 1);
-        setValue('recurrence_end_date', transaction.recurrence_end_date || '');
-      }
+    if (transaction && isEditing) {
+      reset({
+        title: transaction.title,
+        amount: Number(transaction.amount),
+        type: transaction.type,
+        category_id: transaction.category_id || '',
+        date: transaction.date,
+        description: transaction.description || '',
+        is_recurring: transaction.is_recurring || false,
+        recurrence_frequency: transaction.recurrence_frequency || undefined,
+        recurrence_interval: transaction.recurrence_interval || 1,
+        recurrence_end_date: transaction.recurrence_end_date || '',
+      });
     }
-  }, [transaction, setValue]);
+  }, [transaction, isEditing, reset]);
 
-  // Definir categoria após carregar
-  useEffect(() => {
-    if (transaction && categories && categories.length > 0) {
-      const categoryExists = categories.find(cat => cat.id === transaction.category_id);
-      if (categoryExists) {
-        setValue('category_id', transaction.category_id);
-      }
-    }
-  }, [transaction, categories, setValue]);
+  // Verificar se transação não existe ou não pertence ao usuário
+  if (isEditing && !loadingTransaction && !transaction) {
+    return (
+      <MobilePageWrapper>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate('/transactions')}
+            >
+              <ArrowLeft size={20} />
+            </Button>
+            <h1 className="text-xl font-bold">Transação não encontrada</h1>
+          </div>
+        </div>
+        <div className="text-center py-8">
+          <p className="text-muted-foreground mb-4">
+            A transação que você está tentando editar não foi encontrada.
+          </p>
+          <Button onClick={() => navigate('/transactions')}>
+            Voltar para Transações
+          </Button>
+        </div>
+      </MobilePageWrapper>
+    );
+  }
 
   return (
     <MobilePageWrapper>
@@ -272,6 +291,16 @@ export const MobileTransactionForm = () => {
           </h1>
         </div>
       </div>
+
+      {/* Loading para transação em edição */}
+      {isEditing && loadingTransaction && (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">Carregando transação...</p>
+        </div>
+      )}
+
+      {/* Formulário só é exibido se não estiver carregando */}
+      {(!isEditing || (isEditing && !loadingTransaction && transaction)) && (
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Tipo e Valor */}
@@ -468,6 +497,7 @@ export const MobileTransactionForm = () => {
           </Button>
         </div>
       </form>
+      )}
     </MobilePageWrapper>
   );
 };
