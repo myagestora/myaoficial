@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, ArrowUpCircle, ArrowDownCircle, Edit, Trash2, Repeat } from 'lucide-react';
+import { MobileOptimizedCard } from '@/components/ui/mobile-optimized-card';
+import { MobileListItem } from '@/components/ui/mobile-list-item';
 import { TransactionForm } from '@/components/transactions/TransactionForm';
 import { TransactionFilters } from '@/components/transactions/TransactionFilters';
 import { TransactionStats } from '@/components/transactions/TransactionStats';
@@ -174,17 +176,21 @@ const Transactions = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Transações</h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Gerencie suas receitas e despesas com filtros avançados
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Transações</h1>
+          <p className="text-sm text-muted-foreground">
+            Gerencie suas receitas e despesas
           </p>
         </div>
-        <Button onClick={() => setIsFormOpen(true)} className="bg-primary hover:bg-primary/90">
-          <Plus className="mr-2 h-4 w-4" />
+        <Button 
+          onClick={() => setIsFormOpen(true)} 
+          className="w-full md:w-auto min-h-[48px] text-base font-medium"
+          size="lg"
+        >
+          <Plus className="mr-2 h-5 w-5" />
           Nova Transação
         </Button>
       </div>
@@ -208,71 +214,68 @@ const Transactions = () => {
       />
 
       {/* Transactions List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>Lista de Transações</span>
-            <Badge variant="outline" className="ml-2">
-              {filteredTransactions.length} de {transactions.length}
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {filteredTransactions.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-                  <ArrowUpCircle className="h-8 w-8 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                  {hasActiveFilters ? 'Nenhuma transação encontrada' : 'Nenhuma transação cadastrada'}
-                </h3>
-                <p className="text-gray-500 mb-4">
-                  {hasActiveFilters 
-                    ? 'Tente ajustar os filtros para encontrar suas transações.'
-                    : 'Comece criando sua primeira transação!'
-                  }
-                </p>
-                {hasActiveFilters && (
-                  <Button variant="outline" onClick={clearFilters}>
-                    Limpar Filtros
-                  </Button>
-                )}
+      <MobileOptimizedCard 
+        title="Lista de Transações"
+        headerAction={
+          <Badge variant="outline" className="ml-2">
+            {filteredTransactions.length} de {transactions.length}
+          </Badge>
+        }
+      >
+        <div className="space-y-3">
+          {filteredTransactions.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
+                <ArrowUpCircle className="h-8 w-8 text-muted-foreground" />
               </div>
-            ) : (
-              filteredTransactions.map((transaction) => (
-                <div
-                  key={transaction.id}
-                  className="flex items-center justify-between p-4 rounded-lg border hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className={`p-3 rounded-full relative ${
+              <h3 className="text-lg font-medium text-foreground mb-2">
+                {hasActiveFilters ? 'Nenhuma transação encontrada' : 'Nenhuma transação cadastrada'}
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                {hasActiveFilters 
+                  ? 'Tente ajustar os filtros para encontrar suas transações.'
+                  : 'Comece criando sua primeira transação!'
+                }
+              </p>
+              {hasActiveFilters && (
+                <Button variant="outline" onClick={clearFilters} className="min-h-[44px]">
+                  Limpar Filtros
+                </Button>
+              )}
+            </div>
+          ) : (
+            filteredTransactions.map((transaction) => (
+              <MobileListItem key={transaction.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start space-x-3 flex-1 min-w-0">
+                    <div className={`p-3 rounded-full relative flex-shrink-0 ${
                       transaction.type === 'income' 
                         ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400' 
                         : 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400'
                     }`}>
                       {transaction.type === 'income' ? (
-                        <ArrowUpCircle className="h-5 w-5" />
+                        <ArrowUpCircle className="h-6 w-6" />
                       ) : (
-                        <ArrowDownCircle className="h-5 w-5" />
+                        <ArrowDownCircle className="h-6 w-6" />
                       )}
                       {transaction.is_recurring && (
                         <Repeat className="h-3 w-3 absolute -top-1 -right-1 bg-blue-500 text-white rounded-full p-0.5" />
                       )}
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-lg">{transaction.title}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <p className="font-medium text-base truncate">{transaction.title}</p>
                         {transaction.parent_transaction_id && (
                           <Badge variant="outline" className="text-xs">
                             Auto
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center space-x-3 mt-1">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
                         {transaction.categories && (
                           <Badge 
                             variant="secondary"
+                            className="text-xs"
                             style={{ 
                               backgroundColor: transaction.categories.color + '20',
                               color: transaction.categories.color,
@@ -282,7 +285,7 @@ const Transactions = () => {
                             {transaction.categories.name}
                           </Badge>
                         )}
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-muted-foreground">
                           {formatDate(transaction.date)}
                         </span>
                         {transaction.is_recurring && (
@@ -293,7 +296,7 @@ const Transactions = () => {
                         )}
                       </div>
                       {transaction.description && (
-                        <p className="text-sm text-gray-500 mt-1">{transaction.description}</p>
+                        <p className="text-sm text-muted-foreground mt-1 truncate">{transaction.description}</p>
                       )}
                       {transaction.is_recurring && transaction.next_recurrence_date && (
                         <p className="text-xs text-blue-600 mt-1">
@@ -302,38 +305,41 @@ const Transactions = () => {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center space-x-4">
-                    <span className={`font-bold text-xl ${
-                      transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {transaction.type === 'income' ? '+' : ''}R$ {Math.abs(Number(transaction.amount)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </span>
-                    <div className="flex space-x-2">
+                  <div className="flex flex-col items-end space-y-3 flex-shrink-0">
+                    <div className="text-right">
+                      <span className={`font-bold text-lg block ${
+                        transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {transaction.type === 'income' ? '+' : ''}R$ {Math.abs(Number(transaction.amount)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    <div className="flex space-x-1">
                       <Button 
                         variant="ghost" 
                         size="sm"
+                        className="min-h-[44px] min-w-[44px]"
                         onClick={() => handleEditTransaction(transaction)}
                         title="Editar transação"
                       >
-                        <Edit className="h-4 w-4" />
+                        <Edit className="h-5 w-5" />
                       </Button>
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className="text-red-600 hover:text-red-700"
+                        className="text-red-600 hover:text-red-700 min-h-[44px] min-w-[44px]"
                         onClick={() => handleDeleteTransaction(transaction.id)}
                         title="Excluir transação"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-5 w-5" />
                       </Button>
                     </div>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              </MobileListItem>
+            ))
+          )}
+        </div>
+      </MobileOptimizedCard>
 
       {/* Transaction Form Modal */}
       <TransactionForm 

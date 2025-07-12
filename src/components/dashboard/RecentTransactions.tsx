@@ -7,6 +7,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { MobileOptimizedCard } from '@/components/ui/mobile-optimized-card';
+import { MobileListItem } from '@/components/ui/mobile-list-item';
 
 export const RecentTransactions = () => {
   const { user } = useAuth();
@@ -99,62 +101,68 @@ export const RecentTransactions = () => {
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Transações Recentes</CardTitle>
+    <MobileOptimizedCard 
+      title="Transações Recentes"
+      headerAction={
         <Button 
           variant="outline" 
           size="sm"
           onClick={() => navigate('/transactions')}
+          className="min-h-[44px] px-4"
         >
           Ver Todas
         </Button>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {transactions.map((transaction: any) => (
-            <div
-              key={transaction.id}
-              className="flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-            >
-              <div className="flex items-center space-x-3">
-                <div className={`p-2 rounded-full ${
+      }
+    >
+      <div className="space-y-3">
+        {transactions.map((transaction: any) => (
+          <MobileListItem key={transaction.id} variant="compact">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3 flex-1 min-w-0">
+                <div className={`p-2.5 rounded-full flex-shrink-0 ${
                   transaction.type === 'income' 
                     ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400' 
                     : 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400'
                 }`}>
                   {transaction.type === 'income' ? (
-                    <ArrowUpCircle className="h-4 w-4" />
+                    <ArrowUpCircle className="h-5 w-5" />
                   ) : (
-                    <ArrowDownCircle className="h-4 w-4" />
+                    <ArrowDownCircle className="h-5 w-5" />
                   )}
                 </div>
-                <div>
-                  <p className="font-medium">{transaction.title}</p>
-                  <div className="flex items-center space-x-2">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-base truncate">{transaction.title}</p>
+                  <div className="flex items-center space-x-2 mt-1">
                     <Badge variant="secondary" className="text-xs">
                       {transaction.categories?.name || 'Sem categoria'}
                     </Badge>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-muted-foreground">
                       {formatDate(transaction.date)}
                     </span>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <span className={`font-bold ${
-                  transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {transaction.type === 'income' ? '+' : '-'}R$ {Math.abs(Number(transaction.amount)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </span>
-                <Button variant="ghost" size="sm">
-                  <MoreHorizontal className="h-4 w-4" />
+              <div className="flex items-center space-x-2 flex-shrink-0">
+                <div className="text-right">
+                  <span className={`font-bold text-sm ${
+                    transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {transaction.type === 'income' ? '+' : '-'}R$
+                  </span>
+                  <div className={`font-bold text-base ${
+                    transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {Math.abs(Number(transaction.amount)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm" className="min-h-[44px] min-w-[44px]">
+                  <MoreHorizontal className="h-5 w-5" />
                 </Button>
               </div>
             </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+          </MobileListItem>
+        ))}
+      </div>
+    </MobileOptimizedCard>
   );
 };
