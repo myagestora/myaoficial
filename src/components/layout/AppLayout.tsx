@@ -54,14 +54,14 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
 
   // Layout Desktop
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="min-h-screen bg-background">
       <div className="fixed inset-y-0 left-0 z-50 w-64 bg-sidebar-background border-r border-sidebar-border">
         <Sidebar />
       </div>
       
-      <div className="flex-1 lg:ml-64 flex flex-col">
+      <div className="lg:ml-64">
         <Header onMenuClick={() => {}} />
-        <main className="flex-1 overflow-auto p-4">
+        <main className="p-4">
           {children || <Outlet />}
         </main>
       </div>
