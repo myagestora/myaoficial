@@ -68,7 +68,14 @@ export const MobileCategories = () => {
           <Grid3X3 className="h-6 w-6 mr-2" />
           Categorias
         </h1>
-        <Button size="sm" className="flex items-center space-x-2">
+        <Button 
+          size="sm" 
+          className="flex items-center space-x-2"
+          onClick={() => {
+            // TODO: Implementar modal de criação de categoria
+            console.log('Criar nova categoria');
+          }}
+        >
           <Plus size={16} />
           <span>Nova</span>
         </Button>

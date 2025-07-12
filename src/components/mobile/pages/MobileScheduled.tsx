@@ -62,7 +62,14 @@ export const MobileScheduled = () => {
           <Calendar className="h-6 w-6 mr-2" />
           Agendadas
         </h1>
-        <Button size="sm" className="flex items-center space-x-2">
+        <Button 
+          size="sm" 
+          className="flex items-center space-x-2"
+          onClick={() => {
+            // TODO: Implementar modal de criação de transação agendada
+            console.log('Criar nova transação agendada');
+          }}
+        >
           <Plus size={16} />
           <span>Nova</span>
         </Button>

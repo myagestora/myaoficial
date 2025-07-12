@@ -73,13 +73,13 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
 
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
-      {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 relative z-40">
+      {/* Header - Fixed */}
+      <header className="fixed top-0 left-0 right-0 flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
         <div className="flex items-center space-x-3">
           <img 
             src="https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png" 
             alt="Mya Gestora" 
-            className="h-10 w-10 object-contain"
+            className="h-12 w-auto object-contain"
           />
         </div>
         
@@ -89,19 +89,34 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
               <Menu size={20} />
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="w-72 z-50 bg-background">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold">Menu</h2>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <X size={20} />
-              </Button>
+          <SheetContent side="right" className="w-72 z-[60] bg-background border-l">
+            <div className="flex items-center justify-between mb-6 pt-4">
+              <h2 className="text-lg font-semibold text-foreground">Menu</h2>
             </div>
             
             <nav className="space-y-2">
+              {/* Adicionar todos os itens do menu principal também */}
+              {navigationItems.map((item) => (
+                <button
+                  key={item.path}
+                  onClick={() => {
+                    navigate(item.path);
+                    setIsMenuOpen(false);
+                  }}
+                  className={cn(
+                    "flex items-center space-x-3 w-full p-3 rounded-lg transition-colors text-left",
+                    currentPath === item.path
+                      ? "bg-primary/10 text-primary"
+                      : "text-foreground hover:bg-muted"
+                  )}
+                >
+                  <item.icon size={20} />
+                  <span className="font-medium">{item.label}</span>
+                </button>
+              ))}
+              
+              <div className="my-4 border-t border-muted" />
+              
               {moreItems.map((item) => (
                 <button
                   key={item.path}
@@ -110,7 +125,7 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
                     setIsMenuOpen(false);
                   }}
                   className={cn(
-                    "flex items-center space-x-3 w-full p-3 rounded-lg transition-colors",
+                    "flex items-center space-x-3 w-full p-3 rounded-lg transition-colors text-left",
                     currentPath === item.path
                       ? "bg-primary/10 text-primary"
                       : "text-foreground hover:bg-muted"
@@ -125,14 +140,14 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
         </Sheet>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        <div className="p-4 pb-20">
+      {/* Main Content - With top and bottom padding for fixed header/footer */}
+      <main className="flex-1 overflow-auto pt-20 pb-20">
+        <div className="p-4">
           {children || <MobileRouteHandler />}
         </div>
       </main>
 
-      {/* Bottom Navigation */}
+      {/* Bottom Navigation - Fixed */}
       <nav className="fixed bottom-0 left-0 right-0 bg-primary backdrop-blur supports-[backdrop-filter]:bg-primary border-t border-primary-foreground/20 p-2 z-40">
         <div className="flex items-center justify-around max-w-md mx-auto">
           {navigationItems.map((item) => (

@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { TransactionForm } from '@/components/transactions/TransactionForm';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +38,8 @@ import {
 export const MobileTransactions = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('todas');
+  const [isTransactionFormOpen, setIsTransactionFormOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState(null);
   
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -127,7 +131,14 @@ export const MobileTransactions = () => {
       {/* Header com botão de nova transação */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">Transações</h1>
-        <Button size="sm" className="flex items-center space-x-2">
+        <Button 
+          size="sm" 
+          className="flex items-center space-x-2"
+          onClick={() => {
+            setEditingTransaction(null);
+            setIsTransactionFormOpen(true);
+          }}
+        >
           <Plus size={16} />
           <span>Nova</span>
         </Button>
@@ -242,7 +253,15 @@ export const MobileTransactions = () => {
                   
                   {/* Ações */}
                   <div className="flex space-x-2 pt-2 border-t">
-                    <Button variant="outline" size="sm" className="flex-1">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => {
+                        setEditingTransaction(transaction);
+                        setIsTransactionFormOpen(true);
+                      }}
+                    >
                       <Edit size={14} className="mr-1" />
                       Editar
                     </Button>
@@ -251,26 +270,26 @@ export const MobileTransactions = () => {
                         <Button variant="outline" size="sm">
                           <Trash2 size={14} />
                         </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Tem certeza que deseja excluir a transação "{transaction.title}"? 
-                            Esta ação não pode ser desfeita.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => deleteTransactionMutation.mutate(transaction.id)}
-                            disabled={deleteTransactionMutation.isPending}
-                            className="bg-destructive hover:bg-destructive/90"
-                          >
-                            Excluir
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="max-w-sm mx-auto">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Tem certeza que deseja excluir a transação "{transaction.title}"? 
+                              Esta ação não pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteTransactionMutation.mutate(transaction.id)}
+                              disabled={deleteTransactionMutation.isPending}
+                              className="bg-destructive hover:bg-destructive/90"
+                            >
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
                     </AlertDialog>
                   </div>
                 </div>
@@ -291,13 +310,26 @@ export const MobileTransactions = () => {
                 : 'Comece adicionando sua primeira transação'
               }
             </p>
-            <Button>
+            <Button onClick={() => {
+              setEditingTransaction(null);
+              setIsTransactionFormOpen(true);
+            }}>
               <Plus size={16} className="mr-2" />
               Nova Transação
             </Button>
           </CardContent>
         </Card>
       )}
+
+      {/* Transaction Form Modal */}
+      <TransactionForm
+        isOpen={isTransactionFormOpen}
+        onClose={() => {
+          setIsTransactionFormOpen(false);
+          setEditingTransaction(null);
+        }}
+        transaction={editingTransaction}
+      />
     </MobilePageWrapper>
   );
 };

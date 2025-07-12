@@ -89,7 +89,14 @@ export const MobileGoals = () => {
           <Target className="h-6 w-6 mr-2" />
           Metas
         </h1>
-        <Button size="sm" className="flex items-center space-x-2">
+        <Button 
+          size="sm" 
+          className="flex items-center space-x-2"
+          onClick={() => {
+            // TODO: Implementar modal de criação de meta
+            console.log('Criar nova meta');
+          }}
+        >
           <Plus size={16} />
           <span>Nova Meta</span>
         </Button>
