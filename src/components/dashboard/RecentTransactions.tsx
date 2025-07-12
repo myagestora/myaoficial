@@ -135,7 +135,7 @@ export const RecentTransactions = () => {
                 )}
               </div>
               
-              <div className="flex-1 min-w-0 pr-16">
+              <div className="flex-1 min-w-0 pr-20">
                 {/* Título completo sem truncate */}
                 <h3 className="font-semibold text-base leading-tight">{transaction.title}</h3>
               </div>
