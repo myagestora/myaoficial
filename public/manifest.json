@@ -1,0 +1,53 @@
+{
+  "name": "Mya Gestora - Controle Financeiro",
+  "short_name": "Mya Gestora",
+  "description": "Sistema inteligente de controle financeiro pessoal",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "scope": "/",
+  "categories": ["finance", "business", "productivity"],
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nova Transação",
+      "short_name": "Transação",
+      "description": "Adicionar uma nova transação",
+      "url": "/transactions",
+      "icons": [
+        {
+          "src": "https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Início",
+      "description": "Ver visão geral das finanças",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}

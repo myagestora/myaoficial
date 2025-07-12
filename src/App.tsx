@@ -9,8 +9,10 @@ import { ThemeProvider } from "@/hooks/useTheme";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { SubscriptionGuard } from "@/components/subscription/SubscriptionGuard";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { MobileAppLayout } from "@/components/mobile/MobileAppLayout";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { SEOHead } from "@/components/SEOHead";
+import { shouldUseMobileLayout } from "@/hooks/useMobileDetection";
 
 // Regular pages
 import Index from "./pages/Index";
@@ -38,6 +40,17 @@ import AdminAPI from "./pages/admin/API";
 
 const queryClient = new QueryClient();
 
+// Componente para escolher o layout baseado no dispositivo
+const LayoutWrapper = () => {
+  const useMobile = shouldUseMobileLayout();
+  
+  if (useMobile) {
+    return <MobileAppLayout />;
+  }
+  
+  return <AppLayout />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
@@ -53,11 +66,11 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               
-              {/* Protected routes with AppLayout and subscription guard */}
+              {/* Protected routes with responsive layout and subscription guard */}
               <Route path="/*" element={
                 <ProtectedRoute>
                   <SubscriptionGuard>
-                    <AppLayout />
+                    <LayoutWrapper />
                   </SubscriptionGuard>
                 </ProtectedRoute>
               }>
