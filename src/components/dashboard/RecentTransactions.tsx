@@ -116,11 +116,11 @@ export const RecentTransactions = () => {
     >
       <div className="space-y-3">
         {transactions.map((transaction: any) => (
-          <div key={transaction.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 relative">
-            {/* Categoria no canto superior direito */}
-            <Badge variant="secondary" className="absolute top-3 right-3 text-xs px-2 py-1">
+          <div key={transaction.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 relative overflow-hidden">
+            {/* Categoria integrada ao contorno do card */}
+            <div className="absolute top-0 right-0 bg-primary text-primary-foreground text-xs px-3 py-1 rounded-bl-lg rounded-tr-xl">
               {transaction.categories?.name || 'Sem categoria'}
-            </Badge>
+            </div>
             
             <div className="flex items-start space-x-3">
               <div className={`p-2 rounded-full flex-shrink-0 ${
@@ -135,7 +135,7 @@ export const RecentTransactions = () => {
                 )}
               </div>
               
-              <div className="flex-1 min-w-0 space-y-2 pr-20">
+              <div className="flex-1 min-w-0 space-y-3 pr-16">
                 {/* Título em uma linha */}
                 <h3 className="font-semibold text-base leading-tight truncate">{transaction.title}</h3>
                 
@@ -145,19 +145,22 @@ export const RecentTransactions = () => {
                     {transaction.description}
                   </p>
                 )}
-                
-                {/* Linha com valor e data */}
-                <div className="flex items-center justify-between text-sm">
-                  <div className={`font-bold text-lg ${
-                    transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {transaction.type === 'income' ? '+' : '-'}R$ {Math.abs(Number(transaction.amount)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </div>
-                  
-                  <span className="text-muted-foreground font-medium">
-                    {formatDate(transaction.date)}
-                  </span>
+              </div>
+            </div>
+            
+            {/* Linha separadora */}
+            <div className="border-t border-gray-200 dark:border-gray-700 mt-3 pt-3">
+              {/* Linha com valor e data */}
+              <div className="flex items-center justify-between">
+                <div className={`font-bold text-lg ${
+                  transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {transaction.type === 'income' ? '+' : '-'}R$ {Math.abs(Number(transaction.amount)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </div>
+                
+                <span className="text-muted-foreground font-medium text-sm">
+                  {formatDate(transaction.date)}
+                </span>
               </div>
             </div>
           </div>
