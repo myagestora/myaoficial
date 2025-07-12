@@ -122,7 +122,7 @@ export const RecentTransactions = () => {
               {transaction.categories?.name || 'Sem categoria'}
             </div>
             
-            <div className="flex items-start space-x-3">
+            <div className="flex items-start gap-3">
               <div className={`p-2 rounded-full flex-shrink-0 ${
                 transaction.type === 'income' 
                   ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400' 
@@ -135,10 +135,8 @@ export const RecentTransactions = () => {
                 )}
               </div>
               
-              {/* Título ocupando toda a largura disponível */}
-              <div className="flex-1 pr-20">
-                <h3 className="font-semibold text-base leading-tight w-full">{transaction.title}</h3>
-              </div>
+              {/* Título ocupando máximo de espaço possível */}
+              <h3 className="font-semibold text-base leading-tight flex-1 pr-24">{transaction.title}</h3>
             </div>
             
             {/* Descrição ocupando toda a largura do card */}
