@@ -255,29 +255,28 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader className="pb-4">
+          <DialogTitle className="text-lg md:text-xl font-semibold">
             {isEditing ? 'Editar Transação' : 'Nova Transação'}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm text-muted-foreground">
             Preencha os dados da transação abaixo.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="type">Tipo</Label>
+              <Label htmlFor="type" className="text-sm font-medium">Tipo</Label>
               <Select
                 value={transactionType}
                 onValueChange={(value) => {
                   setValue('type', value as 'income' | 'expense');
-                  // Limpar categoria quando o tipo mudar
                   setValue('category_id', '');
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger className="min-h-[44px]">
                   <SelectValue placeholder="Selecione o tipo" />
                 </SelectTrigger>
                 <SelectContent>
@@ -286,56 +285,58 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
                 </SelectContent>
               </Select>
               {errors.type && (
-                <p className="text-sm text-red-600">{errors.type.message}</p>
+                <p className="text-sm text-destructive">{errors.type.message}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="amount">Valor</Label>
+              <Label htmlFor="amount" className="text-sm font-medium">Valor</Label>
               <Input
                 id="amount"
                 type="number"
                 step="0.01"
                 placeholder="0,00"
+                className="min-h-[44px] text-base"
                 {...register('amount', { valueAsNumber: true })}
               />
               {errors.amount && (
-                <p className="text-sm text-red-600">{errors.amount.message}</p>
+                <p className="text-sm text-destructive">{errors.amount.message}</p>
               )}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="title">Título</Label>
+            <Label htmlFor="title" className="text-sm font-medium">Título</Label>
             <Input
               id="title"
               placeholder="Ex: Supermercado, Salário..."
+              className="min-h-[44px] text-base"
               {...register('title')}
             />
             {errors.title && (
-              <p className="text-sm text-red-600">{errors.title.message}</p>
+              <p className="text-sm text-destructive">{errors.title.message}</p>
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="category_id">Categoria</Label>
+              <Label htmlFor="category_id" className="text-sm font-medium">Categoria</Label>
               <Select 
                 value={selectedCategoryId || ''} 
                 onValueChange={(value) => setValue('category_id', value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="min-h-[44px]">
                   <SelectValue placeholder="Selecione a categoria" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[200px]">
                   {categories?.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
+                    <SelectItem key={category.id} value={category.id} className="min-h-[44px]">
                       <div className="flex items-center gap-2">
                         <div 
-                          className="w-3 h-3 rounded-full" 
+                          className="w-3 h-3 rounded-full flex-shrink-0" 
                           style={{ backgroundColor: category.color }}
                         />
-                        {category.name}
+                        <span className="truncate">{category.name}</span>
                         {(category as any).is_default && (
                           <span className="text-xs text-muted-foreground">(padrão)</span>
                         )}
@@ -345,28 +346,30 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
                 </SelectContent>
               </Select>
               {errors.category_id && (
-                <p className="text-sm text-red-600">{errors.category_id.message}</p>
+                <p className="text-sm text-destructive">{errors.category_id.message}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="date">Data</Label>
+              <Label htmlFor="date" className="text-sm font-medium">Data</Label>
               <Input
                 id="date"
                 type="date"
+                className="min-h-[44px] text-base"
                 {...register('date')}
               />
               {errors.date && (
-                <p className="text-sm text-red-600">{errors.date.message}</p>
+                <p className="text-sm text-destructive">{errors.date.message}</p>
               )}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Observações (opcional)</Label>
+            <Label htmlFor="description" className="text-sm font-medium">Observações (opcional)</Label>
             <Textarea
               id="description"
               placeholder="Adicione observações..."
+              className="min-h-[80px] text-base resize-none"
               {...register('description')}
             />
           </div>
@@ -436,11 +439,20 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
             )}
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+          <DialogFooter className="flex flex-col gap-3 sm:flex-row sm:gap-2 pt-4 border-t">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onClose}
+              className="w-full sm:w-auto min-h-[44px] order-2 sm:order-1"
+            >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button 
+              type="submit" 
+              disabled={isSubmitting}
+              className="w-full sm:w-auto min-h-[44px] order-1 sm:order-2"
+            >
               {isSubmitting ? 'Salvando...' : (isEditing ? 'Atualizar' : 'Salvar')}
             </Button>
           </DialogFooter>

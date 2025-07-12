@@ -126,15 +126,23 @@ All colors MUST be HSL.
   /* Mobile-specific optimizations */
   @media (max-width: 768px) {
     /* Larger touch targets */
-    button, [role="button"] {
+    button, [role="button"], input, select, textarea {
       min-height: 44px;
     }
     
     /* Better spacing for dropdowns */
-    [data-radix-dropdown-menu-content] {
+    [data-radix-dropdown-menu-content], [data-radix-select-content] {
       max-width: 90vw;
-      max-height: 70vh;
+      max-height: 60vh;
       overflow-y: auto;
+      z-index: 999999;
+    }
+    
+    /* Dialog optimizations */
+    [data-radix-dialog-content] {
+      max-width: 95vw !important;
+      max-height: 95vh !important;
+      margin: 0 !important;
     }
     
     /* Improve scroll on mobile */
@@ -147,11 +155,13 @@ All colors MUST be HSL.
       overflow-x: hidden;
       -webkit-text-size-adjust: 100%;
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
     
     /* Prevent pull-to-refresh */
     body {
       overscroll-behavior-y: contain;
+      overscroll-behavior-x: none;
     }
     
     /* Safe area support */
@@ -163,10 +173,10 @@ All colors MUST be HSL.
       padding-top: env(safe-area-inset-top);
     }
     
-    /* Better sheet overlay */
+    /* Better overlay styling */
     [data-radix-dialog-overlay] {
-      backdrop-filter: blur(4px);
-      background-color: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(6px);
+      background-color: rgba(0, 0, 0, 0.7);
     }
     
     /* Prevent text selection on UI elements */
@@ -174,6 +184,46 @@ All colors MUST be HSL.
       -webkit-user-select: none;
       user-select: none;
       -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* Input and form optimizations */
+    input[type="number"], input[type="text"], input[type="date"], textarea, select {
+      font-size: 16px; /* Prevent zoom on iOS */
+      border-radius: 8px;
+    }
+    
+    /* Custom scrollbar for mobile */
+    .scrollbar-thin {
+      scrollbar-width: thin;
+      scrollbar-color: hsl(var(--muted)) transparent;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar {
+      width: 4px;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background-color: hsl(var(--muted));
+      border-radius: 2px;
+    }
+    
+    /* Better animation performance */
+    * {
+      will-change: auto;
+    }
+    
+    [data-state="open"] {
+      animation-duration: 0.3s;
+      animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    [data-state="closed"] {
+      animation-duration: 0.2s;
+      animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
     }
   }
 }

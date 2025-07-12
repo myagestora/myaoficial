@@ -93,19 +93,43 @@ export const DailyMovement = ({ dateRange }: DailyMovementProps) => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Movimentação Diária (Entradas e Saídas)</CardTitle>
+    <Card className="w-full touch-manipulation">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base md:text-lg font-semibold truncate">
+          Movimentação Diária
+        </CardTitle>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={dailyData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
+      <CardContent className="p-0 pt-3">
+        <ResponsiveContainer width="100%" height={250}>
+          <BarChart data={dailyData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+            <XAxis 
+              dataKey="date" 
+              fontSize={12}
+              tickLine={false}
+              axisLine={false}
+            />
+            <YAxis 
+              fontSize={12}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(value) => `R$ ${value.toLocaleString('pt-BR')}`}
+            />
             <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="receitas" fill="#10b981" name="Receitas Realizadas" />
-            <Bar dataKey="despesas" fill="#ef4444" name="Despesas Pagas" />
+            <Bar 
+              dataKey="receitas" 
+              fill="#10b981" 
+              name="Receitas" 
+              radius={[2, 2, 0, 0]}
+              maxBarSize={40}
+            />
+            <Bar 
+              dataKey="despesas" 
+              fill="#ef4444" 
+              name="Despesas" 
+              radius={[2, 2, 0, 0]}
+              maxBarSize={40}
+            />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>
