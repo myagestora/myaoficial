@@ -232,76 +232,78 @@ const Dashboard = () => {
       {/* Header */}
       <div className="flex flex-col space-y-4 lg:flex-row lg:justify-between lg:items-center lg:space-y-0 gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">Bem-vindo ao seu controle financeiro</p>
+          <h1 className="text-xl md:text-3xl font-bold text-foreground leading-tight">Dashboard</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Bem-vindo ao seu controle financeiro</p>
         </div>
-        <PeriodFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
+        <div className="w-full md:w-auto">
+          <PeriodFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
+        </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Receitas</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium leading-tight">Receitas</CardTitle>
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-lg md:text-2xl font-bold text-green-600 leading-tight">
               R$ {currentStats.totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
-            <p className="text-xs text-muted-foreground">Total de receitas</p>
+            <p className="text-xs text-muted-foreground leading-tight">Total de receitas</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Despesas Pagas</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium leading-tight">Despesas Pagas</CardTitle>
             <TrendingDown className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-lg md:text-2xl font-bold text-red-600 leading-tight">
               R$ {currentStats.paidExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
-            <p className="text-xs text-muted-foreground">Despesas realizadas</p>
+            <p className="text-xs text-muted-foreground leading-tight">Despesas realizadas</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">A Pagar</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium leading-tight">A Pagar</CardTitle>
             <TrendingDown className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
+            <div className="text-lg md:text-2xl font-bold text-orange-600 leading-tight">
               R$ {currentStats.pendingExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
-            <p className="text-xs text-muted-foreground">Despesas pendentes</p>
+            <p className="text-xs text-muted-foreground leading-tight">Despesas pendentes</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Saldo</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium leading-tight">Saldo</CardTitle>
             <DollarSign className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${
+            <div className={`text-lg md:text-2xl font-bold leading-tight ${
               currentStats.balance >= 0 ? 'text-blue-600' : 'text-red-600'
             }`}>
               R$ {currentStats.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
-            <p className="text-xs text-muted-foreground">Saldo atual</p>
+            <p className="text-xs text-muted-foreground leading-tight">Saldo atual</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Metas</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium leading-tight">Metas</CardTitle>
             <Target className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">{currentGoalsProgress}%</div>
-            <p className="text-xs text-muted-foreground">Progresso das metas</p>
+            <div className="text-lg md:text-2xl font-bold text-purple-600 leading-tight">{currentGoalsProgress}%</div>
+            <p className="text-xs text-muted-foreground leading-tight">Progresso das metas</p>
           </CardContent>
         </Card>
       </div>

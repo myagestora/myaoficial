@@ -178,13 +178,13 @@ const Reports = () => {
           <p className="text-gray-600 dark:text-gray-400">Análise detalhada das suas finanças</p>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline" onClick={handleExportCSV}>
-            <Download className="mr-2 h-4 w-4" />
-            Exportar CSV
+          <Button variant="outline" onClick={handleExportCSV} className="md:px-4 px-2">
+            <Download className="h-4 w-4 md:mr-2" />
+            <span className="hidden md:inline">Exportar CSV</span>
           </Button>
-          <Button variant="outline" onClick={handleExportPDF}>
-            <FileText className="mr-2 h-4 w-4" />
-            Exportar PDF
+          <Button variant="outline" onClick={handleExportPDF} className="md:px-4 px-2">
+            <FileText className="h-4 w-4 md:mr-2" />
+            <span className="hidden md:inline">Exportar PDF</span>
           </Button>
         </div>
       </div>

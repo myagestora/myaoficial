@@ -96,7 +96,7 @@ export const Header = ({
     await signOut();
     navigate('/login');
   };
-  return <header className="sticky top-0 z-40 border-b border-gray-200 dark:border-gray-700 px-4 py-3 h-[60px] backdrop-blur-sm" style={{
+  return <header className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 dark:border-gray-700 px-4 py-3 h-[60px] backdrop-blur-sm" style={{
     backgroundColor: primaryColor || '#222222'
   }}>
       <div className="flex items-center justify-between h-full">

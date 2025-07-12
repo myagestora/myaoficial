@@ -16,11 +16,11 @@ export const ScheduledHeader = ({ onNewSchedule }: ScheduledHeaderProps) => {
       </div>
       <Button 
         onClick={onNewSchedule} 
-        className="bg-primary hover:bg-primary/90 w-full sm:w-auto min-h-[44px] text-sm font-medium"
+        className="bg-primary hover:bg-primary/90 min-h-[44px] min-w-[44px] text-sm font-medium md:w-auto w-auto px-3"
         size="lg"
       >
-        <Plus className="mr-2 h-4 w-4 flex-shrink-0" />
-        <span className="truncate">Novo Agenda</span>
+        <Plus className="h-5 w-5 md:mr-2 flex-shrink-0" />
+        <span className="hidden md:inline">Novo Agenda</span>
       </Button>
     </div>
   );

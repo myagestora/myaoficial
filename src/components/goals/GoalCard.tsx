@@ -128,9 +128,9 @@ export const GoalCard = ({ goal, onEdit, onDelete, onAddAmount }: GoalCardProps)
               Editar
             </Button>
             {goal.goal_type === 'savings' && onAddAmount && (
-              <Button size="sm" onClick={() => onAddAmount(goal)}>
-                <Plus className="h-4 w-4 mr-1" />
-                Adicionar Valor
+              <Button size="sm" onClick={() => onAddAmount(goal)} className="min-h-[44px] md:px-4 px-2">
+                <Plus className="h-4 w-4 md:mr-1" />
+                <span className="hidden md:inline">Adicionar Valor</span>
               </Button>
             )}
             <Button 

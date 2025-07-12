@@ -187,11 +187,11 @@ const Transactions = () => {
         </div>
         <Button 
           onClick={() => setIsFormOpen(true)} 
-          className="w-full md:w-auto min-h-[48px] text-base font-medium"
+          className="min-h-[44px] md:w-auto w-auto md:px-4 px-3 text-base font-medium"
           size="lg"
         >
-          <Plus className="mr-2 h-5 w-5" />
-          Nova Transação
+          <Plus className="h-5 w-5 md:mr-2" />
+          <span className="hidden md:inline">Nova Transação</span>
         </Button>
       </div>
 

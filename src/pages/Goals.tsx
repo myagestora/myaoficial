@@ -133,9 +133,9 @@ const Goals = () => {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Metas Financeiras</h1>
           <p className="text-gray-600 dark:text-gray-400">Defina e acompanhe seus objetivos financeiros</p>
         </div>
-        <Button onClick={() => setIsFormOpen(true)} className="bg-primary hover:bg-primary/90">
-          <Plus className="mr-2 h-4 w-4" />
-          Nova Meta
+        <Button onClick={() => setIsFormOpen(true)} className="bg-primary hover:bg-primary/90 min-h-[44px] md:px-4 px-3">
+          <Plus className="h-5 w-5 md:mr-2" />
+          <span className="hidden md:inline">Nova Meta</span>
         </Button>
       </div>
 
