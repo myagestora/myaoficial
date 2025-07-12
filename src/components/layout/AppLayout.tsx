@@ -59,7 +59,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
         <Sidebar />
       </div>
       
-      <div className="flex-1 lg:ml-64">
+      <div className="flex-1 lg:ml-64 flex flex-col">
         <Header onMenuClick={() => {}} />
         <main className="flex-1 overflow-auto p-4">
           {children || <Outlet />}
