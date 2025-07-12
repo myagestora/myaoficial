@@ -41,24 +41,26 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
   }, []);
 
   return (
-    <div className="h-screen h-[100dvh] bg-background flex flex-col overflow-hidden">
+    <div className="h-screen h-[100dvh] bg-background relative overflow-hidden">
       {/* Header fixo mobile */}
-      <div className="flex-shrink-0">
-        <Header onMenuClick={handleMenuClick} />
-      </div>
+      <Header onMenuClick={handleMenuClick} />
       
-      {/* Conteúdo principal mobile - rolável com padding top para header fixo */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden pt-[60px]">
-        <div className="p-4 pb-8 min-h-full">
-          {children || <Outlet />}
-        </div>
-      </main>
+      {/* Conteúdo com padding top para não ficar atrás do header */}
+      <div className="pt-[60px] h-full overflow-hidden">
+      
+        {/* Conteúdo principal mobile - rolável */}
+        <main className="h-full overflow-y-auto overflow-x-hidden">
+          <div className="p-4 pb-8 min-h-full">
+            {children || <Outlet />}
+          </div>
+        </main>
+      </div>
       
       {/* Sidebar Mobile */}
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
         <SheetContent 
           side="left" 
-          className="p-0 w-[300px] h-full overflow-hidden z-[60] bg-background"
+          className="p-0 w-[300px] h-full overflow-hidden z-[200] bg-background"
         >
           <div className="h-full overflow-y-auto">
             <Sidebar />

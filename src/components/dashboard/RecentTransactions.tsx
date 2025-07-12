@@ -116,46 +116,45 @@ export const RecentTransactions = () => {
     >
       <div className="space-y-3">
         {transactions.map((transaction: any) => (
-          <MobileListItem key={transaction.id} variant="compact">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3 flex-1 min-w-0">
-                <div className={`p-2.5 rounded-full flex-shrink-0 ${
+          <div key={transaction.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start space-x-3 flex-1">
+                <div className={`p-3 rounded-full flex-shrink-0 ${
                   transaction.type === 'income' 
                     ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400' 
                     : 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400'
                 }`}>
                   {transaction.type === 'income' ? (
-                    <ArrowUpCircle className="h-5 w-5" />
+                    <ArrowUpCircle className="h-6 w-6" />
                   ) : (
-                    <ArrowDownCircle className="h-5 w-5" />
+                    <ArrowDownCircle className="h-6 w-6" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-base truncate">{transaction.title}</p>
-                  <div className="flex items-center space-x-2 mt-1">
-                    <Badge variant="secondary" className="text-xs">
-                      {transaction.categories?.name || 'Sem categoria'}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDate(transaction.date)}
-                    </span>
-                  </div>
+                  <h3 className="font-semibold text-lg leading-tight">{transaction.title}</h3>
+                  {transaction.description && (
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                      {transaction.description}
+                    </p>
+                  )}
                 </div>
               </div>
-              <div className="flex items-center space-x-2 flex-shrink-0">
-                <div className="text-right flex flex-col items-end">
-                  <div className={`font-bold text-base leading-none ${
-                    transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {transaction.type === 'income' ? '+' : '-'}R$ {Math.abs(Number(transaction.amount)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm" className="min-h-[44px] min-w-[44px]">
-                  <MoreHorizontal className="h-5 w-5" />
-                </Button>
+              <div className={`font-bold text-lg ${
+                transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {transaction.type === 'income' ? '+' : '-'}R$ {Math.abs(Number(transaction.amount)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
             </div>
-          </MobileListItem>
+            
+            <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
+              <Badge variant="secondary" className="text-sm px-3 py-1">
+                {transaction.categories?.name || 'Sem categoria'}
+              </Badge>
+              <span className="text-sm text-muted-foreground font-medium">
+                {formatDate(transaction.date)}
+              </span>
+            </div>
+          </div>
         ))}
       </div>
     </MobileOptimizedCard>
