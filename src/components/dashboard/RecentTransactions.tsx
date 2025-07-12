@@ -135,18 +135,20 @@ export const RecentTransactions = () => {
                 )}
               </div>
               
-              <div className="flex-1 min-w-0 space-y-2 pr-16">
+              <div className="flex-1 min-w-0 pr-16">
                 {/* Título completo sem truncate */}
                 <h3 className="font-semibold text-base leading-tight">{transaction.title}</h3>
-                
-                {/* Descrição ocupando linha toda */}
-                {transaction.description && (
-                  <p className="text-sm text-muted-foreground">
-                    {transaction.description}
-                  </p>
-                )}
               </div>
             </div>
+            
+            {/* Descrição ocupando toda a largura do card */}
+            {transaction.description && (
+              <div className="mt-2">
+                <p className="text-sm text-muted-foreground">
+                  {transaction.description}
+                </p>
+              </div>
+            )}
             
             {/* Linha separadora */}
             <div className="border-t border-gray-200 dark:border-gray-700 mt-3 pt-3">
