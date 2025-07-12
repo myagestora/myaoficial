@@ -317,10 +317,10 @@ export const Sidebar = ({
                 key={item.name} 
                 to={item.href} 
                 className={({isActive}) => cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors", 
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors touch-manipulation min-h-[44px]", 
                   isActive 
                     ? "text-white font-semibold" 
-                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700"
                 )} 
                 style={({isActive}) => ({
                   backgroundColor: isActive ? primaryColor || '#222222' : undefined
@@ -334,10 +334,10 @@ export const Sidebar = ({
             <NavLink 
               to="/settings" 
               className={({isActive}) => cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors", 
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors touch-manipulation min-h-[44px]", 
                 isActive 
                   ? "text-white font-semibold" 
-                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700"
               )} 
               style={({isActive}) => ({
                 backgroundColor: isActive ? primaryColor || '#222222' : undefined

@@ -141,5 +141,39 @@ All colors MUST be HSL.
     * {
       -webkit-overflow-scrolling: touch;
     }
+    
+    /* App-like mobile styling */
+    html, body {
+      overflow-x: hidden;
+      -webkit-text-size-adjust: 100%;
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    /* Prevent pull-to-refresh */
+    body {
+      overscroll-behavior-y: contain;
+    }
+    
+    /* Safe area support */
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    .pt-safe {
+      padding-top: env(safe-area-inset-top);
+    }
+    
+    /* Better sheet overlay */
+    [data-radix-dialog-overlay] {
+      backdrop-filter: blur(4px);
+      background-color: rgba(0, 0, 0, 0.6);
+    }
+    
+    /* Prevent text selection on UI elements */
+    .touch-manipulation {
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
   }
 }
