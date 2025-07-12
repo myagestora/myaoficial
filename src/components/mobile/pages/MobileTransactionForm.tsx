@@ -431,7 +431,10 @@ export const MobileTransactionForm = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="recurrence_frequency">Frequência</Label>
-                  <Select onValueChange={(value) => setValue('recurrence_frequency', value as any)}>
+                  <Select 
+                    value={watch('recurrence_frequency') || ''} 
+                    onValueChange={(value) => setValue('recurrence_frequency', value as any)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a frequência" />
                     </SelectTrigger>
