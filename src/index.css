@@ -229,5 +229,45 @@ All colors MUST be HSL.
       animation-duration: 0.2s;
       animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
     }
+    }
+  }
+}
+
+/* Mobile-specific optimizations */
+.mobile-device * {
+  -webkit-overflow-scrolling: touch !important;
+  -webkit-transform: translate3d(0, 0, 0) !important;
+}
+
+.mobile-device input,
+.mobile-device select, 
+.mobile-device textarea {
+  font-size: 16px !important;
+  -webkit-appearance: none !important;
+  border-radius: 8px !important;
+}
+
+.mobile-device {
+  -webkit-text-size-adjust: 100% !important;
+  -moz-text-size-adjust: 100% !important;
+  text-size-adjust: 100% !important;
+  touch-action: manipulation !important;
+  overscroll-behavior: contain !important;
+  overflow-x: hidden !important;
+}
+
+/* Mobile touch targets */
+@media (max-width: 768px) {
+  button, .touch-manipulation {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    touch-action: manipulation !important;
+  }
+  
+  /* Fix height issues on mobile */
+  .min-h-screen,
+  .h-screen {
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
   }
 }

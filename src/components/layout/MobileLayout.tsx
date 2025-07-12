@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
@@ -15,14 +15,41 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
     setMobileMenuOpen(true);
   };
 
+  // Configurações específicas para mobile
+  useEffect(() => {
+    // Prevenir zoom em inputs
+    const inputs = document.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+      (input as HTMLElement).style.fontSize = '16px';
+    });
+
+    // Prevenir zoom duplo toque
+    let lastTouchEnd = 0;
+    const preventZoom = (e: TouchEvent) => {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) {
+        e.preventDefault();
+      }
+      lastTouchEnd = now;
+    };
+    
+    document.addEventListener('touchend', preventZoom, { passive: false });
+    
+    return () => {
+      document.removeEventListener('touchend', preventZoom);
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-background flex flex-col">
+    <div className="h-screen h-[100dvh] bg-background flex flex-col overflow-hidden">
       {/* Header fixo mobile */}
-      <Header onMenuClick={handleMenuClick} />
+      <div className="flex-shrink-0">
+        <Header onMenuClick={handleMenuClick} />
+      </div>
       
-      {/* Conteúdo principal mobile */}
-      <main className="flex-1 overflow-auto">
-        <div className="p-3 pb-6">
+      {/* Conteúdo principal mobile - rolável */}
+      <main className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="p-4 pb-8 min-h-full">
           {children || <Outlet />}
         </div>
       </main>
@@ -31,7 +58,7 @@ export const MobileLayout = ({ children }: MobileLayoutProps) => {
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
         <SheetContent 
           side="left" 
-          className="p-0 w-[280px] h-full overflow-hidden z-[60]"
+          className="p-0 w-[300px] h-full overflow-hidden z-[60] bg-white dark:bg-gray-900"
         >
           <div className="h-full overflow-y-auto">
             <Sidebar />

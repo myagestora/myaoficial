@@ -9,18 +9,36 @@ interface AppLayoutProps {
   children?: React.ReactNode;
 }
 
-// Detecção simples e direta de mobile
+// Detecção agressiva de mobile
 const isMobileDevice = (): boolean => {
   if (typeof window === 'undefined') return false;
   
   const userAgent = navigator.userAgent.toLowerCase();
-  const isMobileUA = /android|iphone|ipad|ipod|blackberry|mobile|phone|tablet/.test(userAgent);
+  const isMobileUA = /android|iphone|ipad|ipod|blackberry|mobile|phone|tablet|webos|opera mini|fennec|iemobile|windows phone/i.test(userAgent);
   const isSmallScreen = window.innerWidth <= 768;
-  const hasTouch = 'ontouchstart' in window;
+  const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  const hasOrientation = typeof window.orientation !== 'undefined';
   
-  console.log('🔍 Detecção mobile:', { userAgent, isMobileUA, isSmallScreen, hasTouch });
+  // Forçar mobile se qualquer condição for verdadeira
+  const isMobile = isMobileUA || isSmallScreen || hasTouch || hasOrientation;
   
-  return isMobileUA || isSmallScreen || hasTouch;
+  console.log('🔍 Detecção mobile forçada:', { 
+    userAgent, 
+    isMobileUA, 
+    isSmallScreen, 
+    hasTouch, 
+    hasOrientation,
+    finalResult: isMobile 
+  });
+  
+  // Aplicar classe mobile no body se for mobile
+  if (isMobile) {
+    document.body.classList.add('mobile-device');
+    document.documentElement.classList.add('mobile-device');
+    console.log('✅ Classes mobile aplicadas!');
+  }
+  
+  return isMobile;
 };
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
