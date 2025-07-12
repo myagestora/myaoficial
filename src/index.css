@@ -103,6 +103,10 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
     /* Prevent zoom on double tap (iOS Safari) */
     touch-action: manipulation;
+    /* Fix zoom issue on mobile */
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   /* Mobile-first responsive improvements */

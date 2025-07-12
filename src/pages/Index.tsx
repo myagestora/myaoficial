@@ -184,19 +184,19 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
+    <div className="min-h-screen min-h-[100dvh] bg-white dark:bg-gray-900">
       <SEOHead />
       
-      {/* Header - Modern Floating */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/20 dark:border-gray-700/20">
+      {/* Header - Mobile Optimized */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-b border-gray-200/20 dark:border-gray-700/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-3">
+          <div className="flex justify-between items-center py-3 min-h-[60px]">
+            <div className="flex items-center space-x-2 lg:space-x-3">
               {appLogo && appLogo.trim() !== '' ? (
                 <img 
                   src={appLogo} 
                   alt={appName}
-                  className="h-12 w-auto object-contain"
+                  className="h-8 sm:h-10 lg:h-12 w-auto object-contain"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';
@@ -210,45 +210,46 @@ const Index = () => {
               
               <div className={`flex items-center space-x-2 logo-fallback ${appLogo && appLogo.trim() !== '' ? 'hidden' : ''}`}>
                 <div 
-                  className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg"
+                  className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center shadow-lg"
                   style={{ 
                     background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` 
                   }}
                 >
-                  <DollarSign className="w-7 h-7 text-white" />
+                  <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 lg:w-7 lg:h-7 text-white" />
                 </div>
-                <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+                <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
                   {appName}
                 </span>
               </div>
             </div>
             
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-3 lg:space-x-6">
               <nav className="hidden md:flex items-center space-x-6">
                 <button
                   onClick={scrollToPlans}
-                  className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors cursor-pointer"
+                  className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors cursor-pointer touch-manipulation"
                 >
                   Planos
                 </button>
               </nav>
               
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2 lg:space-x-3">
                 <Link to="/login">
-                  <Button variant="ghost" className="font-semibold">
+                  <Button variant="ghost" className="font-semibold text-sm lg:text-base px-3 lg:px-4 py-2 touch-manipulation">
                     Entrar
                   </Button>
                 </Link>
                 <Button 
                   onClick={handleStartFree}
-                  className="font-semibold shadow-lg hover:shadow-xl transition-all"
+                  className="font-semibold shadow-lg hover:shadow-xl transition-all text-sm lg:text-base px-3 lg:px-4 py-2 touch-manipulation"
                   style={{ 
                     background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
                     border: 'none'
                   }}
                 >
-                  Começar Agora
-                  <ArrowRight className="ml-2 w-4 h-4" />
+                  <span className="hidden sm:inline">Começar Agora</span>
+                  <span className="sm:hidden">Começar</span>
+                  <ArrowRight className="ml-1 lg:ml-2 w-3 h-3 lg:w-4 lg:h-4" />
                 </Button>
               </div>
             </div>
@@ -256,30 +257,30 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Hero Section - Ultra Modern */}
-      <section className="relative pt-32 pb-20 overflow-hidden">
+      {/* Hero Section - Mobile Optimized */}
+      <section className="relative pt-20 sm:pt-24 lg:pt-32 pb-16 lg:pb-20 overflow-hidden">
         {/* Animated Background */}
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900/20" />
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-400/10 rounded-full blur-3xl animate-pulse delay-1000" />
+          <div className="absolute top-0 left-1/4 w-48 h-48 lg:w-96 lg:h-96 bg-blue-400/10 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-0 right-1/4 w-48 h-48 lg:w-96 lg:h-96 bg-purple-400/10 rounded-full blur-3xl animate-pulse delay-1000" />
         </div>
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
+          <div className="text-center mb-8 lg:mb-12">
             {/* Trust Badge */}
-            <div className="inline-flex items-center space-x-2 bg-green-50 dark:bg-green-900/20 px-4 py-2 rounded-full mb-8">
+            <div className="inline-flex items-center space-x-2 bg-green-50 dark:bg-green-900/20 px-3 py-2 lg:px-4 lg:py-2 rounded-full mb-6 lg:mb-8">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              <span className="text-green-700 dark:text-green-400 font-semibold text-sm">
+              <span className="text-green-700 dark:text-green-400 font-semibold text-xs sm:text-sm">
                 +15.000 pessoas organizaram suas finanças
               </span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-8 leading-tight">
-              <span className="block text-gray-900 dark:text-white mb-2">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-7xl font-bold mb-6 lg:mb-8 leading-tight px-2">
+              <span className="block text-gray-900 dark:text-white mb-1 lg:mb-2">
                 Organize suas
               </span>
-              <span className="block text-gray-900 dark:text-white mb-2">
+              <span className="block text-gray-900 dark:text-white mb-1 lg:mb-2">
                 finanças sem sair
               </span>
               <span className="block">
@@ -294,7 +295,7 @@ const Index = () => {
               </span>
             </h1>
             
-            <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-lg sm:text-xl lg:text-2xl text-gray-600 dark:text-gray-300 mb-8 lg:mb-12 max-w-3xl mx-auto leading-relaxed px-4">
               Controle total da sua vida financeira através de conversas simples e intuitivas. 
               <span className="font-semibold text-gray-900 dark:text-white"> Sem aplicativos complicados.</span>
             </p>
@@ -328,12 +329,12 @@ const Index = () => {
               </div>
             </div>
 
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+            {/* CTA Buttons - Mobile Optimized */}
+            <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 justify-center mb-6 lg:mb-8 px-4">
               <Button 
                 onClick={handleStartFree}
                 size="lg" 
-                className="text-lg px-10 py-6 font-bold shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105"
+                className="text-base lg:text-lg px-8 lg:px-10 py-4 lg:py-6 font-bold shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105 touch-manipulation min-h-[48px]"
                 style={{ 
                   background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
                   border: 'none'
@@ -344,9 +345,9 @@ const Index = () => {
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="text-lg px-10 py-6 font-semibold border-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300"
+                className="text-base lg:text-lg px-8 lg:px-10 py-4 lg:py-6 font-semibold border-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300 touch-manipulation min-h-[48px]"
               >
-                <Play className="mr-2 w-5 h-5" />
+                <Play className="mr-2 w-4 h-4 lg:w-5 lg:h-5" />
                 Ver Como Funciona
               </Button>
             </div>
