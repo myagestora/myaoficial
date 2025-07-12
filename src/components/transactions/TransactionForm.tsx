@@ -255,20 +255,21 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">
+          <DialogTitle>
             {isEditing ? 'Editar Transação' : 'Nova Transação'}
           </DialogTitle>
-          <DialogDescription className="text-muted-foreground">
+          <DialogDescription>
             Preencha os dados da transação abaixo.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Tipo e Valor */}
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="type" className="text-sm font-medium">Tipo</Label>
+              <Label htmlFor="type">Tipo</Label>
               <Select
                 value={transactionType}
                 onValueChange={(value) => {
@@ -276,7 +277,7 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
                   setValue('category_id', '');
                 }}
               >
-                <SelectTrigger className="min-h-[44px]">
+                <SelectTrigger>
                   <SelectValue placeholder="Selecione o tipo" />
                 </SelectTrigger>
                 <SelectContent>
@@ -290,13 +291,12 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="amount" className="text-sm font-medium">Valor</Label>
+              <Label htmlFor="amount">Valor</Label>
               <Input
                 id="amount"
                 type="number"
                 step="0.01"
                 placeholder="0,00"
-                className="min-h-[44px] text-base"
                 {...register('amount', { valueAsNumber: true })}
               />
               {errors.amount && (
@@ -305,12 +305,12 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
             </div>
           </div>
 
+          {/* Título */}
           <div className="space-y-2">
-            <Label htmlFor="title" className="text-sm font-medium">Título</Label>
+            <Label htmlFor="title">Título</Label>
             <Input
               id="title"
               placeholder="Ex: Supermercado, Salário..."
-              className="min-h-[44px] text-base"
               {...register('title')}
             />
             {errors.title && (
@@ -318,25 +318,26 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Categoria e Data */}
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="category_id" className="text-sm font-medium">Categoria</Label>
+              <Label htmlFor="category_id">Categoria</Label>
               <Select 
                 value={selectedCategoryId || ''} 
                 onValueChange={(value) => setValue('category_id', value)}
               >
-                <SelectTrigger className="min-h-[44px]">
+                <SelectTrigger>
                   <SelectValue placeholder="Selecione a categoria" />
                 </SelectTrigger>
-                <SelectContent className="max-h-[200px]">
+                <SelectContent>
                   {categories?.map((category) => (
-                    <SelectItem key={category.id} value={category.id} className="min-h-[44px]">
+                    <SelectItem key={category.id} value={category.id}>
                       <div className="flex items-center gap-2">
                         <div 
-                          className="w-3 h-3 rounded-full flex-shrink-0" 
+                          className="w-3 h-3 rounded-full" 
                           style={{ backgroundColor: category.color }}
                         />
-                        <span className="truncate">{category.name}</span>
+                        <span>{category.name}</span>
                         {(category as any).is_default && (
                           <span className="text-xs text-muted-foreground">(padrão)</span>
                         )}
@@ -351,11 +352,10 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="date" className="text-sm font-medium">Data</Label>
+              <Label htmlFor="date">Data</Label>
               <Input
                 id="date"
                 type="date"
-                className="min-h-[44px] text-base"
                 {...register('date')}
               />
               {errors.date && (
@@ -364,31 +364,33 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
             </div>
           </div>
 
+          {/* Observações */}
           <div className="space-y-2">
-            <Label htmlFor="description" className="text-sm font-medium">Observações (opcional)</Label>
+            <Label htmlFor="description">Observações (opcional)</Label>
             <Textarea
               id="description"
               placeholder="Adicione observações..."
-              className="min-h-[80px] text-base resize-none"
+              className="resize-none"
+              rows={3}
               {...register('description')}
             />
           </div>
 
-          {/* Seção de Recorrência */}
-          <div className="border-t pt-4 space-y-4">
+          {/* Recorrência */}
+          <div className="space-y-4">
             <div className="flex items-center space-x-2">
               <Checkbox 
                 id="is_recurring"
                 checked={isRecurring}
                 onCheckedChange={(checked) => setValue('is_recurring', !!checked)}
               />
-              <Label htmlFor="is_recurring" className="text-sm font-medium">
+              <Label htmlFor="is_recurring">
                 Transação recorrente
               </Label>
             </div>
 
             {isRecurring && (
-              <div className="space-y-4 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+              <div className="space-y-4 p-4 bg-muted rounded-lg">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="recurrence_frequency">Frequência</Label>
@@ -405,7 +407,7 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
                       </SelectContent>
                     </Select>
                     {errors.recurrence_frequency && (
-                      <p className="text-sm text-red-600">{errors.recurrence_frequency.message}</p>
+                      <p className="text-sm text-destructive">{errors.recurrence_frequency.message}</p>
                     )}
                   </div>
 
@@ -419,7 +421,7 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
                       {...register('recurrence_interval', { valueAsNumber: true })}
                     />
                     {errors.recurrence_interval && (
-                      <p className="text-sm text-red-600">{errors.recurrence_interval.message}</p>
+                      <p className="text-sm text-destructive">{errors.recurrence_interval.message}</p>
                     )}
                   </div>
                 </div>
@@ -431,7 +433,7 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
                     type="date"
                     {...register('recurrence_end_date')}
                   />
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     Deixe em branco para recorrência indefinida
                   </p>
                 </div>
@@ -439,19 +441,17 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
             )}
           </div>
 
-          <DialogFooter className="flex flex-col gap-2 sm:flex-row pt-4">
+          <DialogFooter>
             <Button 
               type="button" 
               variant="outline" 
               onClick={onClose}
-              className="w-full sm:w-auto min-h-[44px]"
             >
               Cancelar
             </Button>
             <Button 
               type="submit" 
               disabled={isSubmitting}
-              className="w-full sm:w-auto min-h-[44px]"
             >
               {isSubmitting ? 'Salvando...' : (isEditing ? 'Atualizar' : 'Salvar')}
             </Button>
