@@ -137,7 +137,7 @@ export const RecentTransactions = () => {
               
               {/* Título ocupando toda a largura disponível */}
               <div className="flex-1 pr-20">
-                <h3 className="font-semibold text-base leading-tight">{transaction.title}</h3>
+                <h3 className="font-semibold text-base leading-tight w-full">{transaction.title}</h3>
               </div>
             </div>
             
