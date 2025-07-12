@@ -116,43 +116,48 @@ export const RecentTransactions = () => {
     >
       <div className="space-y-3">
         {transactions.map((transaction: any) => (
-          <div key={transaction.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
-            <div className="flex items-start justify-between">
-              <div className="flex items-start space-x-3 flex-1">
-                <div className={`p-3 rounded-full flex-shrink-0 ${
-                  transaction.type === 'income' 
-                    ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400' 
-                    : 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400'
-                }`}>
-                  {transaction.type === 'income' ? (
-                    <ArrowUpCircle className="h-6 w-6" />
-                  ) : (
-                    <ArrowDownCircle className="h-6 w-6" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-lg leading-tight">{transaction.title}</h3>
-                  {transaction.description && (
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                      {transaction.description}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className={`font-bold text-lg ${
-                transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+          <div key={transaction.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            <div className="flex items-start space-x-3">
+              <div className={`p-2 rounded-full flex-shrink-0 ${
+                transaction.type === 'income' 
+                  ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400' 
+                  : 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400'
               }`}>
-                {transaction.type === 'income' ? '+' : '-'}R$ {Math.abs(Number(transaction.amount)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                {transaction.type === 'income' ? (
+                  <ArrowUpCircle className="h-5 w-5" />
+                ) : (
+                  <ArrowDownCircle className="h-5 w-5" />
+                )}
               </div>
-            </div>
-            
-            <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
-              <Badge variant="secondary" className="text-sm px-3 py-1">
-                {transaction.categories?.name || 'Sem categoria'}
-              </Badge>
-              <span className="text-sm text-muted-foreground font-medium">
-                {formatDate(transaction.date)}
-              </span>
+              
+              <div className="flex-1 min-w-0 space-y-2">
+                {/* Título em uma linha */}
+                <h3 className="font-semibold text-base leading-tight truncate">{transaction.title}</h3>
+                
+                {/* Descrição abaixo */}
+                {transaction.description && (
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {transaction.description}
+                  </p>
+                )}
+                
+                {/* Linha com categoria, valor e data */}
+                <div className="flex items-center justify-between text-sm">
+                  <Badge variant="secondary" className="text-xs px-2 py-1">
+                    {transaction.categories?.name || 'Sem categoria'}
+                  </Badge>
+                  
+                  <div className={`font-bold text-base ${
+                    transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {transaction.type === 'income' ? '+' : '-'}R$ {Math.abs(Number(transaction.amount)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </div>
+                  
+                  <span className="text-muted-foreground font-medium">
+                    {formatDate(transaction.date)}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         ))}
