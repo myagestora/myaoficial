@@ -143,16 +143,11 @@ export const RecentTransactions = () => {
                 </div>
               </div>
               <div className="flex items-center space-x-2 flex-shrink-0">
-                <div className="text-right">
-                  <span className={`font-bold text-sm ${
+                <div className="text-right flex flex-col items-end">
+                  <div className={`font-bold text-base leading-none ${
                     transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
                   }`}>
-                    {transaction.type === 'income' ? '+' : '-'}R$
-                  </span>
-                  <div className={`font-bold text-base ${
-                    transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {Math.abs(Number(transaction.amount)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    {transaction.type === 'income' ? '+' : '-'}R$ {Math.abs(Number(transaction.amount)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </div>
                 </div>
                 <Button variant="ghost" size="sm" className="min-h-[44px] min-w-[44px]">
