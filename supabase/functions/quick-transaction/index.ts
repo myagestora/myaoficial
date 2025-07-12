@@ -117,8 +117,13 @@ serve(async (req) => {
       )
     }
 
-    // Criar transação
-    const transactionDate = date || new Date().toISOString().split('T')[0]
+    // Criar transação - usando fuso horário brasileiro (UTC-3)
+    const transactionDate = date || (() => {
+      const now = new Date();
+      // Ajustar para UTC-3 (Brasil)
+      const brazilTime = new Date(now.getTime() - (3 * 60 * 60 * 1000));
+      return brazilTime.toISOString().split('T')[0];
+    })()
     
     const { data: transaction, error: transactionError } = await supabase
       .from('transactions')
