@@ -25,22 +25,48 @@
   <body>
     <div id="root"></div>
     <script>
-      // Mobile optimizations - run immediately
-      if (/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-        // Prevent zoom on inputs
-        document.addEventListener('DOMContentLoaded', function() {
-          var inputs = document.querySelectorAll('input, select, textarea');
-          inputs.forEach(function(input) {
-            input.style.fontSize = '16px';
-          });
-        });
+      // FORÇA DETECÇÃO MOBILE IMEDIATAMENTE - ANTES DE TUDO
+      (function() {
+        console.log('🔍 Forçando detecção mobile...');
         
-        // Fix viewport
-        var viewport = document.querySelector('meta[name="viewport"]');
-        if (viewport) {
-          viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover');
+        // Detectar mobile de múltiplas formas
+        var isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                      window.innerWidth <= 768 ||
+                      'ontouchstart' in window ||
+                      navigator.maxTouchPoints > 0;
+        
+        console.log('📱 É mobile?', isMobile);
+        console.log('📏 Largura da tela:', window.innerWidth);
+        console.log('👆 Tem touch?', 'ontouchstart' in window);
+        console.log('🤖 User Agent:', navigator.userAgent);
+        
+        if (isMobile) {
+          // Adicionar classe imediatamente
+          document.documentElement.classList.add('mobile-device');
+          document.body.classList.add('mobile-device');
+          
+          // Forçar viewport
+          var viewport = document.querySelector('meta[name="viewport"]');
+          if (viewport) {
+            viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover');
+          }
+          
+          // Adicionar estilos mobile críticos imediatamente
+          var style = document.createElement('style');
+          style.innerHTML = `
+            .mobile-device { 
+              -webkit-text-size-adjust: 100% !important;
+              touch-action: manipulation !important;
+            }
+            .mobile-device input, .mobile-device select, .mobile-device textarea { 
+              font-size: 16px !important; 
+            }
+          `;
+          document.head.appendChild(style);
+          
+          console.log('✅ Estilos mobile aplicados!');
         }
-      }
+      })();
     </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
