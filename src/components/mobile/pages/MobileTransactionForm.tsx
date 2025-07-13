@@ -38,6 +38,8 @@ export const MobileTransactionForm = () => {
   const queryClient = useQueryClient();
   const isEditing = !!id;
 
+  console.log('🚀 MobileTransactionForm iniciado:', { id, isEditing, user: !!user });
+
   const {
     register,
     handleSubmit,
@@ -60,10 +62,12 @@ export const MobileTransactionForm = () => {
   const selectedCategoryId = watch('category_id');
 
   // Buscar transação para edição
-  const { data: transaction, isLoading: loadingTransaction } = useQuery({
+  const { data: transaction, isLoading: loadingTransaction, error: transactionError } = useQuery({
     queryKey: ['transaction', id],
     queryFn: async () => {
       if (!id) return null;
+      
+      console.log('🔍 Buscando transação com ID:', id, 'para usuário:', user?.id);
       
       const { data, error } = await supabase
         .from('transactions')
@@ -78,7 +82,12 @@ export const MobileTransactionForm = () => {
         .eq('user_id', user?.id)
         .maybeSingle();
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro ao buscar transação:', error);
+        throw error;
+      }
+      
+      console.log('✅ Transação encontrada:', data);
       return data;
     },
     enabled: !!id && !!user?.id,
@@ -230,7 +239,11 @@ export const MobileTransactionForm = () => {
 
   // Preencher formulário quando transação for carregada
   useEffect(() => {
+    console.log('🔄 useEffect executado:', { transaction, isEditing, hasTransaction: !!transaction });
+    
     if (transaction && isEditing) {
+      console.log('📝 Preenchendo formulário com dados:', transaction);
+      
       reset({
         title: transaction.title,
         amount: Number(transaction.amount),
@@ -243,6 +256,8 @@ export const MobileTransactionForm = () => {
         recurrence_interval: transaction.recurrence_interval || 1,
         recurrence_end_date: transaction.recurrence_end_date || '',
       });
+      
+      console.log('✅ Formulário preenchido com sucesso');
     }
   }, [transaction, isEditing, reset]);
 
