@@ -75,9 +75,9 @@ const App = () => (
                 </ProtectedRoute>
               }>
                 <Route path="dashboard" element={<Dashboard />} />
-                <Route path="transactions" element={<Transactions />} />
+                <Route path="transactions/*" element={<Transactions />} />
                 <Route path="categories" element={<Categories />} />
-                <Route path="goals" element={<Goals />} />
+                <Route path="goals/*" element={<Goals />} />
                 <Route path="reports" element={<Reports />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="scheduled" element={<Scheduled />} />

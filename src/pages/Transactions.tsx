@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,13 +9,23 @@ import { MobileListItem } from '@/components/ui/mobile-list-item';
 import { TransactionForm } from '@/components/transactions/TransactionForm';
 import { TransactionFilters } from '@/components/transactions/TransactionFilters';
 import { TransactionStats } from '@/components/transactions/TransactionStats';
+import { MobileRouteHandler } from '@/components/mobile/MobileRouteHandler';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTransactionFilters } from '@/hooks/useTransactionFilters';
 import { toast } from '@/hooks/use-toast';
+import { shouldUseMobileLayout } from '@/hooks/useMobileDetection';
 
 const Transactions = () => {
+  const location = useLocation();
+  const useMobile = shouldUseMobileLayout();
+  
+  // Se estiver em mobile e não for a rota base de transações, usar o mobile route handler
+  if (useMobile && location.pathname !== '/transactions') {
+    return <MobileRouteHandler />;
+  }
+
   const { user } = useAuth();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
