@@ -259,6 +259,7 @@ export const MobileTransactionForm = () => {
     if (transaction && isEditing) {
       console.log('📝 Preenchendo formulário com dados:', transaction);
       
+      // Primeiro fazer o reset dos dados
       reset({
         title: transaction.title,
         amount: Number(transaction.amount),
@@ -272,9 +273,17 @@ export const MobileTransactionForm = () => {
         recurrence_end_date: transaction.recurrence_end_date || '',
       });
       
+      // Garantir que os valores dos selects sejam definidos explicitamente
+      setValue('type', transaction.type);
+      setValue('category_id', transaction.category_id || '');
+      
       console.log('✅ Formulário preenchido com sucesso');
+      console.log('🔍 Valores setados:', {
+        type: transaction.type,
+        category_id: transaction.category_id
+      });
     }
-  }, [transaction, isEditing, reset]);
+  }, [transaction, isEditing, reset, setValue]);
 
   // Verificar se transação não existe ou não pertence ao usuário
   if (isEditing && !loadingTransaction && !transaction) {
