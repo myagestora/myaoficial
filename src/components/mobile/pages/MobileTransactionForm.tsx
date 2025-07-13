@@ -285,6 +285,14 @@ export const MobileTransactionForm = () => {
     }
   }, [transaction, isEditing, reset, setValue]);
 
+  // Definir categoria após as categorias serem carregadas
+  useEffect(() => {
+    if (transaction && isEditing && categories && categories.length > 0 && transaction.category_id) {
+      console.log('📂 Categorias carregadas, definindo categoria:', transaction.category_id);
+      setValue('category_id', transaction.category_id);
+    }
+  }, [transaction, isEditing, categories, setValue]);
+
   // Verificar se transação não existe ou não pertence ao usuário
   if (isEditing && !loadingTransaction && !transaction) {
     return (
