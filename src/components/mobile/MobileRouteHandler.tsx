@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { MobileDashboard } from './pages/MobileDashboard';
 import { MobileTransactions } from './pages/MobileTransactions';
 import { MobileTransactionForm } from './pages/MobileTransactionForm';
@@ -11,33 +11,20 @@ import { MobileCategories } from './pages/MobileCategories';
 import { MobileSettings } from './pages/MobileSettings';
 
 export const MobileRouteHandler = () => {
-  const location = useLocation();
-  const path = location.pathname;
-
-  // Mapear rotas para componentes mobile otimizados
-  if (path === '/dashboard') {
-    return <MobileDashboard />;
-  } else if (path === '/transactions') {
-    return <MobileTransactions />;
-  } else if (path === '/transactions/nova') {
-    return <MobileTransactionForm />;
-  } else if (path.startsWith('/transactions/editar/')) {
-    return <MobileTransactionForm />;
-  } else if (path === '/goals') {
-    return <MobileGoals />;
-  } else if (path === '/goals/nova') {
-    return <MobileGoalForm />;
-  } else if (path.startsWith('/goals/editar/')) {
-    return <MobileGoalForm />;
-  } else if (path === '/reports') {
-    return <MobileReports />;
-  } else if (path === '/settings') {
-    return <MobileSettings />;
-  } else if (path === '/scheduled') {
-    return <MobileScheduled />;
-  } else if (path === '/categories') {
-    return <MobileCategories />;
-  } else {
-    return <MobileDashboard />; // Fallback para dashboard
-  }
+  return (
+    <Routes>
+      <Route path="dashboard" element={<MobileDashboard />} />
+      <Route path="transactions" element={<MobileTransactions />} />
+      <Route path="transactions/nova" element={<MobileTransactionForm />} />
+      <Route path="transactions/editar/:id" element={<MobileTransactionForm />} />
+      <Route path="goals" element={<MobileGoals />} />
+      <Route path="goals/nova" element={<MobileGoalForm />} />
+      <Route path="goals/editar/:id" element={<MobileGoalForm />} />
+      <Route path="reports" element={<MobileReports />} />
+      <Route path="settings" element={<MobileSettings />} />
+      <Route path="scheduled" element={<MobileScheduled />} />
+      <Route path="categories" element={<MobileCategories />} />
+      <Route path="*" element={<MobileDashboard />} />
+    </Routes>
+  );
 };
