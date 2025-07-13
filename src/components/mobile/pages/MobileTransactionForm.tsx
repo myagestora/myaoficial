@@ -169,7 +169,12 @@ export const MobileTransactionForm = () => {
 
   const updateTransactionMutation = useMutation({
     mutationFn: async (data: TransactionFormData) => {
-      if (!user || !transaction) throw new Error('Dados inválidos');
+      console.log('🔄 Iniciando atualização da transação...', { data, transaction, user: !!user });
+      
+      if (!user || !transaction) {
+        console.error('❌ Dados inválidos:', { user: !!user, transaction: !!transaction });
+        throw new Error('Dados inválidos');
+      }
 
       const transactionData: any = {
         title: data.title,
@@ -181,6 +186,8 @@ export const MobileTransactionForm = () => {
         is_recurring: data.is_recurring,
         updated_at: new Date().toISOString(),
       };
+
+      console.log('📝 Dados que serão atualizados:', transactionData);
 
       if (data.is_recurring) {
         transactionData.recurrence_frequency = data.recurrence_frequency;
@@ -204,14 +211,22 @@ export const MobileTransactionForm = () => {
         transactionData.next_recurrence_date = null;
       }
 
+      console.log('💾 Executando update no Supabase para transação ID:', transaction.id);
+
       const { error } = await supabase
         .from('transactions')
         .update(transactionData)
         .eq('id', transaction.id);
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro ao atualizar transação:', error);
+        throw error;
+      }
+      
+      console.log('✅ Transação atualizada com sucesso');
     },
     onSuccess: () => {
+      console.log('🎉 Callback onSuccess executado');
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       toast({
         title: 'Sucesso!',
@@ -220,7 +235,7 @@ export const MobileTransactionForm = () => {
       navigate('/transactions');
     },
     onError: (error) => {
-      console.error('Error updating transaction:', error);
+      console.error('❌ Erro na atualização:', error);
       toast({
         title: 'Erro!',
         description: 'Erro ao atualizar transação.',
