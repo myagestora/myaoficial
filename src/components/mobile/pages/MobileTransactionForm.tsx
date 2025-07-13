@@ -364,7 +364,13 @@ export const MobileTransactionForm = () => {
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent 
+                position="popper" 
+                side="bottom" 
+                align="start"
+                className="z-50 bg-background border shadow-lg"
+                sideOffset={4}
+              >
                 <SelectItem value="income">Receita</SelectItem>
                 <SelectItem value="expense">Despesa</SelectItem>
               </SelectContent>
@@ -413,7 +419,13 @@ export const MobileTransactionForm = () => {
               <SelectTrigger>
                 <SelectValue placeholder="Selecione a categoria" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent 
+                position="popper" 
+                side="bottom" 
+                align="start"
+                className="z-50 bg-background border shadow-lg max-h-48 overflow-y-auto"
+                sideOffset={4}
+              >
                 {categories?.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
                     <div className="flex items-center gap-2">
