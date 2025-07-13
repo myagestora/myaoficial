@@ -367,9 +367,10 @@ export const MobileTransactionForm = () => {
               <SelectContent 
                 position="popper" 
                 side="bottom" 
-                align="start"
-                className="z-50 bg-background border shadow-lg"
-                sideOffset={4}
+                align="center"
+                className="z-[9999] bg-background border shadow-lg w-full"
+                sideOffset={8}
+                avoidCollisions={false}
               >
                 <SelectItem value="income">Receita</SelectItem>
                 <SelectItem value="expense">Despesa</SelectItem>
@@ -422,9 +423,10 @@ export const MobileTransactionForm = () => {
               <SelectContent 
                 position="popper" 
                 side="bottom" 
-                align="start"
-                className="z-50 bg-background border shadow-lg max-h-48 overflow-y-auto"
-                sideOffset={4}
+                align="center"
+                className="z-[9999] bg-background border shadow-lg max-h-48 overflow-y-auto w-full"
+                sideOffset={8}
+                avoidCollisions={false}
               >
                 {categories?.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
