@@ -13,8 +13,6 @@ export const useScheduledTransactions = () => {
     queryFn: async () => {
       if (!user?.id) return [];
 
-      const today = new Date().toISOString().split('T')[0];
-      
       const { data, error } = await supabase
         .from('transactions')
         .select(`
@@ -39,7 +37,6 @@ export const useScheduledTransactions = () => {
           )
         `)
         .eq('user_id', user.id)
-        .gte('date', today)
         .order('date', { ascending: true });
 
       if (error) {

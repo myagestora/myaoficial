@@ -56,12 +56,26 @@ const Scheduled = () => {
 
   // Calcular estatísticas
   const upcomingExecutions = filteredTransactions.filter(t => {
-    const targetDate = new Date(t.date);
     const today = new Date();
-    const diffTime = targetDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    // Próximos 7 dias sem incluir hoje (> 0)
-    return diffDays > 0 && diffDays <= 7;
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const targetDate = new Date(t.date);
+    targetDate.setHours(0, 0, 0, 0);
+    
+    // A partir de amanhã (não incluir hoje)
+    return targetDate >= tomorrow;
+  }).length;
+
+  const todayCount = filteredTransactions.filter(t => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const targetDate = new Date(t.date);
+    targetDate.setHours(0, 0, 0, 0);
+    
+    return targetDate.getTime() === today.getTime();
   }).length;
 
   const handleToggleStatus = (id: string, isActive: boolean) => {
@@ -140,9 +154,8 @@ const Scheduled = () => {
       <ScheduledHeader onNewSchedule={() => setIsFormOpen(true)} />
       
       <ScheduledStats 
-        totalScheduled={filteredTransactions.length}
         upcomingExecutions={upcomingExecutions}
-        overdueScheduled={0}
+        todayCount={todayCount}
       />
 
       <ScheduledFilters

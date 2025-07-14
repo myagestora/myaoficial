@@ -135,18 +135,14 @@ export const MobileScheduled = () => {
 
   // Calculate statistics
   const stats = useMemo(() => {
-    const total = scheduledTransactions?.length || 0;
-    const active = scheduledTransactions?.filter(t => t.is_recurring).length || 0;
-    const paused = total - active;
-    
     const today = startOfDay(new Date());
-    const nextWeek = addDays(today, 7);
+    const tomorrow = addDays(today, 1);
     
+    // A partir de amanhã (não incluir hoje)
     const upcoming = scheduledTransactions?.filter(t => {
-      const targetDate = t.date; // Usar apenas date em vez de next_recurrence_date
+      const targetDate = t.date;
       const transactionDate = startOfDay(new Date(targetDate));
-      // Incluir transações desde amanhã até próximos 7 dias (não incluir hoje)
-      return isAfter(transactionDate, today) && !isAfter(transactionDate, nextWeek);
+      return transactionDate >= tomorrow;
     }).length || 0;
     
     // Transações do dia
@@ -154,13 +150,6 @@ export const MobileScheduled = () => {
       const targetDate = t.date;
       const transactionDate = startOfDay(new Date(targetDate));
       return transactionDate.getTime() === today.getTime();
-    }).length || 0;
-    
-    // Transações atrasadas (antes de hoje)
-    const overdue = scheduledTransactions?.filter(t => {
-      const targetDate = t.date;
-      const transactionDate = startOfDay(new Date(targetDate));
-      return isBefore(transactionDate, today);
     }).length || 0;
 
     // Calculate monthly impact
@@ -197,12 +186,8 @@ export const MobileScheduled = () => {
       }, 0) || 0;
 
     return {
-      total,
-      active,
-      paused,
       upcoming,
       todayScheduled,
-      overdue,
       monthlyIncome,
       monthlyExpenses
     };
@@ -299,12 +284,8 @@ export const MobileScheduled = () => {
       {/* Statistics */}
       <div className="mb-6">
         <MobileScheduledStats
-          totalScheduled={stats.total}
-          activeScheduled={stats.active}
-          pausedScheduled={stats.paused}
           upcomingExecutions={stats.upcoming}
           todayScheduled={stats.todayScheduled}
-          overdueScheduled={stats.overdue}
           totalMonthlyIncome={stats.monthlyIncome}
           totalMonthlyExpenses={stats.monthlyExpenses}
         />
