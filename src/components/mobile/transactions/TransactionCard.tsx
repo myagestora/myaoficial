@@ -38,6 +38,36 @@ export const TransactionCard = ({
 }: TransactionCardProps) => {
   const navigate = useNavigate();
 
+  // Função para formatar data completa
+  const formatDateFromString = (dateString: string): string => {
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('pt-BR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric' 
+    });
+  };
+
+  // Função para calcular tempo relativo
+  const getRelativeTime = (dateString: string): string => {
+    const [year, month, day] = dateString.split('-').map(Number);
+    const transactionDate = new Date(year, month - 1, day);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    transactionDate.setHours(0, 0, 0, 0);
+    
+    const diffTime = transactionDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Hoje';
+    if (diffDays === 1) return 'Amanhã';
+    if (diffDays === -1) return 'Ontem';
+    if (diffDays < 0) return `Há ${Math.abs(diffDays)} dias`;
+    
+    return `Em ${diffDays} dias`;
+  };
+
   return (
     <Card className="hover:shadow-sm transition-shadow">
       <CardContent className="p-4">
@@ -60,10 +90,15 @@ export const TransactionCard = ({
                   <Badge variant="secondary" className="text-xs">
                     {transaction.categories?.name || 'Sem categoria'}
                   </Badge>
-                  <span className="text-xs text-muted-foreground flex items-center">
-                    <Calendar size={12} className="mr-1" />
-                    {formatDate(transaction.date)}
-                  </span>
+                  <div className="flex flex-col text-xs text-muted-foreground">
+                    <span className="flex items-center">
+                      <Calendar size={10} className="mr-1" />
+                      {formatDateFromString(transaction.date)}
+                    </span>
+                    <span className="text-xs">
+                      {getRelativeTime(transaction.date)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

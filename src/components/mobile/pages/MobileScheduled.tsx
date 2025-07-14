@@ -372,12 +372,6 @@ export const MobileScheduled = () => {
                       </span>
                     </div>
                   </div>
-                  <Badge 
-                    variant={transaction.is_recurring ? 'default' : 'secondary'}
-                    className="text-xs"
-                  >
-                    {transaction.is_recurring ? 'Ativa' : 'Pausada'}
-                  </Badge>
                 </div>
 
                 {/* Ações */}

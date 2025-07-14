@@ -80,7 +80,7 @@ export const MobileTransactions = () => {
 
   const formatDate = (date: string) => {
     try {
-      return format(new Date(date), 'dd/MM', { locale: ptBR });
+      return format(new Date(date), 'dd/MM/yyyy', { locale: ptBR });
     } catch {
       return date;
     }
