@@ -107,7 +107,7 @@ const Index = () => {
     description: 'Gráficos intuitivos e dashboards interativos para entender seus hábitos financeiros'
   }, {
     icon: Bell,
-    title: 'Alertas Personalizados',
+    title: '(Em breve) Alertas Personalizados',
     description: 'Receba avisos inteligentes sobre gastos, prazos e oportunidades de economia'
   }, {
     icon: TrendingUp,
