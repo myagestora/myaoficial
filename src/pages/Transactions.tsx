@@ -62,7 +62,7 @@ const Transactions = () => {
           )
         `)
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('date', { ascending: false });
 
       if (error) {
         console.error('Error fetching transactions:', error);
@@ -188,7 +188,11 @@ const Transactions = () => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString + 'T00:00:00');
-    return date.toLocaleDateString('pt-BR');
+    return date.toLocaleDateString('pt-BR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric' 
+    });
   };
 
   const handleEditTransaction = (transaction: any) => {
@@ -344,11 +348,6 @@ const Transactions = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
                         <p className="font-medium text-base truncate">{transaction.title}</p>
-                        {transaction.parent_transaction_id && (
-                          <Badge variant="outline" className="text-xs">
-                            Auto
-                          </Badge>
-                        )}
                       </div>
                       <div className="flex flex-wrap items-center gap-2 mb-1">
                         {transaction.categories && (
