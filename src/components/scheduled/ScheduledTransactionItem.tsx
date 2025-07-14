@@ -30,6 +30,15 @@ export const ScheduledTransactionItem = ({
     const frequency = frequencyMap[transaction.recurrence_frequency as keyof typeof frequencyMap] || transaction.recurrence_frequency;
     const interval = transaction.recurrence_interval > 1 ? ` (${transaction.recurrence_interval}x)` : '';
     
+    // Para datas que podem não existir em todos os meses, mostrar informação adicional
+    if (['monthly', 'quarterly', 'semiannual', 'yearly'].includes(transaction.recurrence_frequency)) {
+      const transactionDate = new Date(transaction.date);
+      const day = transactionDate.getDate();
+      if (day > 28) {
+        return `${frequency}${interval} (dia ${day} ou último do mês)`;
+      }
+    }
+    
     return `${frequency}${interval}`;
   };
 

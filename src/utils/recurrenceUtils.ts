@@ -1,4 +1,4 @@
-import { addDays, addWeeks, addMonths, addYears, isAfter, parseISO } from 'date-fns';
+import { addDays, addWeeks, addMonths, addYears, isAfter, parseISO, getDate, getMonth, getYear, lastDayOfMonth, setDate } from 'date-fns';
 
 export interface RecurrenceConfig {
   frequency: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'biweekly' | 'semiannual' | 'custom';
@@ -7,6 +7,22 @@ export interface RecurrenceConfig {
   count: number;
   customDays?: number;
 }
+
+// Função para ajustar data quando o dia não existe no mês de destino
+const getValidDateForMonth = (baseDate: Date, targetYear: number, targetMonth: number): Date => {
+  const originalDay = getDate(baseDate);
+  const targetDate = new Date(targetYear, targetMonth, 1);
+  const lastDay = lastDayOfMonth(targetDate);
+  const maxDayInMonth = getDate(lastDay);
+  
+  // Se o dia original existe no mês de destino, usa ele
+  if (originalDay <= maxDayInMonth) {
+    return setDate(targetDate, originalDay);
+  }
+  
+  // Se não existe, usa o último dia do mês
+  return lastDay;
+};
 
 export const generateRecurrenceDates = (config: RecurrenceConfig): string[] => {
   const { frequency, interval, startDate, count, customDays } = config;
@@ -39,16 +55,31 @@ export const generateRecurrenceDates = (config: RecurrenceConfig): string[] => {
         currentDate = addWeeks(currentDate, 2 * interval);
         break;
       case 'monthly':
-        currentDate = addMonths(currentDate, interval);
+        // Usar lógica inteligente para meses
+        const nextMonth = getMonth(currentDate) + interval;
+        const nextYear = getYear(currentDate) + Math.floor(nextMonth / 12);
+        const adjustedMonth = nextMonth % 12;
+        currentDate = getValidDateForMonth(start, nextYear, adjustedMonth);
         break;
       case 'quarterly':
-        currentDate = addMonths(currentDate, interval * 3);
+        // Trimestral = 3 meses
+        const nextQuarterMonth = getMonth(currentDate) + (interval * 3);
+        const nextQuarterYear = getYear(currentDate) + Math.floor(nextQuarterMonth / 12);
+        const adjustedQuarterMonth = nextQuarterMonth % 12;
+        currentDate = getValidDateForMonth(start, nextQuarterYear, adjustedQuarterMonth);
         break;
       case 'semiannual':
-        currentDate = addMonths(currentDate, interval * 6);
+        // Semestral = 6 meses
+        const nextSemiMonth = getMonth(currentDate) + (interval * 6);
+        const nextSemiYear = getYear(currentDate) + Math.floor(nextSemiMonth / 12);
+        const adjustedSemiMonth = nextSemiMonth % 12;
+        currentDate = getValidDateForMonth(start, nextSemiYear, adjustedSemiMonth);
         break;
       case 'yearly':
-        currentDate = addYears(currentDate, interval);
+        // Anual mantém o dia original ou usa o último dia do mês
+        const nextYearValue = getYear(currentDate) + interval;
+        const monthValue = getMonth(currentDate);
+        currentDate = getValidDateForMonth(start, nextYearValue, monthValue);
         break;
       case 'custom':
         if (customDays) {
