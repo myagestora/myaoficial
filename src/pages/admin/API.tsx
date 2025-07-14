@@ -204,11 +204,29 @@ const AdminAPI = () => {
           path: "/user-financial-api/user/{userId}/balance",
           description: "Saldo atual do usuário",
           headers: { Authorization: "Bearer your-secure-bot-token" },
-          response: { balance: "number", total_income: "number", total_expenses: "number" },
+          params: { 
+            period: "string?" 
+          },
+          paramDetails: {
+            period: {
+              type: "string",
+              description: "Período para cálculo do saldo",
+              example: "month",
+              required: false,
+              default: "all",
+              options: ["week", "month", "year", "all"]
+            }
+          },
+          response: { balance: "number", total_income: "number", total_expenses: "number", period: "string" },
+          exampleRequest: {
+            period: "month"
+          },
           exampleResponse: {
             balance: 1250.75,
             total_income: 3500.00,
-            total_expenses: 2249.25
+            total_expenses: 2249.25,
+            period: "month",
+            currency: "BRL"
           }
         },
         {
@@ -388,6 +406,26 @@ const AdminAPI = () => {
           path: "/user-financial-api/user/{userId}/goals",
           description: "Status das metas financeiras",
           headers: { Authorization: "Bearer your-secure-bot-token" },
+          params: { 
+            period: "string?",
+            goal_type: "string?"
+          },
+          paramDetails: {
+            period: {
+              type: "string",
+              description: "Período para filtrar metas",
+              example: "month",
+              required: false,
+              options: ["month", "year", "all"]
+            },
+            goal_type: {
+              type: "string", 
+              description: "Tipo de meta",
+              example: "savings",
+              required: false,
+              options: ["savings", "monthly_budget"]
+            }
+          },
           response: { goals: "array", total_goals: "number" },
           exampleResponse: {
             goals: [
@@ -397,7 +435,8 @@ const AdminAPI = () => {
                 target_amount: 5000.00,
                 current_amount: 1250.75,
                 percentage: 25.0,
-                status: "in_progress"
+                status: "in_progress",
+                goal_type: "savings"
               }
             ],
             total_goals: 3
