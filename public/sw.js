@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mya-gestora-v2';
+const CACHE_NAME = 'mya-gestora-v3';
 const urlsToCache = [
   '/',
   '/dashboard',
@@ -7,8 +7,7 @@ const urlsToCache = [
   '/reports',
   '/categories',
   '/settings',
-  '/scheduled',
-  '/manifest.json'
+  '/scheduled'
 ];
 
 self.addEventListener('install', (event) => {
