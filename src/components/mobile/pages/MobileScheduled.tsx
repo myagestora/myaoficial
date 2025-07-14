@@ -33,7 +33,11 @@ export const MobileScheduled = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
     type: '',
-    category: ''
+    category: '',
+    period: {
+      from: null as Date | null,
+      to: null as Date | null
+    }
   });
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [recurringDeletingId, setRecurringDeletingId] = useState<string | null>(null);
@@ -127,11 +131,30 @@ export const MobileScheduled = () => {
       if (filters.type && transaction.type !== filters.type) return false;
 
       // Category filter
-      if (filters.category && transaction.categories?.name !== categories.find(c => c.id === filters.category)?.name) return false;
+      if (filters.category && transaction.category_id !== filters.category) return false;
+
+      // Period filter
+      if (filters.period.from || filters.period.to) {
+        const transactionDate = new Date(transaction.date);
+        
+        if (filters.period.from) {
+          const fromDate = new Date(filters.period.from);
+          fromDate.setHours(0, 0, 0, 0);
+          transactionDate.setHours(0, 0, 0, 0);
+          if (transactionDate < fromDate) return false;
+        }
+        
+        if (filters.period.to) {
+          const toDate = new Date(filters.period.to);
+          toDate.setHours(23, 59, 59, 999);
+          transactionDate.setHours(0, 0, 0, 0);
+          if (transactionDate > toDate) return false;
+        }
+      }
 
       return true;
     }) || [];
-  }, [scheduledTransactions, searchTerm, filters, categories]);
+  }, [scheduledTransactions, searchTerm, filters]);
 
   // Calculate statistics
   const stats = useMemo(() => {

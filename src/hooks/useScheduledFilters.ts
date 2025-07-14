@@ -4,13 +4,21 @@ import { useState, useMemo } from 'react';
 interface FilterOptions {
   type: string;
   category: string;
+  period: {
+    from: Date | null;
+    to: Date | null;
+  };
 }
 
 export const useScheduledFilters = (transactions: any[]) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<FilterOptions>({
     type: '',
-    category: ''
+    category: '',
+    period: {
+      from: null,
+      to: null
+    }
   });
 
   const applyFilters = (transaction: any) => {
@@ -22,6 +30,25 @@ export const useScheduledFilters = (transactions: any[]) => {
     // Filtro por categoria
     if (filters.category && transaction.category_id !== filters.category) {
       return false;
+    }
+
+    // Filtro por período
+    if (filters.period.from || filters.period.to) {
+      const transactionDate = new Date(transaction.date);
+      
+      if (filters.period.from) {
+        const fromDate = new Date(filters.period.from);
+        fromDate.setHours(0, 0, 0, 0);
+        transactionDate.setHours(0, 0, 0, 0);
+        if (transactionDate < fromDate) return false;
+      }
+      
+      if (filters.period.to) {
+        const toDate = new Date(filters.period.to);
+        toDate.setHours(23, 59, 59, 999);
+        transactionDate.setHours(0, 0, 0, 0);
+        if (transactionDate > toDate) return false;
+      }
     }
 
     return true;
@@ -40,7 +67,7 @@ export const useScheduledFilters = (transactions: any[]) => {
     });
   }, [transactions, searchTerm, filters]);
 
-  const hasFiltersOrSearch = searchTerm !== '' || Object.values(filters).some(f => f !== '');
+  const hasFiltersOrSearch = Boolean(searchTerm !== '' || filters.type !== '' || filters.category !== '' || filters.period.from || filters.period.to);
 
   return {
     searchTerm,
