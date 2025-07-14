@@ -24,6 +24,9 @@ pop3_port = 54326
 [functions.create-mercado-pago-payment]
 verify_jwt = true
 
+[functions.dynamic-manifest]
+verify_jwt = false
+
 [functions.mercado-pago-webhook]
 verify_jwt = false
 
