@@ -191,27 +191,25 @@ O app será instalado na sua tela inicial!`);
             </button>
           ))}
 
-          {/* PWA Install Button - Only show if installation is actually possible */}
-          {(!pwaInstaller.isAppInstalled() && (canInstall || isIOS)) && (
-            <>
-              <div className="my-4 border-t border-muted" />
-              <button
-                onClick={handleInstall}
-                disabled={isInstalling}
-                className="flex items-center space-x-3 w-full p-3 rounded-lg transition-colors text-left bg-primary/5 hover:bg-primary/10 text-primary"
-              >
-                <Download size={20} />
-                <div className="flex flex-col">
-                  <span className="font-medium">
-                    {isInstalling ? 'Instalando...' : 'Instalar App'}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {isIOS ? 'Toque para ver instruções' : 'Instalar aplicativo PWA'}
-                  </span>
-                </div>
-              </button>
-            </>
-          )}
+          {/* PWA Install Button - SEMPRE MOSTRAR para forçar instalação */}
+          <>
+            <div className="my-4 border-t border-muted" />
+            <button
+              onClick={handleInstall}
+              disabled={isInstalling}
+              className="flex items-center space-x-3 w-full p-3 rounded-lg transition-colors text-left bg-primary/5 hover:bg-primary/10 text-primary"
+            >
+              <Download size={20} />
+              <div className="flex flex-col">
+                <span className="font-medium">
+                  {isInstalling ? 'Instalando...' : 'Instalar App'}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {isIOS ? 'Toque para ver instruções' : 'Forçar instalação PWA'}
+                </span>
+              </div>
+            </button>
+          </>
         </nav>
       </div>
     </div>
