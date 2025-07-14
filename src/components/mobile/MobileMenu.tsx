@@ -53,18 +53,32 @@ export const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
   };
 
   const handleInstall = useCallback(async () => {
+    console.log('🚀 Tentando instalar PWA...', { canInstall, isAndroid });
     setIsInstalling(true);
     try {
       const installed = await pwaInstaller.install();
+      console.log('📱 Resultado da instalação:', installed);
+      
       if (installed) {
+        console.log('✅ PWA instalado com sucesso!');
+        onClose();
+      } else if (isAndroid) {
+        console.log('❌ Instalação nativa falhou, mostrando fallback manual');
+        // Fallback para Android: instruções manuais
+        alert('Para adicionar à tela inicial:\n1. Toque nos 3 pontos do navegador\n2. Selecione "Adicionar à tela inicial"');
         onClose();
       }
     } catch (error) {
       console.error('Erro ao instalar:', error);
+      if (isAndroid) {
+        // Fallback para Android em caso de erro
+        alert('Para adicionar à tela inicial:\n1. Toque nos 3 pontos do navegador\n2. Selecione "Adicionar à tela inicial"');
+        onClose();
+      }
     } finally {
       setIsInstalling(false);
     }
-  }, [onClose]);
+  }, [onClose, canInstall, isAndroid]);
 
   useEffect(() => {
     // Listener para status de instalação PWA
@@ -175,16 +189,10 @@ export const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
               // Para iOS, mostrar instruções
               alert('Para instalar no iOS:\n1. Toque no ícone de compartilhar\n2. Selecione "Adicionar à Tela de Início"');
               onClose();
-            } : isAndroid ? () => {
-              // Para Android, sempre tentar instalar
-              if (canInstall) {
-                handleInstall();
-              } else {
-                // Fallback: mostrar como adicionar atalho manualmente
-                alert('Para adicionar à tela inicial:\n1. Toque nos 3 pontos do navegador\n2. Selecione "Adicionar à tela inicial"');
-                onClose();
-              }
-            } : handleInstall}
+            } : () => {
+              // Para Android e outros, sempre tentar instalação nativa primeiro
+              handleInstall();
+            }}
             disabled={isInstalling}
             className="flex items-center space-x-3 w-full p-3 rounded-lg transition-colors text-left bg-primary/5 hover:bg-primary/10 text-primary"
           >
@@ -194,9 +202,7 @@ export const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
                 {isInstalling ? 'Instalando...' : 'Instalar App'}
               </span>
               <span className="text-xs text-muted-foreground">
-                {isIOS ? 'Toque para ver instruções' : 
-                 isAndroid ? (canInstall ? 'Instalar PWA' : 'Adicionar atalho') : 
-                 'Adicionar à tela inicial'}
+                {isIOS ? 'Toque para ver instruções' : 'Instalar aplicativo PWA'}
               </span>
             </div>
           </button>
