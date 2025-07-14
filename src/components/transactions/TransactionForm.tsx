@@ -122,7 +122,24 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
           customDays: data.custom_days
         });
 
-        const transactions = dates.map((date, index) => ({
+        // Criar transação template (pai)
+        const templateTransaction = {
+          title: data.title,
+          amount: data.amount,
+          type: data.type,
+          category_id: data.category_id,
+          date: data.date,
+          description: data.description || null,
+          user_id: user.id,
+          is_recurring: true,
+          is_parent_template: true,
+          recurrence_frequency: data.recurrence_frequency,
+          recurrence_interval: 1,
+          recurrence_count: data.recurrence_count,
+          next_recurrence_date: dates[0] // Primeira execução
+        };
+
+        const childTransactions = dates.map((date) => ({
           title: data.title,
           amount: data.amount,
           type: data.type,
@@ -131,32 +148,29 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
           description: data.description || null,
           user_id: user.id,
           is_recurring: false,
-          is_parent_template: index === 0,
-          parent_transaction_id: index === 0 ? null : undefined
+          is_parent_template: false
         }));
 
-        // Inserir primeira transação (template)
+        // Inserir transação template (pai)
         const { data: parentTransaction, error: parentError } = await supabase
           .from('transactions')
-          .insert(transactions[0])
+          .insert(templateTransaction)
           .select()
           .single();
 
         if (parentError) throw parentError;
 
-        // Inserir transações subsequentes com referência ao parent
-        if (transactions.length > 1) {
-          const childTransactions = transactions.slice(1).map(t => ({
-            ...t,
-            parent_transaction_id: parentTransaction.id
-          }));
+        // Inserir transações filhas com referência ao parent
+        const childTransactionsWithParent = childTransactions.map(t => ({
+          ...t,
+          parent_transaction_id: parentTransaction.id
+        }));
 
-          const { error: childError } = await supabase
-            .from('transactions')
-            .insert(childTransactions);
+        const { error: childError } = await supabase
+          .from('transactions')
+          .insert(childTransactionsWithParent);
 
-          if (childError) throw childError;
-        }
+        if (childError) throw childError;
       } else {
         // Transação única
         const transactionData = {

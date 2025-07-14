@@ -9,13 +9,25 @@ interface ScheduledTransactionsListProps {
   onToggleStatus: (id: string, isActive: boolean) => void;
   onDelete: (id: string) => void;
   hasFiltersOrSearch: boolean;
+  deletingId?: string | null;
+  recurringDeletingId?: string | null;
+  onConfirmDelete?: () => void;
+  onDeleteSingle?: () => void;
+  onDeleteSeries?: () => void;
+  onCancelDelete?: () => void;
 }
 
 export const ScheduledTransactionsList = ({ 
   transactions, 
   onToggleStatus, 
   onDelete,
-  hasFiltersOrSearch
+  hasFiltersOrSearch,
+  deletingId,
+  recurringDeletingId,
+  onConfirmDelete,
+  onDeleteSingle,
+  onDeleteSeries,
+  onCancelDelete
 }: ScheduledTransactionsListProps) => {
   return (
     <Card>
@@ -42,6 +54,12 @@ export const ScheduledTransactionsList = ({
                 transaction={transaction}
                 onToggleStatus={onToggleStatus}
                 onDelete={onDelete}
+                deletingId={deletingId}
+                recurringDeletingId={recurringDeletingId}
+                onConfirmDelete={onConfirmDelete}
+                onDeleteSingle={onDeleteSingle}
+                onDeleteSeries={onDeleteSeries}
+                onCancelDelete={onCancelDelete}
               />
             ))
           )}

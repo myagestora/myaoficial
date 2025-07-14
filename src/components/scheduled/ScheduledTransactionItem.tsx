@@ -3,17 +3,31 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowUpCircle, ArrowDownCircle, Edit, Trash2, Repeat } from 'lucide-react';
+import { InlineConfirmation } from '@/components/ui/inline-confirmation';
+import { RecurringDeletionOptions } from '@/components/ui/recurring-deletion-options';
 
 interface ScheduledTransactionItemProps {
   transaction: any;
   onToggleStatus: (id: string, isActive: boolean) => void;
   onDelete: (id: string) => void;
+  deletingId?: string | null;
+  recurringDeletingId?: string | null;
+  onConfirmDelete?: () => void;
+  onDeleteSingle?: () => void;
+  onDeleteSeries?: () => void;
+  onCancelDelete?: () => void;
 }
 
 export const ScheduledTransactionItem = ({ 
   transaction, 
   onToggleStatus, 
-  onDelete 
+  onDelete,
+  deletingId,
+  recurringDeletingId,
+  onConfirmDelete,
+  onDeleteSingle,
+  onDeleteSeries,
+  onCancelDelete
 }: ScheduledTransactionItemProps) => {
   const formatRecurrenceInfo = (transaction: any) => {
     const frequencyMap = {
@@ -43,7 +57,9 @@ export const ScheduledTransactionItem = ({
   };
 
   const getNextExecutionDate = (transaction: any) => {
-    const transactionDate = new Date(transaction.date);
+    // Usar next_recurrence_date se disponível, senão usar date
+    const targetDate = transaction.next_recurrence_date || transaction.date;
+    const transactionDate = new Date(targetDate);
     const today = new Date();
     const diffTime = transactionDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -111,7 +127,7 @@ export const ScheduledTransactionItem = ({
             <p className="text-sm text-gray-500 mt-1">{transaction.description}</p>
           )}
           <p className="text-xs text-blue-600 mt-1">
-            Data: {new Date(transaction.date).toLocaleDateString('pt-BR')}
+            Próxima: {new Date(transaction.next_recurrence_date || transaction.date).toLocaleDateString('pt-BR')}
           </p>
           {transaction.recurrence_count && (
             <p className="text-xs text-gray-500 mt-1">
@@ -126,19 +142,42 @@ export const ScheduledTransactionItem = ({
         }`}>
           {transaction.type === 'income' ? '+' : ''}R$ {Math.abs(Number(transaction.amount)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
         </span>
-        <div className="flex space-x-2">
+        <div className="flex space-x-2 relative">
           <Button variant="ghost" size="sm" title="Editar agendamento">
             <Edit className="h-4 w-4" />
           </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-red-600 hover:text-red-700"
-            onClick={() => onDelete(transaction.id)}
-            title="Excluir agendamento"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          <div className="relative">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-red-600 hover:text-red-700"
+              onClick={() => onDelete(transaction.id)}
+              title="Excluir agendamento"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+            
+            {/* Confirmação inline para transações não recorrentes */}
+            {deletingId === transaction.id && onConfirmDelete && onCancelDelete && (
+              <InlineConfirmation
+                message="Confirmar exclusão?"
+                onConfirm={onConfirmDelete}
+                onCancel={onCancelDelete}
+                confirmText="Excluir"
+                cancelText="Cancelar"
+              />
+            )}
+            
+            {/* Opções para transações recorrentes */}
+            {recurringDeletingId === transaction.id && onDeleteSingle && onDeleteSeries && onCancelDelete && (
+              <RecurringDeletionOptions
+                onDeleteSingle={onDeleteSingle}
+                onDeleteSeries={onDeleteSeries}
+                onCancel={onCancelDelete}
+                isParent={transaction.is_recurring}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>

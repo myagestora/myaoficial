@@ -22,7 +22,8 @@ import { format, addDays, isBefore, isAfter, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { DeleteRecurringTransactionDialog } from '@/components/scheduled/DeleteRecurringTransactionDialog';
+import { InlineConfirmation } from '@/components/ui/inline-confirmation';
+import { RecurringDeletionOptions } from '@/components/ui/recurring-deletion-options';
 
 export const MobileScheduled = () => {
   const { user } = useAuth();
@@ -36,8 +37,8 @@ export const MobileScheduled = () => {
     frequency: '',
     status: ''
   });
-  const [deletingTransaction, setDeletingTransaction] = useState<any>(null);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [recurringDeletingId, setRecurringDeletingId] = useState<string | null>(null);
 
   // Fetch categories for filters
   const { data: categories = [] } = useQuery({
@@ -184,35 +185,37 @@ export const MobileScheduled = () => {
     const isRecurring = transaction.is_recurring || transaction.parent_transaction_id;
     
     if (isRecurring) {
-      setDeletingTransaction(transaction);
-      setShowDeleteDialog(true);
+      setRecurringDeletingId(transaction.id);
     } else {
-      // Transação simples - usar mutation diretamente
-      try {
-        await deleteScheduledTransaction.mutateAsync(transaction.id);
-      } catch (error) {
-        console.error('Error deleting transaction:', error);
-      }
+      setDeletingId(transaction.id);
     }
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deletingId) return;
+    deleteScheduledTransaction.mutate(deletingId);
+    setDeletingId(null);
   };
 
   const handleDeleteSingle = () => {
-    if (deletingTransaction) {
-      deleteScheduledTransaction.mutate(deletingTransaction.id);
-    }
+    if (!recurringDeletingId) return;
+    deleteScheduledTransaction.mutate(recurringDeletingId);
+    setRecurringDeletingId(null);
   };
 
   const handleDeleteSeries = () => {
-    if (deletingTransaction) {
-      // Se for filho, pegar o parent_transaction_id; se for pai, usar o próprio id
-      const parentId = deletingTransaction.parent_transaction_id || deletingTransaction.id;
-      deleteRecurringSeries.mutate(parentId);
-    }
+    if (!recurringDeletingId) return;
+    const transaction = filteredTransactions.find(t => t.id === recurringDeletingId);
+    if (!transaction) return;
+    
+    const parentId = transaction.parent_transaction_id || transaction.id;
+    deleteRecurringSeries.mutate(parentId);
+    setRecurringDeletingId(null);
   };
 
-  const handleCloseDeleteDialog = () => {
-    setShowDeleteDialog(false);
-    setDeletingTransaction(null);
+  const handleCancelDelete = () => {
+    setDeletingId(null);
+    setRecurringDeletingId(null);
   };
 
   const handleEdit = (transaction: any) => {
@@ -341,7 +344,7 @@ export const MobileScheduled = () => {
                 </div>
 
                 {/* Ações */}
-                <div className="flex space-x-2 pt-2 border-t">
+                <div className="flex space-x-2 pt-2 border-t relative">
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -351,14 +354,37 @@ export const MobileScheduled = () => {
                     <Edit size={14} className="mr-1" />
                     Editar
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleDelete(transaction)}
-                    disabled={deleteScheduledTransaction.isPending}
-                  >
-                    <Trash2 size={14} />
-                  </Button>
+                  <div className="relative">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleDelete(transaction)}
+                      disabled={deleteScheduledTransaction.isPending}
+                    >
+                      <Trash2 size={14} />
+                    </Button>
+                    
+                    {/* Confirmação inline para transações não recorrentes */}
+                    {deletingId === transaction.id && (
+                      <InlineConfirmation
+                        message="Confirmar exclusão?"
+                        onConfirm={handleConfirmDelete}
+                        onCancel={handleCancelDelete}
+                        confirmText="Excluir"
+                        cancelText="Cancelar"
+                      />
+                    )}
+                    
+                    {/* Opções para transações recorrentes */}
+                    {recurringDeletingId === transaction.id && (
+                      <RecurringDeletionOptions
+                        onDeleteSingle={handleDeleteSingle}
+                        onDeleteSeries={handleDeleteSeries}
+                        onCancel={handleCancelDelete}
+                        isParent={transaction.is_recurring}
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -392,13 +418,6 @@ export const MobileScheduled = () => {
         </Card>
       )}
 
-      <DeleteRecurringTransactionDialog
-        isOpen={showDeleteDialog}
-        onClose={handleCloseDeleteDialog}
-        onDeleteSingle={handleDeleteSingle}
-        onDeleteSeries={handleDeleteSeries}
-        transaction={deletingTransaction}
-      />
     </MobilePageWrapper>
   );
 };

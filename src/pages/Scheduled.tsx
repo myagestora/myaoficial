@@ -8,15 +8,14 @@ import { ScheduledHeader } from '@/components/scheduled/ScheduledHeader';
 import { ScheduledStats } from '@/components/scheduled/ScheduledStats';
 import { ScheduledFilters } from '@/components/scheduled/ScheduledFilters';
 import { ScheduledTransactionsList } from '@/components/scheduled/ScheduledTransactionsList';
-import { DeleteRecurringTransactionDialog } from '@/components/scheduled/DeleteRecurringTransactionDialog';
 import { useScheduledTransactions } from '@/hooks/useScheduledTransactions';
 import { useScheduledFilters } from '@/hooks/useScheduledFilters';
 
 const Scheduled = () => {
   const { user } = useAuth();
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [deletingTransaction, setDeletingTransaction] = useState<any>(null);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [recurringDeletingId, setRecurringDeletingId] = useState<string | null>(null);
   
   const { 
     scheduledTransactions, 
@@ -79,31 +78,37 @@ const Scheduled = () => {
     const isRecurring = transaction.is_recurring || transaction.parent_transaction_id;
     
     if (isRecurring) {
-      setDeletingTransaction(transaction);
-      setShowDeleteDialog(true);
+      setRecurringDeletingId(id);
     } else {
-      // Transação simples - confirmação inline
-      deleteScheduledTransaction.mutate(id);
+      setDeletingId(id);
     }
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deletingId) return;
+    deleteScheduledTransaction.mutate(deletingId);
+    setDeletingId(null);
   };
 
   const handleDeleteSingle = () => {
-    if (deletingTransaction) {
-      deleteScheduledTransaction.mutate(deletingTransaction.id);
-    }
+    if (!recurringDeletingId) return;
+    deleteScheduledTransaction.mutate(recurringDeletingId);
+    setRecurringDeletingId(null);
   };
 
   const handleDeleteSeries = () => {
-    if (deletingTransaction) {
-      // Se for filho, pegar o parent_transaction_id; se for pai, usar o próprio id
-      const parentId = deletingTransaction.parent_transaction_id || deletingTransaction.id;
-      deleteRecurringSeries.mutate(parentId);
-    }
+    if (!recurringDeletingId) return;
+    const transaction = filteredTransactions.find(t => t.id === recurringDeletingId);
+    if (!transaction) return;
+    
+    const parentId = transaction.parent_transaction_id || transaction.id;
+    deleteRecurringSeries.mutate(parentId);
+    setRecurringDeletingId(null);
   };
 
-  const handleCloseDeleteDialog = () => {
-    setShowDeleteDialog(false);
-    setDeletingTransaction(null);
+  const handleCancelDelete = () => {
+    setDeletingId(null);
+    setRecurringDeletingId(null);
   };
 
   if (isLoading) {
@@ -147,19 +152,17 @@ const Scheduled = () => {
         onToggleStatus={handleToggleStatus}
         onDelete={handleDelete}
         hasFiltersOrSearch={hasFiltersOrSearch}
+        deletingId={deletingId}
+        recurringDeletingId={recurringDeletingId}
+        onConfirmDelete={handleConfirmDelete}
+        onDeleteSingle={handleDeleteSingle}
+        onDeleteSeries={handleDeleteSeries}
+        onCancelDelete={handleCancelDelete}
       />
 
       <TransactionForm 
         isOpen={isFormOpen} 
         onClose={() => setIsFormOpen(false)} 
-      />
-
-      <DeleteRecurringTransactionDialog
-        isOpen={showDeleteDialog}
-        onClose={handleCloseDeleteDialog}
-        onDeleteSingle={handleDeleteSingle}
-        onDeleteSeries={handleDeleteSeries}
-        transaction={deletingTransaction}
       />
     </div>
   );
