@@ -269,80 +269,75 @@ export const MobileScheduledTransactionForm = () => {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Tipo */}
-        <div>
-          <Label className="text-base font-medium">Tipo *</Label>
-          <div className="mt-2">
+        {/* Tipo e Valor */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Tipo</Label>
             <MobileListSelect
               value={watchedType}
-              onValueChange={(value) => setValue('type', value as 'income' | 'expense')}
-              options={typeOptions}
+              onValueChange={(value) => {
+                setValue('type', value as 'income' | 'expense');
+                setValue('category_id', '');
+              }}
               placeholder="Selecione o tipo"
+              options={typeOptions}
             />
+            {errors.type && (
+              <p className="text-sm text-destructive">{errors.type.message}</p>
+            )}
           </div>
-          {errors.type && (
-            <p className="text-sm text-red-500 mt-1">{errors.type.message}</p>
-          )}
-        </div>
 
-        {/* Título */}
-        <div>
-          <Label htmlFor="title" className="text-base font-medium">Título *</Label>
-          <Input
-            id="title"
-            {...register('title')}
-            placeholder="Ex: Salário, Aluguel, Academia..."
-            className="mt-2"
-          />
-          {errors.title && (
-            <p className="text-sm text-red-500 mt-1">{errors.title.message}</p>
-          )}
-        </div>
-
-        {/* Valor */}
-        <div>
-          <Label htmlFor="amount" className="text-base font-medium">Valor *</Label>
-          <div className="relative mt-2">
-            <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <div className="space-y-2">
+            <Label htmlFor="amount">Valor</Label>
             <Input
               id="amount"
               type="number"
               step="0.01"
               {...register('amount', { valueAsNumber: true })}
-              className="pl-10"
               placeholder="0,00"
             />
+            {errors.amount && (
+              <p className="text-sm text-destructive">{errors.amount.message}</p>
+            )}
           </div>
-          {errors.amount && (
-            <p className="text-sm text-red-500 mt-1">{errors.amount.message}</p>
+        </div>
+
+        {/* Título */}
+        <div className="space-y-2">
+          <Label htmlFor="title">Título</Label>
+          <Input
+            id="title"
+            {...register('title')}
+            placeholder="Ex: Salário, Aluguel, Academia..."
+          />
+          {errors.title && (
+            <p className="text-sm text-destructive">{errors.title.message}</p>
           )}
         </div>
 
         {/* Categoria */}
-        <div>
-          <Label className="text-base font-medium">Categoria *</Label>
-          <div className="mt-2">
-            <MobileListSelect
-              value={watch('category_id') || ''}
-              onValueChange={(value) => setValue('category_id', value)}
-              options={categoryOptions}
-              placeholder="Selecione a categoria"
-            />
-          </div>
+        <div className="space-y-2">
+          <Label>Categoria</Label>
+          <MobileListSelect
+            value={watch('category_id') || ''}
+            onValueChange={(value) => setValue('category_id', value)}
+            placeholder="Selecione a categoria"
+            options={categoryOptions}
+          />
           {errors.category_id && (
-            <p className="text-sm text-red-500 mt-1">{errors.category_id.message}</p>
+            <p className="text-sm text-destructive">{errors.category_id.message}</p>
           )}
         </div>
 
         {/* Descrição */}
-        <div>
-          <Label htmlFor="description" className="text-base font-medium">Descrição</Label>
+        <div className="space-y-2">
+          <Label htmlFor="description">Observações (opcional)</Label>
           <Textarea
             id="description"
             {...register('description')}
-            placeholder="Detalhes adicionais (opcional)"
+            placeholder="Adicione observações..."
+            className="resize-none"
             rows={3}
-            className="mt-2"
           />
         </div>
 
@@ -355,36 +350,34 @@ export const MobileScheduledTransactionForm = () => {
             </div>
             
             <div className="space-y-4">
-              {/* Frequência */}
-              <div>
-                <Label className="text-base font-medium">Frequência *</Label>
-                <div className="mt-2">
+              {/* Frequência e Intervalo */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Frequência</Label>
                   <MobileListSelect
                     value={watchedFrequency}
                     onValueChange={(value) => setValue('recurrence_frequency', value as any)}
                     options={frequencyOptions}
                     placeholder="Selecione a frequência"
                   />
+                  {errors.recurrence_frequency && (
+                    <p className="text-sm text-destructive">{errors.recurrence_frequency.message}</p>
+                  )}
                 </div>
-                {errors.recurrence_frequency && (
-                  <p className="text-sm text-red-500 mt-1">{errors.recurrence_frequency.message}</p>
-                )}
-              </div>
 
-              {/* Intervalo */}
-              <div>
-                <Label htmlFor="interval" className="text-base font-medium">A cada</Label>
-                <Input
-                  id="interval"
-                  type="number"
-                  min="1"
-                  {...register('recurrence_interval', { valueAsNumber: true })}
-                  placeholder="1"
-                  className="mt-2"
-                />
-                {errors.recurrence_interval && (
-                  <p className="text-sm text-red-500 mt-1">{errors.recurrence_interval.message}</p>
-                )}
+                <div className="space-y-2">
+                  <Label htmlFor="interval">A cada</Label>
+                  <Input
+                    id="interval"
+                    type="number"
+                    min="1"
+                    {...register('recurrence_interval', { valueAsNumber: true })}
+                    placeholder="1"
+                  />
+                  {errors.recurrence_interval && (
+                    <p className="text-sm text-destructive">{errors.recurrence_interval.message}</p>
+                  )}
+                </div>
               </div>
 
               {/* Preview da frequência */}
@@ -398,33 +391,28 @@ export const MobileScheduledTransactionForm = () => {
         </Card>
 
         {/* Datas */}
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="start_date" className="text-base font-medium">Data de Início *</Label>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="start_date">Data de Início</Label>
             <Input
               id="start_date"
               type="date"
               {...register('start_date')}
-              className="mt-2"
             />
             {errors.start_date && (
-              <p className="text-sm text-red-500 mt-1">{errors.start_date.message}</p>
+              <p className="text-sm text-destructive">{errors.start_date.message}</p>
             )}
           </div>
 
-          <div>
-            <Label htmlFor="end_date" className="text-base font-medium">Data de Fim (opcional)</Label>
+          <div className="space-y-2">
+            <Label htmlFor="end_date">Data de Fim (opcional)</Label>
             <Input
               id="end_date"
               type="date"
               {...register('end_date')}
-              className="mt-2"
             />
-            <p className="text-sm text-muted-foreground mt-1">
-              Deixe em branco para repetir indefinidamente
-            </p>
             {errors.end_date && (
-              <p className="text-sm text-red-500 mt-1">{errors.end_date.message}</p>
+              <p className="text-sm text-destructive">{errors.end_date.message}</p>
             )}
           </div>
         </div>
