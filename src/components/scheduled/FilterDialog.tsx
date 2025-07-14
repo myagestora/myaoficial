@@ -144,7 +144,7 @@ export const FilterDialog = ({ filters, onFiltersChange, categories }: FilterDia
                 <SelectValue placeholder="Todos os tipos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os tipos</SelectItem>
+                <SelectItem value="all">Todos os tipos</SelectItem>
                 <SelectItem value="income">Receita</SelectItem>
                 <SelectItem value="expense">Despesa</SelectItem>
               </SelectContent>
@@ -162,7 +162,7 @@ export const FilterDialog = ({ filters, onFiltersChange, categories }: FilterDia
                 <SelectValue placeholder="Todas as categorias" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as categorias</SelectItem>
+                <SelectItem value="all">Todas as categorias</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
                     <div className="flex items-center gap-2">
@@ -189,7 +189,7 @@ export const FilterDialog = ({ filters, onFiltersChange, categories }: FilterDia
                 <SelectValue placeholder="Todas as frequências" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as frequências</SelectItem>
+                <SelectItem value="all">Todas as frequências</SelectItem>
                 {frequencyOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
@@ -210,7 +210,7 @@ export const FilterDialog = ({ filters, onFiltersChange, categories }: FilterDia
                 <SelectValue placeholder="Todos os status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os status</SelectItem>
+                <SelectItem value="all">Todos os status</SelectItem>
                 {statusOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
@@ -231,7 +231,7 @@ export const FilterDialog = ({ filters, onFiltersChange, categories }: FilterDia
                 <SelectValue placeholder="Todos os períodos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os períodos</SelectItem>
+                <SelectItem value="all">Todos os períodos</SelectItem>
                 {nextExecutionOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
