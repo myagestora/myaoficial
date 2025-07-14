@@ -60,7 +60,7 @@ export const MobileScheduledStats = ({
             Impacto Mensal Estimado
           </CardTitle>
           <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-            Transações recorrentes
+            Transações deste mês
           </p>
         </CardHeader>
         <CardContent className="space-y-3">

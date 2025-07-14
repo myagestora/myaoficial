@@ -18,37 +18,22 @@ export const ScheduledStats = ({
 
   // Calculate monthly impact
   const monthlyImpact = useMemo(() => {
-    const monthlyIncome = scheduledTransactions?.filter(t => t.type === 'income' && t.is_recurring)
-      .reduce((sum, t) => {
-        let monthlyAmount = t.amount;
-        switch (t.recurrence_frequency) {
-          case 'daily': monthlyAmount = t.amount * 30; break;
-          case 'weekly': monthlyAmount = t.amount * 4; break;
-          case 'biweekly': monthlyAmount = t.amount * 2; break;
-          case 'quarterly': monthlyAmount = t.amount / 3; break;
-          case 'semiannual': monthlyAmount = t.amount / 6; break;
-          case 'yearly': monthlyAmount = t.amount / 12; break;
-          case 'custom': monthlyAmount = t.amount * (30 / ((t.recurrence_interval || 1) * 1)); break;
-          default: monthlyAmount = t.amount; // monthly
-        }
-        return sum + monthlyAmount;
-      }, 0) || 0;
+    const currentMonth = new Date().getMonth() + 1;
+    const currentYear = new Date().getFullYear();
+    const currentMonthStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+    
+    // Filtrar transações do mês atual
+    const currentMonthTransactions = scheduledTransactions?.filter(t => {
+      return t.date && t.date.startsWith(currentMonthStr);
+    }) || [];
 
-    const monthlyExpenses = scheduledTransactions?.filter(t => t.type === 'expense' && t.is_recurring)
-      .reduce((sum, t) => {
-        let monthlyAmount = t.amount;
-        switch (t.recurrence_frequency) {
-          case 'daily': monthlyAmount = t.amount * 30; break;
-          case 'weekly': monthlyAmount = t.amount * 4; break;
-          case 'biweekly': monthlyAmount = t.amount * 2; break;
-          case 'quarterly': monthlyAmount = t.amount / 3; break;
-          case 'semiannual': monthlyAmount = t.amount / 6; break;
-          case 'yearly': monthlyAmount = t.amount / 12; break;
-          case 'custom': monthlyAmount = t.amount * (30 / ((t.recurrence_interval || 1) * 1)); break;
-          default: monthlyAmount = t.amount; // monthly
-        }
-        return sum + monthlyAmount;
-      }, 0) || 0;
+    const monthlyIncome = currentMonthTransactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const monthlyExpenses = currentMonthTransactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
 
     return { monthlyIncome, monthlyExpenses };
   }, [scheduledTransactions]);
@@ -95,7 +80,7 @@ export const ScheduledStats = ({
             Impacto Mensal Estimado
           </CardTitle>
           <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-            Projeção baseada em transações recorrentes
+            Transações agendadas para este mês
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
