@@ -9,11 +9,13 @@ import {
   Grid3X3, 
   Settings,
   X,
-  Download
+  Download,
+  LogOut
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { isIOSDevice } from '@/utils/mobileDetection';
+import { useAuth } from '@/hooks/useAuth';
 
 
 interface MobileMenuProps {
@@ -37,6 +39,7 @@ const moreItems = [
 export const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const isIOS = isIOSDevice();
   
   // Debug visual para Android
@@ -48,6 +51,16 @@ export const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
   const handleNavigate = (path: string) => {
     navigate(path);
     onClose();
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      onClose();
+      navigate('/');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    }
   };
 
 
@@ -137,6 +150,17 @@ export const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
           ))}
 
         </nav>
+
+        {/* Footer com botão de logout */}
+        <div className="p-4 border-t">
+          <button
+            onClick={handleLogout}
+            className="flex items-center space-x-3 w-full p-3 rounded-lg transition-colors text-left text-destructive hover:bg-destructive/10"
+          >
+            <LogOut size={20} />
+            <span className="font-medium">Sair</span>
+          </button>
+        </div>
       </div>
     </div>
   );
