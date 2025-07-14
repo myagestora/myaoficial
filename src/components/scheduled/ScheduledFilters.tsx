@@ -1,12 +1,11 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 
 interface FilterOptions {
   type: string;
@@ -31,7 +30,6 @@ export const ScheduledFilters = ({
   onFiltersChange,
   categories
 }: ScheduledFiltersProps) => {
-  const [showFilters, setShowFilters] = useState(false);
 
   const typeOptions = [
     { value: '', label: 'Todos os tipos' },
@@ -97,142 +95,94 @@ export const ScheduledFilters = ({
           />
         </div>
 
-        {/* Botão de filtros e limpar */}
-        <div className="flex items-center justify-between">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center space-x-2"
-          >
-            <Filter className="h-4 w-4" />
-            <span>Filtros</span>
+        {/* Filtros sempre visíveis */}
+        <div className="space-y-4">
+          {/* Header com badge de filtros ativos e botão limpar */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Label className="text-sm font-medium">Filtros</Label>
+              {hasActiveFilters && (
+                <Badge variant="secondary" className="h-5 text-xs">
+                  {getActiveFiltersCount()} ativo{getActiveFiltersCount() > 1 ? 's' : ''}
+                </Badge>
+              )}
+            </div>
             {hasActiveFilters && (
-              <Badge variant="secondary" className="ml-1 h-4 text-xs">
-                {getActiveFiltersCount()}
-              </Badge>
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                <X className="h-4 w-4 mr-1" />
+                Limpar
+              </Button>
             )}
-          </Button>
+          </div>
 
-          {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={clearFilters}>
-              <X className="h-4 w-4 mr-1" />
-              Limpar
-            </Button>
-          )}
-        </div>
-
-        {/* Campos de filtro expandidos */}
-        {showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 border-t pt-4">
+          {/* Campos de filtro em grid responsivo */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             {/* Tipo */}
-            <div className="space-y-2">
-              <Label htmlFor="type">Tipo</Label>
-              <Select 
+            <div className="space-y-1">
+              <Label htmlFor="type" className="text-xs text-muted-foreground">Tipo</Label>
+              <select 
                 value={filters.type} 
-                onValueChange={(value) => onFiltersChange({ ...filters, type: value })}
+                onChange={(e) => onFiltersChange({ ...filters, type: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos os tipos" />
-                </SelectTrigger>
-                <SelectContent>
-                  {typeOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                {typeOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Categoria */}
-            <div className="space-y-2">
-              <Label htmlFor="category">Categoria</Label>
-              <Select 
+            <div className="space-y-1">
+              <Label htmlFor="category" className="text-xs text-muted-foreground">Categoria</Label>
+              <select 
                 value={filters.category} 
-                onValueChange={(value) => onFiltersChange({ ...filters, category: value })}
+                onChange={(e) => onFiltersChange({ ...filters, category: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Todas as categorias" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Todas as categorias</SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded-full" 
-                          style={{ backgroundColor: category.color }}
-                        />
-                        {category.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <option value="">Todas as categorias</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Frequência */}
-            <div className="space-y-2">
-              <Label htmlFor="frequency">Frequência</Label>
-              <Select 
+            <div className="space-y-1">
+              <Label htmlFor="frequency" className="text-xs text-muted-foreground">Frequência</Label>
+              <select 
                 value={filters.frequency} 
-                onValueChange={(value) => onFiltersChange({ ...filters, frequency: value })}
+                onChange={(e) => onFiltersChange({ ...filters, frequency: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Todas as frequências" />
-                </SelectTrigger>
-                <SelectContent>
-                  {frequencyOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                {frequencyOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Status */}
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select 
+            <div className="space-y-1">
+              <Label htmlFor="status" className="text-xs text-muted-foreground">Status</Label>
+              <select 
                 value={filters.status} 
-                onValueChange={(value) => onFiltersChange({ ...filters, status: value })}
+                onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos os status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Próxima Execução */}
-            <div className="space-y-2">
-              <Label htmlFor="nextExecution">Próxima Execução</Label>
-              <Select 
-                value={filters.nextExecution} 
-                onValueChange={(value) => onFiltersChange({ ...filters, nextExecution: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos os períodos" />
-                </SelectTrigger>
-                <SelectContent>
-                  {nextExecutionOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                {statusOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
-        )}
+        </div>
       </CardContent>
     </Card>
   );
