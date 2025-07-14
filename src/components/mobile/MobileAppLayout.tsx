@@ -12,7 +12,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { InstallPrompt } from './InstallPrompt';
-import { PWAFloatingButton } from './PWAFloatingButton';
 
 
 interface MobileAppLayoutProps {
@@ -113,9 +112,6 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
 
       {/* Install Prompt */}
       <InstallPrompt />
-      
-      {/* PWA Floating Button - Fallback visível */}
-      <PWAFloatingButton />
     </div>
   );
 };
