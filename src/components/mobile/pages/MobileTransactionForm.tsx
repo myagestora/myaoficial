@@ -364,7 +364,7 @@ export const MobileTransactionForm = () => {
               <MobileSelectTrigger>
                 <MobileSelectValue placeholder="Selecione o tipo" />
               </MobileSelectTrigger>
-              <MobileSelectContent className="z-50 bg-background border shadow-lg">
+              <MobileSelectContent>
                 <MobileSelectItem value="income">Receita</MobileSelectItem>
                 <MobileSelectItem value="expense">Despesa</MobileSelectItem>
               </MobileSelectContent>
@@ -413,7 +413,7 @@ export const MobileTransactionForm = () => {
               <MobileSelectTrigger>
                 <MobileSelectValue placeholder="Selecione a categoria" />
               </MobileSelectTrigger>
-              <MobileSelectContent className="z-50 bg-background border shadow-lg max-h-48 overflow-y-auto">
+              <MobileSelectContent>
                 {categories?.map((category) => (
                   <MobileSelectItem key={category.id} value={category.id}>
                     <div className="flex items-center gap-2">
