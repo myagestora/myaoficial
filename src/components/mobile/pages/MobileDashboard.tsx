@@ -68,9 +68,14 @@ export const MobileDashboard = () => {
         .from('system_config')
         .select('value')
         .eq('key', 'whatsapp_support')
-        .single();
+        .maybeSingle();
       
-      if (error) return null;
+      if (error) {
+        console.log('Erro ao buscar WhatsApp de suporte:', error);
+        return null;
+      }
+      
+      console.log('WhatsApp suporte encontrado:', data);
       return data?.value as string;
     }
   });
