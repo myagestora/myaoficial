@@ -65,11 +65,16 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
       {/* Header - Fixed */}
       <header className="fixed top-0 left-0 right-0 flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
         <div className="flex items-center space-x-3">
-          <img 
-            src="https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png" 
-            alt="Mya Gestora" 
-            className="h-12 w-auto object-contain"
-          />
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
+          >
+            <img 
+              src="https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png" 
+              alt="Mya Gestora" 
+              className="h-12 w-auto object-contain"
+            />
+          </button>
         </div>
         
         <Button 
