@@ -9,17 +9,22 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { MobileOptimizedCard } from '@/components/ui/mobile-optimized-card';
 import { MobileListItem } from '@/components/ui/mobile-list-item';
+import { DateRange } from 'react-day-picker';
 
-export const RecentTransactions = () => {
+interface RecentTransactionsProps {
+  dateRange?: DateRange;
+}
+
+export const RecentTransactions = ({ dateRange }: RecentTransactionsProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
   const { data: transactions, isLoading } = useQuery({
-    queryKey: ['recent-transactions', user?.id],
+    queryKey: ['recent-transactions', user?.id, dateRange],
     queryFn: async () => {
       if (!user?.id) return [];
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('transactions')
         .select(`
           id,
@@ -28,12 +33,22 @@ export const RecentTransactions = () => {
           amount,
           type,
           date,
+          created_at,
           categories (
             name
           )
         `)
-        .eq('user_id', user.id)
-        .order('date', { ascending: false })
+        .eq('user_id', user.id);
+
+      // Aplicar filtro de período se especificado
+      if (dateRange?.from && dateRange?.to) {
+        query = query
+          .gte('date', dateRange.from.toISOString().split('T')[0])
+          .lte('date', dateRange.to.toISOString().split('T')[0]);
+      }
+
+      const { data, error } = await query
+        .order('created_at', { ascending: false })
         .limit(5);
 
       if (error) {

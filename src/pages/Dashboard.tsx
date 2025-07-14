@@ -318,7 +318,7 @@ const Dashboard = () => {
       <DailyMovement dateRange={dateRange} />
 
       {/* Recent Transactions */}
-      <RecentTransactions />
+      <RecentTransactions dateRange={dateRange} />
     </div>
   );
 };

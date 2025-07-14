@@ -37,12 +37,14 @@ export const MobileDashboard = () => {
     queryFn: async () => {
       if (!user?.id || !dateRange?.from || !dateRange?.to) return null;
       
-      const { data: transactions, error } = await supabase
+      let query = supabase
         .from('transactions')
         .select('*')
         .eq('user_id', user.id)
         .gte('date', dateRange.from.toISOString().split('T')[0])
         .lte('date', dateRange.to.toISOString().split('T')[0]);
+
+      const { data: transactions, error } = await query;
       
       if (error) throw error;
       
@@ -50,7 +52,22 @@ export const MobileDashboard = () => {
       const expenses = transactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0) || 0;
       const balance = income - expenses;
       
-      return { income, expenses, balance, recentTransactions: transactions?.slice(-5) || [] };
+      // Buscar transações recentes ordenadas pela data de criação (mais recentes primeiro)
+      const recentTransactionsQuery = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('date', dateRange.from.toISOString().split('T')[0])
+        .lte('date', dateRange.to.toISOString().split('T')[0])
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      return { 
+        income, 
+        expenses, 
+        balance, 
+        recentTransactions: recentTransactionsQuery.data || [] 
+      };
     },
     enabled: !!user?.id && !!dateRange?.from && !!dateRange?.to
   });
