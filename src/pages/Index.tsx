@@ -592,7 +592,7 @@ const Index = () => {
                   </p>
                    <div className="flex items-center">
                      <img 
-                       src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face" 
+                       src={testimonial.image} 
                        alt={testimonial.name}
                        className="w-12 h-12 rounded-full object-cover mr-4 border-2 border-gray-200" 
                        onError={(e) => {
