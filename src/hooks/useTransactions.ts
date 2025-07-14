@@ -22,7 +22,7 @@ export const useTransactions = () => {
           )
         `)
         .eq('user_id', user.id)
-        .order('date', { ascending: false })
+        .order('date', { ascending: true })
         .limit(50);
       
       if (error) throw error;

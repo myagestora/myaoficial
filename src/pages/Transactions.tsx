@@ -62,7 +62,7 @@ const Transactions = () => {
           )
         `)
         .eq('user_id', user.id)
-        .order('date', { ascending: false });
+        .order('date', { ascending: true });
 
       if (error) {
         console.error('Error fetching transactions:', error);

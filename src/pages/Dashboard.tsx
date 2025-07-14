@@ -16,7 +16,7 @@ const Dashboard = () => {
   const { user } = useAuth();
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-    to: new Date()
+    to: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
   });
 
   // Buscar estatísticas do usuário

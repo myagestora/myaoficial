@@ -17,6 +17,50 @@ export const PeriodFilter = ({ dateRange, onDateRangeChange }: PeriodFilterProps
   const [selectedPeriod, setSelectedPeriod] = useState<string>('monthly');
   const [tempDateRange, setTempDateRange] = useState<DateRange | undefined>(dateRange);
 
+  // Detectar qual período está selecionado baseado no dateRange atual
+  React.useEffect(() => {
+    if (!dateRange?.from || !dateRange?.to) return;
+
+    const currentDate = new Date();
+    const from = dateRange.from;
+    const to = dateRange.to;
+
+    // Verificar se é semana atual
+    const weekStart = startOfWeek(currentDate, { locale: ptBR });
+    const weekEnd = endOfWeek(currentDate, { locale: ptBR });
+    if (from.getTime() === weekStart.getTime() && to.getTime() === weekEnd.getTime()) {
+      setSelectedPeriod('weekly');
+      return;
+    }
+
+    // Verificar se é mês atual
+    const monthStart = startOfMonth(currentDate);
+    const monthEnd = endOfMonth(currentDate);
+    if (from.getTime() === monthStart.getTime() && to.getTime() === monthEnd.getTime()) {
+      setSelectedPeriod('monthly');
+      return;
+    }
+
+    // Verificar se é trimestre atual
+    const quarterStart = startOfQuarter(currentDate);
+    const quarterEnd = endOfQuarter(currentDate);
+    if (from.getTime() === quarterStart.getTime() && to.getTime() === quarterEnd.getTime()) {
+      setSelectedPeriod('quarterly');
+      return;
+    }
+
+    // Verificar se é ano atual
+    const yearStart = startOfYear(currentDate);
+    const yearEnd = endOfYear(currentDate);
+    if (from.getTime() === yearStart.getTime() && to.getTime() === yearEnd.getTime()) {
+      setSelectedPeriod('yearly');
+      return;
+    }
+
+    // Se não corresponder a nenhum período padrão, é personalizado
+    setSelectedPeriod('custom');
+  }, [dateRange]);
+
   const periodOptions = [
     {
       key: 'weekly',
