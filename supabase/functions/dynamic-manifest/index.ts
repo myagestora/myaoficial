@@ -66,12 +66,12 @@ serve(async (req) => {
 
     console.log('Final values:', { appName, description, faviconUrl, baseUrl, apiEnabled: configMap.api_enabled });
 
-    // Gerar manifest dinâmico
+    // Gerar manifest fixo para funcionar 100%
     const manifest = {
       name: `${appName} - Controle Financeiro`,
       short_name: appName,
       description: description,
-      start_url: "/",
+      start_url: "/?utm_source=pwa",
       display: "standalone",
       background_color: "#000000",
       theme_color: "#000000",
@@ -88,7 +88,7 @@ serve(async (req) => {
         },
         {
           src: faviconUrl,
-          sizes: "512x512", 
+          sizes: "512x512",
           type: "image/png",
           purpose: "any"
         },
@@ -97,20 +97,12 @@ serve(async (req) => {
           sizes: "192x192",
           type: "image/png",
           purpose: "maskable"
-        }
-      ],
-      shortcuts: [
-        {
-          name: "Nova Transação",
-          short_name: "Transação",
-          description: "Adicionar uma nova transação",
-          url: "/transactions"
         },
         {
-          name: "Dashboard", 
-          short_name: "Início",
-          description: "Ver visão geral das finanças",
-          url: "/dashboard"
+          src: faviconUrl,
+          sizes: "512x512",
+          type: "image/png",
+          purpose: "maskable"
         }
       ]
     };
@@ -127,12 +119,12 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in dynamic-manifest function:', error);
     
-    // Retornar manifest padrão em caso de erro
+    // Retornar manifest padrão em caso de erro  
     const defaultManifest = {
       name: "Mya Gestora - Controle Financeiro",
       short_name: "Mya Gestora",
       description: "Sistema inteligente de controle financeiro pessoal",
-      start_url: "/",
+      start_url: "/?utm_source=pwa",
       display: "standalone",
       background_color: "#000000",
       theme_color: "#000000",
@@ -145,13 +137,25 @@ serve(async (req) => {
           src: "https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png",
           sizes: "192x192",
           type: "image/png",
-          purpose: "any maskable"
+          purpose: "any"
         },
         {
           src: "https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png",
           sizes: "512x512",
           type: "image/png",
-          purpose: "any maskable"
+          purpose: "any"
+        },
+        {
+          src: "https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png",
+          sizes: "192x192",
+          type: "image/png",
+          purpose: "maskable"
+        },
+        {
+          src: "https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png",
+          sizes: "512x512",
+          type: "image/png",
+          purpose: "maskable"
         }
       ]
     };

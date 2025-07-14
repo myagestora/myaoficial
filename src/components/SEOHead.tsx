@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { getDynamicSupabaseUrl, getStorageUrl } from '@/utils/supabaseConfigClient';
 
 export const SEOHead = () => {
   const { data: seoConfig } = useQuery({
@@ -28,7 +29,9 @@ export const SEOHead = () => {
           'facebook_pixel',
           'custom_head_scripts',
           'custom_body_scripts',
-          'app_favicon'
+          'app_favicon',
+          'api_enabled',
+          'api_domain'
         ]);
       
       if (error) throw error;
@@ -39,6 +42,18 @@ export const SEOHead = () => {
           item.value.replace(/^"|"$/g, '') : 
           JSON.stringify(item.value).replace(/^"|"$/g, '');
       });
+      
+      // Se favicon não estiver configurado, usar URL dinâmica para o logo padrão
+      if (!configObj.app_favicon) {
+        const dynamicFaviconUrl = await getStorageUrl('logos', 'logo-1751933896307.png');
+        configObj.app_favicon = dynamicFaviconUrl;
+      }
+      
+      // Usar URL dinâmica para og_image se não configurada
+      if (!configObj.og_image) {
+        const dynamicImageUrl = await getStorageUrl('logos', 'logo-1751933896307.png');
+        configObj.og_image = dynamicImageUrl;
+      }
       
       return configObj;
     }
@@ -73,14 +88,37 @@ export const SEOHead = () => {
         shortcutLink.type = 'image/png';
         document.head.appendChild(shortcutLink);
 
+        // Add apple-touch-icon for PWA
+        const appleLink = document.createElement('link');
+        appleLink.rel = 'apple-touch-icon';
+        appleLink.href = faviconUrl;
+        document.head.appendChild(appleLink);
+
         console.log('Favicon atualizado para:', faviconUrl);
       }
+    };
+
+    // Update manifest link with dynamic URL
+    const updateManifestLink = async () => {
+      const existingManifest = document.querySelector('link[rel="manifest"]');
+      if (existingManifest) {
+        existingManifest.remove();
+      }
+      
+      const dynamicUrl = await getDynamicSupabaseUrl();
+      const manifestLink = document.createElement('link');
+      manifestLink.rel = 'manifest';
+      manifestLink.href = `${dynamicUrl}/functions/v1/dynamic-manifest`;
+      document.head.appendChild(manifestLink);
     };
 
     // Apply favicon if configured
     if (seoConfig.app_favicon) {
       updateFavicon(seoConfig.app_favicon);
     }
+
+    // Update manifest link
+    updateManifestLink();
 
     // Update or create meta tags
     const updateMetaTag = (name: string, content: string, attribute = 'name') => {
