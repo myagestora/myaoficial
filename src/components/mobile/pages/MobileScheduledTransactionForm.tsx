@@ -272,12 +272,14 @@ export const MobileScheduledTransactionForm = () => {
         {/* Tipo */}
         <div>
           <Label className="text-base font-medium">Tipo *</Label>
-          <MobileListSelect
-            value={watchedType}
-            onValueChange={(value) => setValue('type', value as 'income' | 'expense')}
-            options={typeOptions}
-            placeholder="Selecione o tipo"
-          />
+          <div className="mt-2">
+            <MobileListSelect
+              value={watchedType}
+              onValueChange={(value) => setValue('type', value as 'income' | 'expense')}
+              options={typeOptions}
+              placeholder="Selecione o tipo"
+            />
+          </div>
           {errors.type && (
             <p className="text-sm text-red-500 mt-1">{errors.type.message}</p>
           )}
@@ -319,12 +321,14 @@ export const MobileScheduledTransactionForm = () => {
         {/* Categoria */}
         <div>
           <Label className="text-base font-medium">Categoria *</Label>
-          <MobileListSelect
-            value={watch('category_id') || ''}
-            onValueChange={(value) => setValue('category_id', value)}
-            options={categoryOptions}
-            placeholder="Selecione a categoria"
-          />
+          <div className="mt-2">
+            <MobileListSelect
+              value={watch('category_id') || ''}
+              onValueChange={(value) => setValue('category_id', value)}
+              options={categoryOptions}
+              placeholder="Selecione a categoria"
+            />
+          </div>
           {errors.category_id && (
             <p className="text-sm text-red-500 mt-1">{errors.category_id.message}</p>
           )}
@@ -354,12 +358,14 @@ export const MobileScheduledTransactionForm = () => {
               {/* Frequência */}
               <div>
                 <Label className="text-base font-medium">Frequência *</Label>
-                <MobileListSelect
-                  value={watchedFrequency}
-                  onValueChange={(value) => setValue('recurrence_frequency', value as any)}
-                  options={frequencyOptions}
-                  placeholder="Selecione a frequência"
-                />
+                <div className="mt-2">
+                  <MobileListSelect
+                    value={watchedFrequency}
+                    onValueChange={(value) => setValue('recurrence_frequency', value as any)}
+                    options={frequencyOptions}
+                    placeholder="Selecione a frequência"
+                  />
+                </div>
                 {errors.recurrence_frequency && (
                   <p className="text-sm text-red-500 mt-1">{errors.recurrence_frequency.message}</p>
                 )}
