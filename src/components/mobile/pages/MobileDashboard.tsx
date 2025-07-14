@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -16,7 +17,9 @@ import {
   PiggyBank,
   ArrowUpRight,
   ArrowDownRight,
-  Clock
+  Clock,
+  MessageCircle,
+  Phone
 } from 'lucide-react';
 import { MobilePageWrapper } from '../MobilePageWrapper';
 import { useNavigate } from 'react-router-dom';
@@ -38,6 +41,24 @@ export const MobileDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { goals } = useGoals();
+
+  // Buscar perfil do usuário para obter WhatsApp
+  const { data: profile } = useQuery({
+    queryKey: ['user-profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('whatsapp, full_name')
+        .eq('id', user.id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id
+  });
 
   // Buscar estatísticas detalhadas do usuário baseado no período selecionado
   const { data: stats, isLoading } = useQuery({
@@ -117,16 +138,44 @@ export const MobileDashboard = () => {
   };
 
   return (
-    <MobilePageWrapper>
+    <MobilePageWrapper className="bg-gradient-to-br from-background to-primary/5">
+      {/* WhatsApp Info Card */}
+      {profile?.whatsapp && (
+        <Card className="mb-4 bg-gradient-to-r from-green-500/10 to-green-600/5 border-green-500/20 shadow-md">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-green-500/20 rounded-full">
+                  <MessageCircle className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-green-800 dark:text-green-200">WhatsApp Autorizado</p>
+                  <p className="text-xs text-green-600 dark:text-green-300">Para usar com a Mya (IA)</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Phone className="h-4 w-4 text-green-600" />
+                <Badge variant="outline" className="border-green-500/30 text-green-700 dark:text-green-300">
+                  {profile.whatsapp}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Header com período */}
       <div className="space-y-4 mb-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
             <p className="text-sm text-muted-foreground">
+              Olá, {profile?.full_name?.split(' ')[0] || 'Usuário'}! 👋
               {dateRange?.from && dateRange?.to && (
-                format(dateRange.from, 'dd MMM', { locale: ptBR }) + ' - ' + 
-                format(dateRange.to, 'dd MMM yyyy', { locale: ptBR })
+                <span className="block mt-1">
+                  {format(dateRange.from, 'dd MMM', { locale: ptBR }) + ' - ' + 
+                   format(dateRange.to, 'dd MMM yyyy', { locale: ptBR })}
+                </span>
               )}
             </p>
           </div>
