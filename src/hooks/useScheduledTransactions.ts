@@ -24,13 +24,16 @@ export const useScheduledTransactions = () => {
           amount,
           type,
           date,
+          category_id,
           is_recurring,
           is_parent_template,
           parent_transaction_id,
           recurrence_frequency,
           recurrence_interval,
           recurrence_end_date,
+          next_recurrence_date,
           categories (
+            id,
             name,
             color
           )

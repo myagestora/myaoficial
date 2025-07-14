@@ -26,7 +26,7 @@ export const useScheduledFilters = (transactions: any[]) => {
     }
 
     // Filtro por categoria
-    if (filters.category && transaction.categories?.id !== filters.category) {
+    if (filters.category && transaction.category_id !== filters.category) {
       return false;
     }
 
