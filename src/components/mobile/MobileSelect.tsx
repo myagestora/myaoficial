@@ -59,8 +59,8 @@ MobileSelectTrigger.displayName = "MobileSelectTrigger"
 
 const MobileSelectValue = React.forwardRef<
   HTMLSpanElement,
-  React.HTMLAttributes<HTMLSpanElement> & { placeholder?: string }
->(({ className, placeholder, ...props }, ref) => {
+  React.HTMLAttributes<HTMLSpanElement> & { placeholder?: string; children?: React.ReactNode }
+>(({ className, placeholder, children, ...props }, ref) => {
   const context = React.useContext(MobileSelectContext)
   if (!context) throw new Error("MobileSelectValue must be used within MobileSelect")
 
@@ -72,7 +72,7 @@ const MobileSelectValue = React.forwardRef<
       className={cn("block truncate", !value && "text-muted-foreground", className)}
       {...props}
     >
-      {value || placeholder}
+      {children || value || placeholder}
     </span>
   )
 })
