@@ -39,7 +39,7 @@ const MobileListSelect = ({ value, onValueChange, placeholder, options }: Mobile
   }, [isOpen])
 
   return (
-    <div className="relative w-full" ref={containerRef}>
+    <div className="w-full" ref={containerRef}>
       {/* Trigger Button */}
       <button
         type="button"
@@ -64,14 +64,9 @@ const MobileListSelect = ({ value, onValueChange, placeholder, options }: Mobile
         </div>
       </button>
 
-      {/* Options List - Positioned absolutely below the button */}
+      {/* Options List - Pushes content down when open */}
       {isOpen && (
-        <div 
-          className="absolute left-0 right-0 top-full mt-1 z-[9999] rounded-lg border border-border bg-popover text-popover-foreground shadow-lg"
-          style={{ 
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-          }}
-        >
+        <div className="mt-1 w-full rounded-lg border border-border bg-popover text-popover-foreground shadow-lg animate-fade-in">
           <div className="max-h-60 overflow-y-auto py-1">
             {options.map((option) => {
               const isSelected = value === option.value
