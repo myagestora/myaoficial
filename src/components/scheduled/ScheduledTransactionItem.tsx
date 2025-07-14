@@ -115,7 +115,10 @@ export const ScheduledTransactionItem = ({
             ) : (
               <ArrowDownCircle className="h-5 w-5" />
             )}
-            <Repeat className="h-3 w-3 absolute -top-1 -right-1 bg-blue-500 text-white rounded-full p-0.5" />
+            {/* Ícone de recorrência só aparece para transações recorrentes */}
+            {(transaction.is_recurring || transaction.parent_transaction_id) && (
+              <Repeat className="h-3 w-3 absolute -top-1 -right-1 bg-blue-500 text-white rounded-full p-0.5" />
+            )}
           </div>
           <div>
             <div className="flex items-center gap-2">
