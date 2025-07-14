@@ -77,41 +77,6 @@ export class PWAInstaller {
     return this.isInstalled;
   }
 
-  public async waitForInstallPrompt(timeoutMs: number = 3000): Promise<boolean> {
-    if (this.deferredPrompt) {
-      console.log('✅ Prompt já disponível');
-      return true;
-    }
-
-    if (this.isWaitingForPrompt) {
-      console.log('⏳ Já aguardando prompt...');
-      return false;
-    }
-
-    console.log(`⏳ Aguardando beforeinstallprompt por ${timeoutMs}ms...`);
-    this.isWaitingForPrompt = true;
-
-    return new Promise((resolve) => {
-      const timeout = setTimeout(() => {
-        console.log('⏰ Timeout aguardando beforeinstallprompt');
-        this.isWaitingForPrompt = false;
-        resolve(false);
-      }, timeoutMs);
-
-      const checkPrompt = () => {
-        if (this.deferredPrompt) {
-          clearTimeout(timeout);
-          this.isWaitingForPrompt = false;
-          console.log('✅ beforeinstallprompt capturado!');
-          resolve(true);
-        } else {
-          setTimeout(checkPrompt, 100);
-        }
-      };
-
-      checkPrompt();
-    });
-  }
 
   public async install(): Promise<boolean> {
     console.log('🚀 Tentativa de instalação PWA iniciada');

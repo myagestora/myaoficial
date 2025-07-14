@@ -52,77 +52,47 @@ export const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
     onClose();
   };
 
-  const handleInstall = useCallback(async () => {
-    console.log('🚀 Menu: Tentando instalar PWA...', { 
-      canInstall, 
-      isAndroid, 
-      isIOS, 
-      userAgent: navigator.userAgent,
-      isInstalled: pwaInstaller.isAppInstalled()
-    });
+  const handleInstall = async () => {
+    console.log('🔧 Install button clicked');
     
-    setIsInstalling(true);
-    
-    try {
-      // Para Android: forçar instalação PWA nativa
-      if (isAndroid) {
-        console.log('🤖 Android detectado - forçando instalação nativa...');
-        
-        // Primeiro: tentar instalação imediata se prompt disponível
-        if (pwaInstaller.canInstall()) {
-          const success = await pwaInstaller.install();
-          if (success) {
-            console.log('✅ Instalação nativa imediata bem-sucedida');
-            onClose();
-            return;
-          }
-        }
-        
-        // Segundo: aguardar prompt por mais tempo
-        console.log('⏳ Aguardando prompt de instalação...');
-        const promptAvailable = await pwaInstaller.waitForInstallPrompt(3000);
-        
-        if (promptAvailable) {
-          const success = await pwaInstaller.install();
-          if (success) {
-            console.log('✅ Instalação nativa após aguardar bem-sucedida');
-            onClose();
-            return;
-          }
-        }
-        
-        // Terceiro: recarregar página para tentar capturar prompt
-        console.log('🔄 Recarregando para capturar prompt...');
-        alert('Recarregando página para instalação PWA...');
-        window.location.reload();
-        return;
-      }
-      
-      // Para iOS: sempre mostrar instruções manuais
-      if (isIOS) {
-        console.log('🍎 iOS detectado - mostrando instruções manuais');
-        alert('Para instalar no iOS:\n\n1. Toque no ícone de compartilhar (□↗)\n2. Role para baixo e toque em "Adicionar à Tela de Início"\n3. Toque em "Adicionar"');
-        onClose();
-        return;
-      }
-      
-      // Para outros navegadores: tentar nativo primeiro
-      const installed = await pwaInstaller.install();
-      if (installed) {
-        onClose();
-      } else {
-        alert('Para adicionar à tela inicial, use as opções do seu navegador');
-        onClose();
-      }
-      
-    } catch (error) {
-      console.error('💥 Erro durante instalação:', error);
-      alert('❌ Erro ao instalar. Tente novamente.');
-      onClose();
-    } finally {
-      setIsInstalling(false);
+    if (isIOS) {
+      console.log('📱 iOS detected - showing manual instructions');
+      alert(`Para instalar no iOS:
+
+1. Toque no ícone de compartilhar (□↗) na parte inferior da tela
+2. Role para baixo e toque em "Adicionar à Tela de Início"
+3. Toque em "Adicionar" no canto superior direito
+
+O app será instalado na sua tela inicial!`);
+      return;
     }
-  }, [onClose, canInstall, isAndroid, isIOS]);
+
+    if (isAndroid) {
+      console.log('🤖 Android detected - attempting native installation');
+      
+      if (pwaInstaller.canInstall()) {
+        console.log('✅ PWA prompt available - installing');
+        setIsInstalling(true);
+        const success = await pwaInstaller.install();
+        setIsInstalling(false);
+        
+        if (success) {
+          console.log('🎉 Installation successful!');
+          return;
+        }
+      }
+
+      // Fallback: Show manual instructions for Android
+      console.log('❌ Native installation not available - showing manual instructions');
+      alert(`Para instalar no Android:
+
+1. Toque nos 3 pontos (⋮) no canto superior direito do Chrome
+2. Toque em "Instalar aplicativo" ou "Adicionar à tela inicial"
+3. Confirme a instalação
+
+O app será instalado na sua tela inicial!`);
+    }
+  };
 
   useEffect(() => {
     // Listener para status de instalação PWA
