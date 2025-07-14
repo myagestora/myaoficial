@@ -357,7 +357,6 @@ export const MobileTransactionForm = () => {
             <MobileExpandableSelect
               value={transactionType}
               onValueChange={(value) => {
-                console.log('🔄 Type selection changed:', value)
                 setValue('type', value as 'income' | 'expense');
                 setValue('category_id', '');
               }}

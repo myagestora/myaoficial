@@ -15,8 +15,7 @@ interface MobileExpandableSelectContextType {
   isOpen: boolean
   setIsOpen: (open: boolean) => void
   placeholder?: string
-  selectedLabel: string
-  setSelectedLabel: (label: string) => void
+  itemsRegistry: Map<string, string>
   registerItem: (itemValue: string, itemLabel: string) => void
 }
 
@@ -24,7 +23,6 @@ const MobileExpandableSelectContext = React.createContext<MobileExpandableSelect
 
 const MobileExpandableSelect = ({ value, onValueChange, children, placeholder }: MobileExpandableSelectProps) => {
   const [isOpen, setIsOpen] = React.useState(false)
-  const [selectedLabel, setSelectedLabel] = React.useState<string>("")
   const [itemsRegistry, setItemsRegistry] = React.useState<Map<string, string>>(new Map())
 
   // Registrar um item no mapa
@@ -32,36 +30,9 @@ const MobileExpandableSelect = ({ value, onValueChange, children, placeholder }:
     setItemsRegistry(prev => {
       const newMap = new Map(prev)
       newMap.set(itemValue, itemLabel)
-      
-      // Se este item corresponde ao valor atual, atualizar o selectedLabel imediatamente
-      if (value === itemValue) {
-        console.log('🎯 Item registrado corresponde ao valor atual, atualizando label:', itemLabel)
-        setSelectedLabel(itemLabel)
-      }
-      
       return newMap
     })
-  }, [value])
-
-  // Log para debug
-  React.useEffect(() => {
-    console.log('🔄 MobileExpandableSelect - Value changed:', value)
-    console.log('📋 Items registry:', Array.from(itemsRegistry.entries()))
-  }, [value, itemsRegistry])
-
-  // Atualizar o selectedLabel quando o value ou itemsRegistry mudarem
-  React.useEffect(() => {
-    if (value && itemsRegistry.has(value)) {
-      const label = itemsRegistry.get(value) || ""
-      console.log('✅ Setting selected label:', label, 'for value:', value)
-      setSelectedLabel(label)
-    } else if (!value) {
-      console.log('🔄 Clearing selected label (no value)')
-      setSelectedLabel("")
-    } else if (value && !itemsRegistry.has(value)) {
-      console.log('⚠️ Value exists but not in registry yet:', value)
-    }
-  }, [value, itemsRegistry])
+  }, [])
 
   return (
     <MobileExpandableSelectContext.Provider value={{ 
@@ -69,9 +40,8 @@ const MobileExpandableSelect = ({ value, onValueChange, children, placeholder }:
       onValueChange, 
       isOpen, 
       setIsOpen, 
-      placeholder, 
-      selectedLabel, 
-      setSelectedLabel,
+      placeholder,
+      itemsRegistry,
       registerItem
     }}>
       <div className="space-y-2">
@@ -115,7 +85,10 @@ const MobileExpandableSelectValue = React.forwardRef<
   const context = React.useContext(MobileExpandableSelectContext)
   if (!context) throw new Error("MobileExpandableSelectValue must be used within MobileExpandableSelect")
 
-  const { value, placeholder, selectedLabel } = context
+  const { value, placeholder, itemsRegistry } = context
+
+  // Obter o label diretamente do registry
+  const selectedLabel = value && itemsRegistry.has(value) ? itemsRegistry.get(value) : ""
 
   return (
     <span
@@ -165,7 +138,7 @@ const MobileExpandableSelectItem = React.forwardRef<
   const context = React.useContext(MobileExpandableSelectContext)
   if (!context) throw new Error("MobileExpandableSelectItem must be used within MobileExpandableSelect")
 
-  const { value: selectedValue, onValueChange, setIsOpen, setSelectedLabel, registerItem } = context
+  const { value: selectedValue, onValueChange, setIsOpen, registerItem } = context
   const isSelected = selectedValue === value
 
   // Extrair o texto do children para usar como label
@@ -190,22 +163,12 @@ const MobileExpandableSelectItem = React.forwardRef<
   // Registrar este item no mapa quando montado
   React.useEffect(() => {
     if (itemLabel) {
-      console.log('📋 Registering item:', value, '→', itemLabel)
       registerItem(value, itemLabel)
     }
   }, [value, itemLabel, registerItem])
 
-  // Atualizar o label selecionado quando este item estiver selecionado
-  React.useEffect(() => {
-    if (isSelected && itemLabel) {
-      console.log('✅ Item selected, updating label:', itemLabel)
-      setSelectedLabel(itemLabel)
-    }
-  }, [isSelected, itemLabel, setSelectedLabel])
-
   const handleClick = () => {
     onValueChange?.(value)
-    setSelectedLabel(itemLabel)
     setIsOpen(false)
   }
 
