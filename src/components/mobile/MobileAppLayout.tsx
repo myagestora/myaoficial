@@ -1,23 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { MobileRouteHandler } from './MobileRouteHandler';
+import { MobileMenu } from './MobileMenu';
 import { 
   Home, 
   CreditCard, 
   Target, 
   BarChart3, 
-  Calendar, 
-  Grid3X3, 
-  Settings,
-  Plus,
-  Menu,
-  X
+  Menu
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { InstallPrompt } from './InstallPrompt';
-import { isIOSDevice } from '@/utils/mobileDetection';
 
 
 interface MobileAppLayoutProps {
@@ -31,31 +25,12 @@ const navigationItems = [
   { path: '/reports', icon: BarChart3, label: 'Relatórios' },
 ];
 
-const moreItems = [
-  { path: '/scheduled', icon: Calendar, label: 'Agendadas' },
-  { path: '/categories', icon: Grid3X3, label: 'Categorias' },
-  { path: '/settings', icon: Settings, label: 'Configurações' },
-];
-
 export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [forceRender, setForceRender] = useState(0);
 
   const currentPath = location.pathname;
-  const isIOS = isIOSDevice();
-
-  // Forçar re-render quando menu abre no iOS
-  useEffect(() => {
-    if (isMenuOpen && isIOS) {
-      // Pequeno delay para garantir que a animação iniciou
-      const timer = setTimeout(() => {
-        setForceRender(prev => prev + 1);
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [isMenuOpen, isIOS]);
 
   const NavItem = ({ path, icon: Icon, label, onClick }: {
     path: string;
@@ -97,68 +72,14 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
           />
         </div>
         
-        <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-10 w-10">
-              <Menu size={20} />
-            </Button>
-          </SheetTrigger>
-          <SheetContent 
-            side="right" 
-            className={cn(
-              "w-72 z-[60] bg-background border-l sheet-content",
-              isIOS && "ios-optimized"
-            )}
-            key={isIOS ? `menu-${forceRender}` : undefined}
-          >
-            <div className="flex items-center justify-between mb-6 pt-4">
-              <h2 className="text-lg font-semibold text-foreground">Menu</h2>
-            </div>
-            
-            <nav className="space-y-2">
-              {/* Adicionar todos os itens do menu principal também */}
-              {navigationItems.map((item) => (
-                <button
-                  key={item.path}
-                  onClick={() => {
-                    navigate(item.path);
-                    setIsMenuOpen(false);
-                  }}
-                  className={cn(
-                    "flex items-center space-x-3 w-full p-3 rounded-lg transition-colors text-left",
-                    currentPath === item.path
-                      ? "bg-primary/10 text-primary"
-                      : "text-foreground hover:bg-muted"
-                  )}
-                >
-                  <item.icon size={20} />
-                  <span className="font-medium">{item.label}</span>
-                </button>
-              ))}
-              
-              <div className="my-4 border-t border-muted" />
-              
-              {moreItems.map((item) => (
-                <button
-                  key={item.path}
-                  onClick={() => {
-                    navigate(item.path);
-                    setIsMenuOpen(false);
-                  }}
-                  className={cn(
-                    "flex items-center space-x-3 w-full p-3 rounded-lg transition-colors text-left",
-                    currentPath === item.path
-                      ? "bg-primary/10 text-primary"
-                      : "text-foreground hover:bg-muted"
-                  )}
-                >
-                  <item.icon size={20} />
-                  <span className="font-medium">{item.label}</span>
-                </button>
-              ))}
-            </nav>
-          </SheetContent>
-        </Sheet>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-10 w-10"
+          onClick={() => setIsMenuOpen(true)}
+        >
+          <Menu size={20} />
+        </Button>
       </header>
 
       {/* Main Content - With top and bottom padding for fixed header/footer */}
@@ -182,6 +103,12 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
         </div>
       </nav>
 
+
+      {/* Mobile Menu */}
+      <MobileMenu 
+        isOpen={isMenuOpen} 
+        onClose={() => setIsMenuOpen(false)} 
+      />
 
       {/* Install Prompt */}
       <InstallPrompt />
