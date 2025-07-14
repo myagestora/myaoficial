@@ -77,7 +77,8 @@ serve(async (req) => {
           icons: [
             {
               src: faviconUrl,
-              sizes: "96x96"
+              sizes: "96x96",
+              type: "image/png"
             }
           ]
         },
@@ -89,7 +90,8 @@ serve(async (req) => {
           icons: [
             {
               src: faviconUrl,
-              sizes: "96x96"
+              sizes: "96x96",
+              type: "image/png"
             }
           ]
         }
@@ -123,6 +125,12 @@ serve(async (req) => {
         {
           src: "https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png",
           sizes: "192x192",
+          type: "image/png",
+          purpose: "any maskable"
+        },
+        {
+          src: "https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png",
+          sizes: "512x512",
           type: "image/png",
           purpose: "any maskable"
         }
