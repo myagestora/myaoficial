@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,51 +10,15 @@ import {
   Play,
   Pause,
   Edit,
-  Trash2,
-  AlertCircle
+  Trash2
 } from 'lucide-react';
 import { MobilePageWrapper } from '../MobilePageWrapper';
-import { MobileScheduledFilters } from '../MobileScheduledFilters';
-import { MobileScheduledStats } from '../MobileScheduledStats';
 import { useScheduledTransactions } from '@/hooks/useScheduledTransactions';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { format, addDays, isBefore, isAfter, startOfDay } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 
 export const MobileScheduled = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const { scheduledTransactions, isLoading, toggleRecurringStatus, deleteScheduledTransaction } = useScheduledTransactions();
-  
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filters, setFilters] = useState({
-    type: '',
-    category: '',
-    frequency: '',
-    status: ''
-  });
-
-  // Fetch categories for filters
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      
-      const { data, error } = await supabase
-        .from('categories')
-        .select('id, name, color')
-        .or(`user_id.eq.${user.id},is_default.eq.true`)
-        .order('name');
-
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.id
-  });
+  const { scheduledTransactions, isLoading } = useScheduledTransactions();
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -72,126 +36,6 @@ export const MobileScheduled = () => {
       yearly: 'Anual'
     };
     return frequencies[frequency] || frequency;
-  };
-
-  // Filter and search logic
-  const filteredTransactions = useMemo(() => {
-    return scheduledTransactions?.filter(transaction => {
-      // Search filter
-      if (searchTerm) {
-        const searchLower = searchTerm.toLowerCase();
-        const matchesSearch = 
-          transaction.title.toLowerCase().includes(searchLower) ||
-          transaction.description?.toLowerCase().includes(searchLower) ||
-          transaction.categories?.name?.toLowerCase().includes(searchLower);
-        
-        if (!matchesSearch) return false;
-      }
-
-      // Type filter
-      if (filters.type && transaction.type !== filters.type) return false;
-
-      // Category filter
-      if (filters.category && transaction.categories?.name !== categories.find(c => c.id === filters.category)?.name) return false;
-
-      // Frequency filter
-      if (filters.frequency && transaction.recurrence_frequency !== filters.frequency) return false;
-
-      // Status filter
-      if (filters.status) {
-        if (filters.status === 'active' && !transaction.is_recurring) return false;
-        if (filters.status === 'paused' && transaction.is_recurring) return false;
-      }
-
-      return true;
-    }) || [];
-  }, [scheduledTransactions, searchTerm, filters, categories]);
-
-  // Calculate statistics
-  const stats = useMemo(() => {
-    const total = scheduledTransactions?.length || 0;
-    const active = scheduledTransactions?.filter(t => t.is_recurring).length || 0;
-    const paused = total - active;
-    
-    const today = startOfDay(new Date());
-    const nextWeek = addDays(today, 7);
-    
-    const upcoming = scheduledTransactions?.filter(t => {
-      if (!t.next_recurrence_date || !t.is_recurring) return false;
-      const nextDate = startOfDay(new Date(t.next_recurrence_date));
-      return !isBefore(nextDate, today) && !isAfter(nextDate, nextWeek);
-    }).length || 0;
-    
-    const overdue = scheduledTransactions?.filter(t => {
-      if (!t.next_recurrence_date || !t.is_recurring) return false;
-      return isBefore(startOfDay(new Date(t.next_recurrence_date)), today);
-    }).length || 0;
-
-    // Calculate monthly impact
-    const monthlyIncome = scheduledTransactions?.filter(t => t.type === 'income' && t.is_recurring)
-      .reduce((sum, t) => {
-        let monthlyAmount = t.amount;
-        switch (t.recurrence_frequency) {
-          case 'daily': monthlyAmount = t.amount * 30; break;
-          case 'weekly': monthlyAmount = t.amount * 4; break;
-          case 'quarterly': monthlyAmount = t.amount / 3; break;
-          case 'yearly': monthlyAmount = t.amount / 12; break;
-          default: monthlyAmount = t.amount; // monthly
-        }
-        return sum + monthlyAmount;
-      }, 0) || 0;
-
-    const monthlyExpenses = scheduledTransactions?.filter(t => t.type === 'expense' && t.is_recurring)
-      .reduce((sum, t) => {
-        let monthlyAmount = t.amount;
-        switch (t.recurrence_frequency) {
-          case 'daily': monthlyAmount = t.amount * 30; break;
-          case 'weekly': monthlyAmount = t.amount * 4; break;
-          case 'quarterly': monthlyAmount = t.amount / 3; break;
-          case 'yearly': monthlyAmount = t.amount / 12; break;
-          default: monthlyAmount = t.amount; // monthly
-        }
-        return sum + monthlyAmount;
-      }, 0) || 0;
-
-    return {
-      total,
-      active,
-      paused,
-      upcoming,
-      overdue,
-      monthlyIncome,
-      monthlyExpenses
-    };
-  }, [scheduledTransactions]);
-
-  const handleToggleStatus = async (transaction: any) => {
-    try {
-      await toggleRecurringStatus.mutateAsync({
-        id: transaction.id,
-        isActive: !transaction.is_recurring
-      });
-    } catch (error) {
-      console.error('Error toggling status:', error);
-    }
-  };
-
-  const handleDelete = async (transaction: any) => {
-    if (window.confirm('Tem certeza que deseja excluir este agendamento?')) {
-      try {
-        await deleteScheduledTransaction.mutateAsync(transaction.id);
-      } catch (error) {
-        console.error('Error deleting transaction:', error);
-      }
-    }
-  };
-
-  const handleEdit = (transaction: any) => {
-    navigate(`/scheduled/editar/${transaction.id}`);
-  };
-
-  const handleCreateNew = () => {
-    navigate('/scheduled/nova');
   };
 
   if (isLoading) {
@@ -221,40 +65,40 @@ export const MobileScheduled = () => {
         <Button 
           size="sm" 
           className="flex items-center space-x-2"
-          onClick={handleCreateNew}
+          onClick={() => {
+            // TODO: Implementar modal de criação de transação agendada
+            console.log('Criar nova transação agendada');
+          }}
         >
           <Plus size={16} />
           <span>Nova</span>
         </Button>
       </div>
 
-      {/* Statistics */}
-      <div className="mb-6">
-        <MobileScheduledStats
-          totalScheduled={stats.total}
-          activeScheduled={stats.active}
-          pausedScheduled={stats.paused}
-          upcomingExecutions={stats.upcoming}
-          overdueScheduled={stats.overdue}
-          totalMonthlyIncome={stats.monthlyIncome}
-          totalMonthlyExpenses={stats.monthlyExpenses}
-        />
-      </div>
-
-      {/* Filters */}
-      <div className="mb-6">
-        <MobileScheduledFilters
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          filters={filters}
-          onFiltersChange={setFilters}
-          categories={categories}
-        />
-      </div>
+      {/* Resumo */}
+      <Card className="mb-6 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Resumo de Transações Agendadas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-primary">{scheduledTransactions?.length || 0}</p>
+              <p className="text-xs text-muted-foreground">Total</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-green-600">
+                {scheduledTransactions?.filter(t => t.is_recurring)?.length || 0}
+              </p>
+              <p className="text-xs text-muted-foreground">Ativas</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Lista de transações agendadas */}
       <div className="space-y-3">
-        {filteredTransactions.map((transaction) => (
+        {scheduledTransactions?.map((transaction) => (
           <Card key={transaction.id} className="hover:shadow-sm transition-shadow">
             <CardContent className="p-4">
               <div className="space-y-3">
@@ -271,15 +115,6 @@ export const MobileScheduled = () => {
                     <div>
                       <p className="font-medium text-sm">{transaction.title}</p>
                       <p className="text-xs text-muted-foreground">{transaction.description}</p>
-                      {transaction.categories && (
-                        <div className="flex items-center mt-1">
-                          <div 
-                            className="w-2 h-2 rounded-full mr-1" 
-                            style={{ backgroundColor: transaction.categories.color }}
-                          />
-                          <span className="text-xs text-muted-foreground">{transaction.categories.name}</span>
-                        </div>
-                      )}
                     </div>
                   </div>
                   <div className="text-right">
@@ -304,12 +139,6 @@ export const MobileScheduled = () => {
                         Próxima: {format(new Date(transaction.next_recurrence_date), 'dd/MM', { locale: ptBR })}
                       </span>
                     )}
-                    {transaction.next_recurrence_date && isBefore(startOfDay(new Date(transaction.next_recurrence_date)), startOfDay(new Date())) && (
-                      <Badge variant="destructive" className="flex items-center space-x-1">
-                        <AlertCircle size={10} />
-                        <span>Atrasada</span>
-                      </Badge>
-                    )}
                   </div>
                   <Badge 
                     variant={transaction.is_recurring ? 'default' : 'secondary'}
@@ -321,29 +150,14 @@ export const MobileScheduled = () => {
 
                 {/* Ações */}
                 <div className="flex space-x-2 pt-2 border-t">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1"
-                    onClick={() => handleEdit(transaction)}
-                  >
+                  <Button variant="outline" size="sm" className="flex-1">
                     <Edit size={14} className="mr-1" />
                     Editar
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleToggleStatus(transaction)}
-                    disabled={toggleRecurringStatus.isPending}
-                  >
+                  <Button variant="outline" size="sm">
                     {transaction.is_recurring ? <Pause size={14} /> : <Play size={14} />}
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleDelete(transaction)}
-                    disabled={deleteScheduledTransaction.isPending}
-                  >
+                  <Button variant="outline" size="sm">
                     <Trash2 size={14} />
                   </Button>
                 </div>
@@ -353,28 +167,18 @@ export const MobileScheduled = () => {
         ))}
       </div>
 
-      {filteredTransactions.length === 0 && !isLoading && (
+      {scheduledTransactions?.length === 0 && (
         <Card className="mt-6">
           <CardContent className="p-8 text-center">
             <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="font-medium text-lg mb-2">
-              {searchTerm || Object.values(filters).some(Boolean) 
-                ? 'Nenhum agendamento encontrado' 
-                : 'Nenhuma transação agendada'
-              }
-            </h3>
+            <h3 className="font-medium text-lg mb-2">Nenhuma transação agendada</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              {searchTerm || Object.values(filters).some(Boolean)
-                ? 'Tente ajustar os filtros ou busca.'
-                : 'Crie transações recorrentes para automatizar seu controle financeiro'
-              }
+              Crie transações recorrentes para automatizar seu controle financeiro
             </p>
-            {!searchTerm && !Object.values(filters).some(Boolean) && (
-              <Button onClick={handleCreateNew}>
-                <Plus size={16} className="mr-2" />
-                Criar primeira transação agendada
-              </Button>
-            )}
+            <Button>
+              <Plus size={16} className="mr-2" />
+              Criar primeira transação agendada
+            </Button>
           </CardContent>
         </Card>
       )}

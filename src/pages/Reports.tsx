@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, FileText } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
+import { Download, FileText, BarChart3 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DateRange } from 'react-day-picker';
-import { startOfMonth, endOfMonth, format } from 'date-fns';
+import { addDays, startOfMonth, endOfMonth, format } from 'date-fns';
 import { exportToCSV, exportToPDF, ReportData, TransactionData } from '@/utils/exportUtils';
 import { toast } from 'sonner';
 import { GoalsSection } from '@/components/reports/GoalsSection';
-import { PeriodFilter } from '@/components/dashboard/PeriodFilter';
 
 const Reports = () => {
+  const [reportType, setReportType] = useState('monthly');
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
     to: endOfMonth(new Date())
@@ -189,11 +191,32 @@ const Reports = () => {
 
       {/* Filters */}
       <Card>
-        <CardContent className="p-6">
-          <PeriodFilter 
-            dateRange={dateRange}
-            onDateRangeChange={handleDateRangeChange}
-          />
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <Select value={reportType} onValueChange={setReportType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tipo de relatório" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monthly">Relatório Mensal</SelectItem>
+                  <SelectItem value="quarterly">Relatório Trimestral</SelectItem>
+                  <SelectItem value="yearly">Relatório Anual</SelectItem>
+                  <SelectItem value="category">Por Categoria</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1">
+              <DatePickerWithRange 
+                date={dateRange}
+                onDateChange={handleDateRangeChange}
+              />
+            </div>
+            <Button>
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Gerar Relatório
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

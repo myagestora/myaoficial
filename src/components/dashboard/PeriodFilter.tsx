@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+
+import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
+import { DateRange } from 'react-day-picker';
 
 interface PeriodFilterProps {
   dateRange: DateRange | undefined;
@@ -14,133 +15,93 @@ interface PeriodFilterProps {
 }
 
 export const PeriodFilter = ({ dateRange, onDateRangeChange }: PeriodFilterProps) => {
-  const [selectedPeriod, setSelectedPeriod] = useState<string>('monthly');
-  const [tempDateRange, setTempDateRange] = useState<DateRange | undefined>(dateRange);
-
-  const periodOptions = [
+  const presetRanges = [
     {
-      key: 'weekly',
-      label: 'Semana',
-      getRange: () => ({
-        from: startOfWeek(new Date(), { locale: ptBR }),
-        to: endOfWeek(new Date(), { locale: ptBR })
-      })
+      label: 'Últimos 7 dias',
+      range: {
+        from: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        to: new Date()
+      }
     },
     {
-      key: 'monthly',
-      label: 'Mensal',
-      getRange: () => ({
-        from: startOfMonth(new Date()),
-        to: endOfMonth(new Date())
-      })
+      label: 'Últimos 30 dias',
+      range: {
+        from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        to: new Date()
+      }
     },
     {
-      key: 'quarterly',
-      label: 'Trimestre',
-      getRange: () => ({
-        from: startOfQuarter(new Date()),
-        to: endOfQuarter(new Date())
-      })
+      label: 'Este mês',
+      range: {
+        from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+        to: new Date()
+      }
     },
     {
-      key: 'yearly',
-      label: 'Anual',
-      getRange: () => ({
-        from: startOfYear(new Date()),
-        to: endOfYear(new Date())
-      })
-    },
-    {
-      key: 'custom',
-      label: 'Personalizado',
-      getRange: () => dateRange || { from: new Date(), to: new Date() }
+      label: 'Últimos 3 meses',
+      range: {
+        from: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
+        to: new Date()
+      }
     }
   ];
 
-  const handlePeriodSelect = (periodKey: string) => {
-    setSelectedPeriod(periodKey);
-    
-    if (periodKey !== 'custom') {
-      const period = periodOptions.find(p => p.key === periodKey);
-      if (period) {
-        const range = period.getRange();
-        onDateRangeChange(range);
-      }
-    }
-  };
-
-  const handleCustomDateChange = (range: DateRange | undefined) => {
-    setTempDateRange(range);
-    
-    // Só atualiza quando o range estiver completo (from e to)
-    if (range?.from && range?.to) {
-      onDateRangeChange(range);
-    }
-  };
-
-  const formatDateRange = () => {
-    const displayRange = selectedPeriod === 'custom' ? (tempDateRange || dateRange) : dateRange;
-    
-    if (!displayRange?.from) return 'Selecione o período';
-    
-    if (displayRange.to) {
-      return `${format(displayRange.from, 'dd/MM/yyyy', { locale: ptBR })} - ${format(displayRange.to, 'dd/MM/yyyy', { locale: ptBR })}`;
-    }
-    
-    return format(displayRange.from, 'dd/MM/yyyy', { locale: ptBR });
-  };
-
   return (
-    <div className="space-y-4">
-      {/* Period Buttons */}
-      <div className="flex flex-wrap gap-2">
-        {periodOptions.map((period) => (
+    <div className="flex flex-col sm:flex-row gap-2">
+      <div className="flex gap-2 flex-wrap">
+        {presetRanges.map((preset) => (
           <Button
-            key={period.key}
-            variant={selectedPeriod === period.key ? 'default' : 'outline'}
+            key={preset.label}
+            variant="outline"
             size="sm"
-            onClick={() => handlePeriodSelect(period.key)}
-            className="min-w-[100px]"
+            onClick={() => onDateRangeChange(preset.range)}
+            className={cn(
+              dateRange?.from?.toDateString() === preset.range.from.toDateString() &&
+              dateRange?.to?.toDateString() === preset.range.to.toDateString() &&
+              "bg-primary text-primary-foreground"
+            )}
           >
-            {period.label}
+            {preset.label}
           </Button>
         ))}
       </div>
-
-      {/* Custom Date Picker */}
-      {selectedPeriod === 'custom' && (
-        <div className="border rounded-lg p-4 bg-background">
-          <div className="space-y-4">
-            <div className="text-sm font-medium">Selecione o período personalizado:</div>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !tempDateRange && !dateRange && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formatDateRange()}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  initialFocus
-                  mode="range"
-                  defaultMonth={tempDateRange?.from || dateRange?.from}
-                  selected={tempDateRange || dateRange}
-                  onSelect={handleCustomDateChange}
-                  numberOfMonths={2}
-                  locale={ptBR}
-                  className="pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
-      )}
+      
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn(
+              "justify-start text-left font-normal",
+              !dateRange && "text-muted-foreground"
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {dateRange?.from ? (
+              dateRange.to ? (
+                <>
+                  {format(dateRange.from, "dd/MM/yyyy", { locale: ptBR })} -{" "}
+                  {format(dateRange.to, "dd/MM/yyyy", { locale: ptBR })}
+                </>
+              ) : (
+                format(dateRange.from, "dd/MM/yyyy", { locale: ptBR })
+              )
+            ) : (
+              <span>Período personalizado</span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            initialFocus
+            mode="range"
+            defaultMonth={dateRange?.from}
+            selected={dateRange}
+            onSelect={onDateRangeChange}
+            numberOfMonths={2}
+            className="pointer-events-auto"
+          />
+        </PopoverContent>
+      </Popover>
     </div>
   );
 };
