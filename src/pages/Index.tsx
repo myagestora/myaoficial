@@ -95,7 +95,7 @@ const Index = () => {
   }, {
     icon: Shield,
     title: 'Segurança Total',
-    description: 'Seus dados financeiros protegidos com criptografia bancária de última geração.'
+    description: 'Seus dados financeiros protegidos com criptografia avançada e total privacidade.'
   }];
   const organizationFeatures = [{
     icon: Calculator,
