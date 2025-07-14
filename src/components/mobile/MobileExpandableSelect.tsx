@@ -17,6 +17,7 @@ interface MobileExpandableSelectContextType {
   placeholder?: string
   selectedLabel: string
   setSelectedLabel: (label: string) => void
+  registerItem: (itemValue: string, itemLabel: string) => void
 }
 
 const MobileExpandableSelectContext = React.createContext<MobileExpandableSelectContextType | null>(null)
@@ -24,6 +25,25 @@ const MobileExpandableSelectContext = React.createContext<MobileExpandableSelect
 const MobileExpandableSelect = ({ value, onValueChange, children, placeholder }: MobileExpandableSelectProps) => {
   const [isOpen, setIsOpen] = React.useState(false)
   const [selectedLabel, setSelectedLabel] = React.useState<string>("")
+  const [itemsRegistry, setItemsRegistry] = React.useState<Map<string, string>>(new Map())
+
+  // Registrar um item no mapa
+  const registerItem = React.useCallback((itemValue: string, itemLabel: string) => {
+    setItemsRegistry(prev => {
+      const newMap = new Map(prev)
+      newMap.set(itemValue, itemLabel)
+      return newMap
+    })
+  }, [])
+
+  // Atualizar o selectedLabel quando o value ou itemsRegistry mudarem
+  React.useEffect(() => {
+    if (value && itemsRegistry.has(value)) {
+      setSelectedLabel(itemsRegistry.get(value) || "")
+    } else if (!value) {
+      setSelectedLabel("")
+    }
+  }, [value, itemsRegistry])
 
   return (
     <MobileExpandableSelectContext.Provider value={{ 
@@ -33,7 +53,8 @@ const MobileExpandableSelect = ({ value, onValueChange, children, placeholder }:
       setIsOpen, 
       placeholder, 
       selectedLabel, 
-      setSelectedLabel 
+      setSelectedLabel,
+      registerItem
     }}>
       <div className="space-y-2">
         {children}
@@ -126,7 +147,7 @@ const MobileExpandableSelectItem = React.forwardRef<
   const context = React.useContext(MobileExpandableSelectContext)
   if (!context) throw new Error("MobileExpandableSelectItem must be used within MobileExpandableSelect")
 
-  const { value: selectedValue, onValueChange, setIsOpen, setSelectedLabel } = context
+  const { value: selectedValue, onValueChange, setIsOpen, setSelectedLabel, registerItem } = context
   const isSelected = selectedValue === value
 
   // Extrair o texto do children para usar como label
@@ -147,6 +168,13 @@ const MobileExpandableSelectItem = React.forwardRef<
   }
 
   const itemLabel = label || getTextContent(children)
+
+  // Registrar este item no mapa quando montado
+  React.useEffect(() => {
+    if (itemLabel) {
+      registerItem(value, itemLabel)
+    }
+  }, [value, itemLabel, registerItem])
 
   // Atualizar o label selecionado quando este item estiver selecionado
   React.useEffect(() => {
