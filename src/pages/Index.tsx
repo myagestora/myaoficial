@@ -303,7 +303,7 @@ const Index = () => {
             {/* Social Proof */}
             <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-8 mb-12">
               <div className="flex items-center space-x-2">
-                <div className="flex -space-x-2">
+                <div className="flex space-x-1">
                   {[...Array(5)].map((_, i) => (
                     <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
                   ))}
@@ -315,12 +315,16 @@ const Index = () => {
               <div className="flex items-center space-x-2">
                 <div className="flex -space-x-2">
                   {[1, 2, 3, 4].map((i) => (
-                    <div 
+                    <img 
                       key={i}
-                      className="w-8 h-8 rounded-full border-2 border-white bg-gradient-to-r from-blue-400 to-purple-400 flex items-center justify-center text-white text-xs font-bold"
-                    >
-                      {String.fromCharCode(65 + i)}
-                    </div>
+                      src={`https://images.unsplash.com/photo-164997290434${i}-6e44c42644a7?w=32&h=32&fit=crop&crop=face`}
+                      alt={`Usuário ${i}`}
+                      className="w-8 h-8 rounded-full border-2 border-white object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = `https://ui-avatars.com/api/?name=U${i}&background=4f46e5&color=fff&size=32`;
+                      }}
+                    />
                   ))}
                 </div>
                 <span className="text-gray-600 dark:text-gray-300 font-medium">
