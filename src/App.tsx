@@ -45,51 +45,31 @@ const queryClient = new QueryClient();
 const LayoutWrapper = () => {
   const useMobile = shouldUseMobileLayout();
   
-  // Força refresh Android se necessário
+  // One-time cache refresh for Android (não interfere com auth)
   React.useEffect(() => {
     const isAndroid = /android/i.test(navigator.userAgent);
-    const appVersion = localStorage.getItem('app-version');
-    const currentVersion = 'v6-force-android';
+    const cacheVersion = localStorage.getItem('cache-version');
+    const currentVersion = 'v7-stable';
     
-    if (isAndroid && appVersion !== currentVersion) {
-      console.log('🔥 ANDROID: Forçando refresh completo');
-      localStorage.clear();
-      sessionStorage.clear();
-      localStorage.setItem('app-version', currentVersion);
+    if (isAndroid && cacheVersion !== currentVersion) {
+      console.log('📱 Android: Cache update (stable)');
+      localStorage.setItem('cache-version', currentVersion);
       
-      // Force service worker update
+      // Gentle service worker update
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(registrations => {
           registrations.forEach(registration => {
             registration.update();
-            if (registration.waiting) {
-              registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-            }
           });
         });
       }
-      
-      // Force reload em 1 segundo
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
     }
   }, []);
   
-  console.log('🎯 LayoutWrapper v6 ANDROID FORCE:', { 
-    useMobile, 
-    userAgent: navigator.userAgent.substring(0, 50) + '...',
-    screenWidth: window.innerWidth,
-    isAndroid: /android/i.test(navigator.userAgent),
-    href: window.location.href 
-  });
-  
   if (useMobile) {
-    console.log('📱 Usando MobileAppLayout (ÚNICO LAYOUT MOBILE)');
     return <MobileAppLayout />;
   }
   
-  console.log('💻 Usando AppLayout (Desktop)');
   return <AppLayout />;
 };
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mya-gestora-v6-force-android';
+const CACHE_NAME = 'mya-gestora-v7-stable';
 const urlsToCache = [
   '/',
   '/dashboard',
@@ -30,20 +30,19 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Ignorar requests de APIs, Supabase e manifest dinâmico
+  // Ignorar requests de APIs, Supabase e auth
   if (event.request.method !== 'GET' || 
       event.request.url.includes('supabase.co') ||
       event.request.url.includes('/api/') ||
-      event.request.url.includes('dynamic-manifest')) {
+      event.request.url.includes('dynamic-manifest') ||
+      event.request.url.includes('/login') ||
+      event.request.url.includes('/reset-password')) {
     return;
   }
 
   event.respondWith(
-    fetch(event.request, {
-      // Força revalidação
-      cache: 'no-cache'
-    }).then(response => {
-      // Se a resposta for bem-sucedida, atualizar cache
+    fetch(event.request).then(response => {
+      // Cache static resources normally
       if (response && response.status === 200 && response.type === 'basic') {
         const responseToCache = response.clone();
         caches.open(CACHE_NAME).then((cache) => {
@@ -52,12 +51,11 @@ self.addEventListener('fetch', (event) => {
       }
       return response;
     }).catch(() => {
-      // Se falhar, tentar cache como fallback
+      // Fallback to cache
       return caches.match(event.request).then(cachedResponse => {
         if (cachedResponse) {
           return cachedResponse;
         }
-        // Se for documento e não tiver cache, retornar página inicial
         if (event.request.destination === 'document') {
           return caches.match('/');
         }
@@ -68,33 +66,21 @@ self.addEventListener('fetch', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('🔥 Service Worker v6 - FORÇA ANDROID REFRESH');
+  console.log('✅ Service Worker v7 - Stable');
   
   event.waitUntil(
-    Promise.all([
-      // 1. Deletar TODOS os caches
-      caches.keys().then((cacheNames) => {
-        console.log('🗑️ Deletando caches:', cacheNames);
-        return Promise.all(cacheNames.map(name => caches.delete(name)));
-      }),
-      
-      // 2. Limpar todos os storages
-      self.clients.matchAll().then(clients => {
-        clients.forEach(client => {
-          client.postMessage({
-            type: 'FORCE_ANDROID_REFRESH',
-            timestamp: Date.now()
-          });
-        });
-      })
-    ]).then(() => {
-      console.log('✅ Limpeza completa realizada');
-      // 3. Recriar cache mínimo
-      return caches.open(CACHE_NAME).then(cache => {
-        return cache.addAll(['/']);
-      });
+    // Clean old caches but keep newer ones
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheName !== CACHE_NAME && cacheName.includes('mya-gestora')) {
+            console.log('🗑️ Removing old cache:', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
     }).then(() => {
-      console.log('🎯 Assumindo controle - Android forçado');
+      console.log('🎯 Service Worker activated');
       return self.clients.claim();
     })
   );
