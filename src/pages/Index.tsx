@@ -316,7 +316,7 @@ const Index = () => {
               
               {/* Benefits List */}
               <div className="space-y-4 mb-8">
-                {['Envie mensagem de texto, áudio ou imagem', 'Reconhecimento automático de valores e categorias', 'Relatórios instantâneos e insights personalizados', 'Lembretes inteligentes para suas metas financeiras'].map((benefit, index) => <div key={index} className="flex items-start space-x-3">
+                {['Envie mensagem de texto, áudio ou imagem', 'Reconhecimento automático de valores e categorias', 'Relatórios instantâneos e insights personalizados', '(Em breve) Lembretes inteligentes para suas metas financeiras'].map((benefit, index) => <div key={index} className="flex items-start space-x-3">
                     <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mr-3 mt-0.5">
                       <CheckCircle className="w-4 h-4 text-white" />
                     </div>
