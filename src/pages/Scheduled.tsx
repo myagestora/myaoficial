@@ -57,25 +57,22 @@ const Scheduled = () => {
   // Calcular estatísticas
   const upcomingExecutions = filteredTransactions.filter(t => {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const todayString = today.getFullYear() + '-' + 
+      String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+      String(today.getDate()).padStart(2, '0');
     
-    const targetDate = new Date(t.date);
-    targetDate.setHours(0, 0, 0, 0);
-    
-    // A partir de amanhã (não incluir hoje)
-    return targetDate >= tomorrow;
+    // A partir de amanhã (comparação de strings)
+    return t.date > todayString;
   }).length;
 
   const todayCount = filteredTransactions.filter(t => {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayString = today.getFullYear() + '-' + 
+      String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+      String(today.getDate()).padStart(2, '0');
     
-    const targetDate = new Date(t.date);
-    targetDate.setHours(0, 0, 0, 0);
-    
-    return targetDate.getTime() === today.getTime();
+    // Comparar diretamente as strings de data no formato YYYY-MM-DD
+    return t.date === todayString;
   }).length;
 
   const handleToggleStatus = (id: string, isActive: boolean) => {

@@ -140,16 +140,24 @@ export const MobileScheduled = () => {
     
     // A partir de amanhã (não incluir hoje)
     const upcoming = scheduledTransactions?.filter(t => {
-      const targetDate = t.date;
-      const transactionDate = startOfDay(new Date(targetDate));
-      return transactionDate >= tomorrow;
+      const today = new Date();
+      const todayString = today.getFullYear() + '-' + 
+        String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+        String(today.getDate()).padStart(2, '0');
+      
+      // A partir de amanhã (comparação de strings)
+      return t.date > todayString;
     }).length || 0;
     
     // Transações do dia
     const todayScheduled = scheduledTransactions?.filter(t => {
-      const targetDate = t.date;
-      const transactionDate = startOfDay(new Date(targetDate));
-      return transactionDate.getTime() === today.getTime();
+      const today = new Date();
+      const todayString = today.getFullYear() + '-' + 
+        String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+        String(today.getDate()).padStart(2, '0');
+      
+      // Comparar diretamente as strings de data no formato YYYY-MM-DD
+      return t.date === todayString;
     }).length || 0;
 
     // Calculate monthly impact
