@@ -98,27 +98,12 @@ export const SEOHead = () => {
       }
     };
 
-    // Update manifest link with dynamic URL
-    const updateManifestLink = async () => {
-      const existingManifest = document.querySelector('link[rel="manifest"]');
-      if (existingManifest) {
-        existingManifest.remove();
-      }
-      
-      const dynamicUrl = await getDynamicSupabaseUrl();
-      const manifestLink = document.createElement('link');
-      manifestLink.rel = 'manifest';
-      manifestLink.href = `${dynamicUrl}/functions/v1/dynamic-manifest`;
-      document.head.appendChild(manifestLink);
-    };
 
     // Apply favicon if configured
     if (seoConfig.app_favicon) {
       updateFavicon(seoConfig.app_favicon);
     }
 
-    // Update manifest link
-    updateManifestLink();
 
     // Update or create meta tags
     const updateMetaTag = (name: string, content: string, attribute = 'name') => {
