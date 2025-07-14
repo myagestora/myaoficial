@@ -273,17 +273,15 @@ export const MobileScheduledTransactionForm = () => {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="type">Tipo</Label>
-            <div className="mt-2">
-              <MobileListSelect
-                value={watchedType}
-                onValueChange={(value) => {
-                  setValue('type', value as 'income' | 'expense');
-                  setValue('category_id', '');
-                }}
-                placeholder="Selecione o tipo"
-                options={typeOptions}
-              />
-            </div>
+            <MobileListSelect
+              value={watchedType}
+              onValueChange={(value) => {
+                setValue('type', value as 'income' | 'expense');
+                setValue('category_id', '');
+              }}
+              placeholder="Selecione o tipo"
+              options={typeOptions}
+            />
             {errors.type && (
               <p className="text-sm text-destructive">{errors.type.message}</p>
             )}
@@ -320,26 +318,24 @@ export const MobileScheduledTransactionForm = () => {
         {/* Categoria */}
         <div className="space-y-2">
           <Label htmlFor="category_id">Categoria</Label>
-          <div className="mt-2">
-            <MobileListSelect
-              value={watch('category_id') || ''}
-              onValueChange={(value) => setValue('category_id', value)}
-              placeholder="Selecione a categoria"
-              options={categoryOptions.map(category => ({
-                value: category.value,
-                label: category.label,
-                content: (
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: category.color }}
-                    />
-                    <span>{category.label}</span>
-                  </div>
-                )
-              }))}
-            />
-          </div>
+          <MobileListSelect
+            value={watch('category_id') || ''}
+            onValueChange={(value) => setValue('category_id', value)}
+            placeholder="Selecione a categoria"
+            options={categoryOptions.map(category => ({
+              value: category.value,
+              label: category.label,
+              content: (
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="w-3 h-3 rounded-full" 
+                    style={{ backgroundColor: category.color }}
+                  />
+                  <span>{category.label}</span>
+                </div>
+              )
+            }))}
+          />
           {errors.category_id && (
             <p className="text-sm text-destructive">{errors.category_id.message}</p>
           )}
@@ -370,14 +366,12 @@ export const MobileScheduledTransactionForm = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Frequência</Label>
-                  <div className="mt-2">
-                    <MobileListSelect
-                      value={watchedFrequency}
-                      onValueChange={(value) => setValue('recurrence_frequency', value as any)}
-                      options={frequencyOptions}
-                      placeholder="Selecione a frequência"
-                    />
-                  </div>
+                  <MobileListSelect
+                    value={watchedFrequency}
+                    onValueChange={(value) => setValue('recurrence_frequency', value as any)}
+                    options={frequencyOptions}
+                    placeholder="Selecione a frequência"
+                  />
                   {errors.recurrence_frequency && (
                     <p className="text-sm text-destructive">{errors.recurrence_frequency.message}</p>
                   )}
