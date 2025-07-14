@@ -24,7 +24,7 @@ serve(async (req) => {
     const { data: configs, error } = await supabase
       .from('system_config')
       .select('key, value')
-      .in('key', ['app_name', 'app_favicon', 'seo_title', 'seo_description']);
+      .in('key', ['app_name', 'app_favicon', 'seo_title', 'seo_description', 'api_enabled', 'api_domain']);
 
     if (error) {
       console.error('Error fetching system config:', error);
@@ -52,12 +52,19 @@ serve(async (req) => {
 
     console.log('Processed config map:', configMap);
 
+    // Determinar URL base baseada na configuração da API
+    let baseUrl = 'https://fimgalqlsezgxqbmktpz.supabase.co';
+    if (configMap.api_enabled === 'true' && configMap.api_domain?.trim()) {
+      const domain = configMap.api_domain.trim();
+      baseUrl = domain.startsWith('http') ? domain : `https://${domain}`;
+    }
+
     // Valores padrão
     const appName = configMap.app_name || configMap.seo_title || 'Mya Gestora';
     const description = configMap.seo_description || 'Sistema inteligente de controle financeiro pessoal';
-    const faviconUrl = configMap.app_favicon || 'https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png';
+    const faviconUrl = configMap.app_favicon || `${baseUrl}/storage/v1/object/public/logos/logo-1751933896307.png`;
 
-    console.log('Final values:', { appName, description, faviconUrl });
+    console.log('Final values:', { appName, description, faviconUrl, baseUrl, apiEnabled: configMap.api_enabled });
 
     // Gerar manifest dinâmico
     const manifest = {

@@ -15,3 +15,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     autoRefreshToken: true,
   }
 });
+
+// Re-export functions from the dynamic config utility
+export { invokeEdgeFunction, getStorageUrl, getWebhookUrl, supabaseBase } from '@/utils/supabaseConfigClient';

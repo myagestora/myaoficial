@@ -648,10 +648,7 @@ const AdminAPI = () => {
             }
           },
           response: { success: "boolean", categories: "array", total: "number" },
-          curl: `curl -X POST "https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1/list-categories" \\
-  -H "Authorization: Bearer your-api-key" \\
-  -H "Content-Type: application/json" \\
-  -d '{"user_id": "12345678-1234-1234-1234-123456789012"}'`,
+          curl: `curl -X POST "${apiInfo.baseUrl}/list-categories" \\\n  -H "Authorization: Bearer your-api-key" \\\n  -H "Content-Type: application/json" \\\n  -d '{"user_id": "12345678-1234-1234-1234-123456789012"}'`,
           exampleRequest: {
             user_id: "12345678-1234-1234-1234-123456789012"
           },

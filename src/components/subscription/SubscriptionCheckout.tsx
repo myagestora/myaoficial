@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useMutation } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { invokeEdgeFunction } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Check, CreditCard, Calendar } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -32,7 +32,7 @@ export const SubscriptionCheckout = ({ plan, onCancel }: SubscriptionCheckoutPro
 
   const createSubscriptionMutation = useMutation({
     mutationFn: async ({ planId, subscriptionFrequency }: { planId: string; subscriptionFrequency: 'monthly' | 'yearly' }) => {
-      const { data, error } = await supabase.functions.invoke('create-mercado-pago-subscription', {
+      const { data, error } = await invokeEdgeFunction('create-mercado-pago-subscription', {
         body: { planId, subscriptionFrequency }
       });
 

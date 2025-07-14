@@ -11,7 +11,7 @@ import { NotificationSettings } from '@/components/admin/settings/NotificationSe
 import { SubscriptionPlansManager } from '@/components/admin/settings/SubscriptionPlansManager';
 import { MotivationalPhrasesManager } from '@/components/admin/MotivationalPhrasesManager';
 import { SEOSettings } from '@/components/admin/SEOSettings';
-import { PaymentSettings } from '@/components/admin/PaymentSettings';
+import { PaymentSettingsDynamic } from '@/components/admin/PaymentSettingsDynamic';
 import { APISettings } from '@/components/admin/settings/APISettings';
 import { SpecialUsersManager } from '@/components/admin/settings/SpecialUsersManager';
 
@@ -184,11 +184,9 @@ const AdminSettings = () => {
         </TabsContent>
 
         <TabsContent value="payments" className="space-y-6">
-          <PaymentSettings 
-            settings={settings}
-            onInputChange={handleInputChange}
-            onSave={handleSave}
-            isLoading={updateSettingsMutation.isPending}
+          <PaymentSettingsDynamic 
+            settings={settings} 
+            onInputChange={handleInputChange} 
           />
         </TabsContent>
 

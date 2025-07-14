@@ -7,7 +7,7 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserPlus } from 'lucide-react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, invokeEdgeFunction } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { checkWhatsappExists } from '@/utils/whatsappValidation';
 
@@ -81,7 +81,7 @@ export const AddUserDialog = ({ onUserAdded }: AddUserDialogProps) => {
       console.log('📞 Calling admin-create-user function...');
 
       // Call edge function to create user (which has admin privileges)
-      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+      const { data, error } = await invokeEdgeFunction('admin-create-user', {
         body: {
           email: userData.email,
           password: userData.password,

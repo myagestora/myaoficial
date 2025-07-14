@@ -1,6 +1,6 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { invokeEdgeFunction } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { CardData } from './CreditCardForm';
@@ -24,7 +24,7 @@ export const usePaymentMutation = ({ onPixDataReceived }: UsePaymentMutationProp
     mutationFn: async (paymentData: PaymentMutationData) => {
       console.log('Calling create-mercado-pago-payment function with:', paymentData);
       
-      const { data, error } = await supabase.functions.invoke('create-mercado-pago-payment', {
+      const { data, error } = await invokeEdgeFunction('create-mercado-pago-payment', {
         body: paymentData
       });
 
