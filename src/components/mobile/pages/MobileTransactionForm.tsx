@@ -6,7 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MobileExpandableSelect, MobileExpandableSelectContent, MobileExpandableSelectItem, MobileExpandableSelectTrigger, MobileExpandableSelectValue } from '@/components/mobile/MobileExpandableSelect';
+import { MobileListSelect } from '@/components/mobile/MobileListSelect';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
@@ -354,22 +354,18 @@ export const MobileTransactionForm = () => {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="type">Tipo</Label>
-            <MobileExpandableSelect
+            <MobileListSelect
               value={transactionType}
               onValueChange={(value) => {
                 setValue('type', value as 'income' | 'expense');
                 setValue('category_id', '');
               }}
               placeholder="Selecione o tipo"
-            >
-              <MobileExpandableSelectTrigger>
-                <MobileExpandableSelectValue />
-              </MobileExpandableSelectTrigger>
-              <MobileExpandableSelectContent>
-                <MobileExpandableSelectItem value="income">Receita</MobileExpandableSelectItem>
-                <MobileExpandableSelectItem value="expense">Despesa</MobileExpandableSelectItem>
-              </MobileExpandableSelectContent>
-            </MobileExpandableSelect>
+              options={[
+                { value: 'income', label: 'Receita' },
+                { value: 'expense', label: 'Despesa' }
+              ]}
+            />
             {errors.type && (
               <p className="text-sm text-destructive">{errors.type.message}</p>
             )}
@@ -407,28 +403,24 @@ export const MobileTransactionForm = () => {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="category_id">Categoria</Label>
-            <MobileExpandableSelect 
-              value={selectedCategoryId || ''} 
+            <MobileListSelect
+              value={selectedCategoryId || ''}
               onValueChange={(value) => setValue('category_id', value)}
               placeholder="Selecione a categoria"
-            >
-              <MobileExpandableSelectTrigger>
-                <MobileExpandableSelectValue />
-              </MobileExpandableSelectTrigger>
-              <MobileExpandableSelectContent>
-                {categories?.map((category) => (
-                  <MobileExpandableSelectItem key={category.id} value={category.id}>
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: category.color }}
-                      />
-                      <span>{category.name}</span>
-                    </div>
-                  </MobileExpandableSelectItem>
-                ))}
-              </MobileExpandableSelectContent>
-            </MobileExpandableSelect>
+              options={categories?.map(category => ({
+                value: category.id,
+                label: category.name,
+                content: (
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: category.color }}
+                    />
+                    <span>{category.name}</span>
+                  </div>
+                )
+              })) || []}
+            />
             {errors.category_id && (
               <p className="text-sm text-destructive">{errors.category_id.message}</p>
             )}
@@ -477,22 +469,18 @@ export const MobileTransactionForm = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="recurrence_frequency">Frequência</Label>
-                  <MobileExpandableSelect 
-                    value={watch('recurrence_frequency') || ''} 
+                  <MobileListSelect
+                    value={watch('recurrence_frequency') || ''}
                     onValueChange={(value) => setValue('recurrence_frequency', value as any)}
                     placeholder="Selecione a frequência"
-                  >
-                    <MobileExpandableSelectTrigger>
-                      <MobileExpandableSelectValue />
-                    </MobileExpandableSelectTrigger>
-                    <MobileExpandableSelectContent>
-                      <MobileExpandableSelectItem value="daily">Diário</MobileExpandableSelectItem>
-                      <MobileExpandableSelectItem value="weekly">Semanal</MobileExpandableSelectItem>
-                      <MobileExpandableSelectItem value="monthly">Mensal</MobileExpandableSelectItem>
-                      <MobileExpandableSelectItem value="quarterly">Trimestral</MobileExpandableSelectItem>
-                      <MobileExpandableSelectItem value="yearly">Anual</MobileExpandableSelectItem>
-                    </MobileExpandableSelectContent>
-                  </MobileExpandableSelect>
+                    options={[
+                      { value: 'daily', label: 'Diário' },
+                      { value: 'weekly', label: 'Semanal' },
+                      { value: 'monthly', label: 'Mensal' },
+                      { value: 'quarterly', label: 'Trimestral' },
+                      { value: 'yearly', label: 'Anual' }
+                    ]}
+                  />
                   {errors.recurrence_frequency && (
                     <p className="text-sm text-destructive">{errors.recurrence_frequency.message}</p>
                   )}
