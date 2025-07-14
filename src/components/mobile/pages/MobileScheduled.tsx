@@ -79,6 +79,38 @@ export const MobileScheduled = () => {
     return frequencies[frequency] || frequency;
   };
 
+  // Função para formatar data a partir de string evitando problemas de fuso horário
+  const formatDateFromString = (dateString: string): string => {
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month é 0-indexed
+    return date.toLocaleDateString('pt-BR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric' 
+    });
+  };
+
+  const getNextExecutionDate = (transaction: any) => {
+    // Usar next_recurrence_date se disponível, senão usar date
+    const targetDate = transaction.next_recurrence_date || transaction.date;
+    
+    // Parse manual para evitar problemas de timezone
+    const [year, month, day] = targetDate.split('-').map(Number);
+    const transactionDate = new Date(year, month - 1, day);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Zerar horas para comparação precisa
+    transactionDate.setHours(0, 0, 0, 0);
+    
+    const diffTime = transactionDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Hoje';
+    if (diffDays === 1) return 'Amanhã';
+    if (diffDays < 0) return 'Vencida';
+    
+    return `Em ${diffDays} dias`;
+  };
+
   // Filter and search logic
   const filteredTransactions = useMemo(() => {
     return scheduledTransactions?.filter(transaction => {
@@ -330,10 +362,15 @@ export const MobileScheduled = () => {
                       <Clock size={10} />
                       <span>{formatFrequency(transaction.recurrence_frequency || '')}</span>
                     </Badge>
-                    <span className="text-muted-foreground flex items-center">
-                      <Calendar size={10} className="mr-1" />
-                      Data: {format(new Date(transaction.date), 'dd/MM', { locale: ptBR })}
-                    </span>
+                    <div className="flex flex-col text-muted-foreground">
+                      <span className="flex items-center">
+                        <Calendar size={10} className="mr-1" />
+                        {formatDateFromString(transaction.date)}
+                      </span>
+                      <span className="text-xs">
+                        {getNextExecutionDate(transaction)}
+                      </span>
+                    </div>
                   </div>
                   <Badge 
                     variant={transaction.is_recurring ? 'default' : 'secondary'}

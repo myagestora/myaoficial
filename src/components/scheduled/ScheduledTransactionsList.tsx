@@ -8,6 +8,7 @@ interface ScheduledTransactionsListProps {
   transactions: any[];
   onToggleStatus: (id: string, isActive: boolean) => void;
   onDelete: (id: string) => void;
+  onEdit?: (id: string) => void;
   hasFiltersOrSearch: boolean;
   deletingId?: string | null;
   recurringDeletingId?: string | null;
@@ -21,6 +22,7 @@ export const ScheduledTransactionsList = ({
   transactions, 
   onToggleStatus, 
   onDelete,
+  onEdit,
   hasFiltersOrSearch,
   deletingId,
   recurringDeletingId,
@@ -54,6 +56,7 @@ export const ScheduledTransactionsList = ({
                 transaction={transaction}
                 onToggleStatus={onToggleStatus}
                 onDelete={onDelete}
+                onEdit={onEdit}
                 deletingId={deletingId}
                 recurringDeletingId={recurringDeletingId}
                 onConfirmDelete={onConfirmDelete}

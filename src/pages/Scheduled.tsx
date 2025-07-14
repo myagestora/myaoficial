@@ -111,6 +111,13 @@ const Scheduled = () => {
     setRecurringDeletingId(null);
   };
 
+  const handleEdit = (id: string) => {
+    // Para desktop, vamos mostrar o formulário de edição
+    console.log('Editar transação:', id);
+    // Aqui você pode implementar a lógica de edição
+    // Por exemplo, abrir um modal ou navegar para uma página de edição
+  };
+
   if (isLoading) {
     return (
       <div className="p-6 space-y-6">
@@ -151,6 +158,7 @@ const Scheduled = () => {
         transactions={filteredTransactions}
         onToggleStatus={handleToggleStatus}
         onDelete={handleDelete}
+        onEdit={handleEdit}
         hasFiltersOrSearch={hasFiltersOrSearch}
         deletingId={deletingId}
         recurringDeletingId={recurringDeletingId}

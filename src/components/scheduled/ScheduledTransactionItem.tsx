@@ -10,6 +10,7 @@ interface ScheduledTransactionItemProps {
   transaction: any;
   onToggleStatus: (id: string, isActive: boolean) => void;
   onDelete: (id: string) => void;
+  onEdit?: (id: string) => void;
   deletingId?: string | null;
   recurringDeletingId?: string | null;
   onConfirmDelete?: () => void;
@@ -22,6 +23,7 @@ export const ScheduledTransactionItem = ({
   transaction, 
   onToggleStatus, 
   onDelete,
+  onEdit,
   deletingId,
   recurringDeletingId,
   onConfirmDelete,
@@ -133,10 +135,12 @@ export const ScheduledTransactionItem = ({
                   {transaction.categories.name}
                 </Badge>
               )}
-              <Badge variant="outline" className="text-xs">
-                <Repeat className="h-3 w-3 mr-1" />
-                {formatRecurrenceInfo(transaction)}
-              </Badge>
+              {transaction.recurrence_frequency && (
+                <Badge variant="outline" className="text-xs">
+                  <Repeat className="h-3 w-3 mr-1" />
+                  {formatRecurrenceInfo(transaction)}
+                </Badge>
+              )}
               <span className="text-sm text-gray-500">
                 {getNextExecutionDate(transaction)}
               </span>
@@ -145,7 +149,7 @@ export const ScheduledTransactionItem = ({
               <p className="text-sm text-gray-500 mt-1">{transaction.description}</p>
             )}
             <p className="text-xs text-blue-600 mt-1">
-              Próxima: {formatDateFromString(transaction.next_recurrence_date || transaction.date)}
+              {formatDateFromString(transaction.next_recurrence_date || transaction.date)}
             </p>
             {transaction.recurrence_count && (
               <p className="text-xs text-gray-500 mt-1">
@@ -161,7 +165,12 @@ export const ScheduledTransactionItem = ({
             {transaction.type === 'income' ? '+' : ''}R$ {Math.abs(Number(transaction.amount)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </span>
           <div className="flex space-x-2">
-            <Button variant="ghost" size="sm" title="Editar agendamento">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              title="Editar agendamento"
+              onClick={() => onEdit?.(transaction.id)}
+            >
               <Edit className="h-4 w-4" />
             </Button>
             <Button 
