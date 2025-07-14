@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mya-gestora-v4';
+const CACHE_NAME = 'mya-gestora-v5-unified';
 const urlsToCache = [
   '/',
   '/dashboard',

@@ -44,10 +44,15 @@ const queryClient = new QueryClient();
 const LayoutWrapper = () => {
   const useMobile = shouldUseMobileLayout();
   
-  console.log('🎯 LayoutWrapper:', { useMobile, href: window.location.href });
+  console.log('🎯 LayoutWrapper (UNIFIED):', { 
+    useMobile, 
+    userAgent: navigator.userAgent.substring(0, 50) + '...',
+    screenWidth: window.innerWidth,
+    href: window.location.href 
+  });
   
   if (useMobile) {
-    console.log('📱 Usando MobileAppLayout');
+    console.log('📱 Usando MobileAppLayout (ÚNICO LAYOUT MOBILE)');
     return <MobileAppLayout />;
   }
   
