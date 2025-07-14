@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Home, CreditCard, Target, BarChart3, Settings, Calendar, FolderOpen } from 'lucide-react';
-import { PWAFloatingButton } from './PWAFloatingButton';
+
 import { getStorageUrl, supabase } from '@/integrations/supabase/client';
 
 const navigationItems = [
@@ -62,7 +62,7 @@ export const MobileAppLayoutDynamic = () => {
             />
           )}
         </div>
-        <PWAFloatingButton />
+        
       </header>
 
       {/* Main Content */}

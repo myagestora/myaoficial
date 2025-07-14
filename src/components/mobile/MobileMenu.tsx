@@ -14,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { isIOSDevice } from '@/utils/mobileDetection';
-import { pwaInstaller } from '@/utils/pwaInstaller';
+
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -37,8 +37,6 @@ const moreItems = [
 export const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [canInstall, setCanInstall] = useState(false);
-  const [isInstalling, setIsInstalling] = useState(false);
   const isIOS = isIOSDevice();
   
   // Debug visual para Android
@@ -52,65 +50,7 @@ export const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
     onClose();
   };
 
-  const handleInstall = async () => {
-    console.log('🚀 PWA: Iniciando instalação via menu mobile...');
-    
-    // For iOS - always show manual instructions
-    if (isIOS) {
-      alert(`Para instalar no iOS:
 
-1. Toque no ícone de compartilhar (□↗) na parte inferior da tela
-2. Role para baixo e toque em "Adicionar à Tela de Início"
-3. Toque em "Adicionar" no canto superior direito
-
-O app será instalado na sua tela inicial!`);
-      return;
-    }
-
-    // For Android - SEMPRE tentar instalação, independente de canInstall()
-    console.log('🎯 PWA: Forçando instalação no Android...');
-    setIsInstalling(true);
-    
-    try {
-      const success = await pwaInstaller.install();
-      console.log('📱 PWA: Resultado da instalação:', success);
-      
-      if (success) {
-        console.log('✅ PWA: Instalação concluída com sucesso!');
-        // Aguardar um pouco antes de fechar o menu para dar feedback visual
-        setTimeout(() => {
-          onClose();
-        }, 1500);
-      } else {
-        console.log('❌ PWA: Instalação não foi concluída');
-      }
-    } catch (error) {
-      console.error('💥 PWA: Erro durante instalação:', error);
-    } finally {
-      // Resetar estado após um delay maior para dar tempo do processo completar
-      setTimeout(() => {
-        setIsInstalling(false);
-      }, 3000);
-    }
-  };
-
-  useEffect(() => {
-    // Listener para status de instalação PWA
-    pwaInstaller.onInstallStatusChange((canInstall) => {
-      setCanInstall(canInstall);
-    });
-
-    // Listener para evento personalizado de instalação
-    const handlePWAInstall = () => {
-      handleInstall();
-    };
-
-    window.addEventListener('pwa-install', handlePWAInstall);
-
-    return () => {
-      window.removeEventListener('pwa-install', handlePWAInstall);
-    };
-  }, [handleInstall]);
 
   // Prevenir scroll do body quando menu está aberto
   useEffect(() => {
@@ -196,25 +136,6 @@ O app será instalado na sua tela inicial!`);
             </button>
           ))}
 
-          {/* PWA Install Button - SEMPRE MOSTRAR para forçar instalação */}
-          <>
-            <div className="my-4 border-t border-muted" />
-            <button
-              onClick={handleInstall}
-              disabled={isInstalling}
-              className="flex items-center space-x-3 w-full p-3 rounded-lg transition-colors text-left bg-primary/5 hover:bg-primary/10 text-primary"
-            >
-              <Download size={20} />
-              <div className="flex flex-col">
-                <span className="font-medium">
-                  {isInstalling ? 'Instalando...' : 'Instalar App'}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {isIOS ? 'Toque para ver instruções' : 'Forçar instalação PWA'}
-                </span>
-              </div>
-            </button>
-          </>
         </nav>
       </div>
     </div>

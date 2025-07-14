@@ -22,7 +22,7 @@
     <meta name="twitter:image" content="https://api.myagestora.com.br/storage/v1/object/public/logos/logo-1751933896307.png" />
     
     <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json" />
+    
     
     <!-- iOS specific meta tags -->
     <meta name="apple-mobile-web-app-title" content="Mya Gestora" />
@@ -50,19 +50,5 @@
     </script>
     <script type="module" src="/src/main.tsx"></script>
     
-    <!-- Service Worker Registration -->
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((registration) => {
-              console.log('SW registrado com sucesso:', registration);
-            })
-            .catch((registrationError) => {
-              console.log('Falha no registro do SW:', registrationError);
-            });
-        });
-      }
-    </script>
   </body>
 </html>

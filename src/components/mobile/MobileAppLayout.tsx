@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { InstallPrompt } from './InstallPrompt';
+
 
 
 interface MobileAppLayoutProps {
@@ -111,7 +111,7 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
       />
 
       {/* Install Prompt */}
-      <InstallPrompt />
+      
     </div>
   );
 };
