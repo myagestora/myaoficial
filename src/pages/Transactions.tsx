@@ -11,6 +11,7 @@ import { TransactionFilters } from '@/components/transactions/TransactionFilters
 import { TransactionStats } from '@/components/transactions/TransactionStats';
 import { MobileRouteHandler } from '@/components/mobile/MobileRouteHandler';
 import { DeleteRecurringTransactionDialog } from '@/components/scheduled/DeleteRecurringTransactionDialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -32,6 +33,7 @@ const Transactions = () => {
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [deletingTransaction, setDeletingTransaction] = useState<any>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showSimpleDeleteDialog, setShowSimpleDeleteDialog] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: transactions = [], isLoading } = useQuery({
@@ -211,8 +213,9 @@ const Transactions = () => {
       setDeletingTransaction(transaction);
       setShowDeleteDialog(true);
     } else {
-      // Transação simples - usar mutation diretamente
-      deleteTransactionMutation.mutate(transactionId);
+      // Transação simples - pedir confirmação
+      setDeletingTransaction(transaction);
+      setShowSimpleDeleteDialog(true);
     }
   };
 
@@ -232,6 +235,19 @@ const Transactions = () => {
 
   const handleCloseDeleteDialog = () => {
     setShowDeleteDialog(false);
+    setDeletingTransaction(null);
+  };
+
+  const handleConfirmSimpleDelete = () => {
+    if (deletingTransaction) {
+      deleteTransactionMutation.mutate(deletingTransaction.id);
+      setShowSimpleDeleteDialog(false);
+      setDeletingTransaction(null);
+    }
+  };
+
+  const handleCloseSimpleDeleteDialog = () => {
+    setShowSimpleDeleteDialog(false);
     setDeletingTransaction(null);
   };
 
@@ -433,6 +449,29 @@ const Transactions = () => {
         onDeleteSeries={handleDeleteSeries}
         transaction={deletingTransaction}
       />
+
+      {/* Simple Delete Confirmation Dialog */}
+      <AlertDialog open={showSimpleDeleteDialog} onOpenChange={setShowSimpleDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir a transação "{deletingTransaction?.title}"? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCloseSimpleDeleteDialog}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmSimpleDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
