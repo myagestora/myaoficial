@@ -8,18 +8,22 @@ interface PreferencesTabProps {
   darkTheme: boolean;
   animations: boolean;
   notificationSound: boolean;
+  expenseReminders: boolean;
   onThemeToggle: (checked: boolean) => void;
   onAnimationsToggle: (checked: boolean) => void;
   onNotificationSoundToggle: (checked: boolean) => void;
+  onExpenseRemindersToggle: (checked: boolean) => void;
 }
 
 export const PreferencesTab = ({
   darkTheme,
   animations,
   notificationSound,
+  expenseReminders,
   onThemeToggle,
   onAnimationsToggle,
-  onNotificationSoundToggle
+  onNotificationSoundToggle,
+  onExpenseRemindersToggle
 }: PreferencesTabProps) => {
   return (
     <Card>
@@ -64,6 +68,18 @@ export const PreferencesTab = ({
           <Switch 
             checked={notificationSound}
             onCheckedChange={onNotificationSoundToggle}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <Label>Lembretes de Despesas</Label>
+            <p className="text-sm text-gray-500">
+              Receber lembretes de despesas que vencem no dia
+            </p>
+          </div>
+          <Switch 
+            checked={expenseReminders}
+            onCheckedChange={onExpenseRemindersToggle}
           />
         </div>
       </CardContent>

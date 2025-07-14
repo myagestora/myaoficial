@@ -46,6 +46,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     let mounted = true;
 
+    // Function to check expense reminders
+    const checkExpenseReminders = async (userId: string) => {
+      try {
+        const { data, error } = await supabase.functions.invoke('check-expense-reminders', {
+          body: { user_id: userId }
+        });
+
+        if (error) {
+          console.error('Error checking expense reminders:', error);
+          return;
+        }
+
+        if (data?.notification_created) {
+          console.log('Expense reminder notification created for user:', userId);
+        }
+      } catch (error) {
+        console.error('Error invoking expense reminders function:', error);
+      }
+    };
+
     // Get initial session
     const getInitialSession = async () => {
       try {
@@ -54,6 +74,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           console.error('Error getting session:', error);
         } else if (mounted) {
           setUser(session?.user ?? null);
+          
+          // Check expense reminders for existing session
+          if (session?.user) {
+            setTimeout(() => {
+              checkExpenseReminders(session.user.id);
+            }, 1000);
+          }
         }
       } catch (error) {
         console.error('Error in getSession:', error);
@@ -73,6 +100,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (mounted) {
           setUser(session?.user ?? null);
           setLoading(false);
+          
+          // Check expense reminders when user signs in
+          if (event === 'SIGNED_IN' && session?.user) {
+            setTimeout(() => {
+              checkExpenseReminders(session.user.id);
+            }, 1000);
+          }
         }
       }
     );

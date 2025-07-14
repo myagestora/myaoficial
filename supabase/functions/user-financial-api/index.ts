@@ -55,6 +55,94 @@ serve(async (req) => {
     console.log('URL pathname:', url.pathname)
     console.log('Path segments:', pathSegments)
     
+    // Check for global endpoints first
+    if (pathSegments[1] === 'expense-reminders') {
+      // Global endpoint for expense reminders
+      const today = new Date().toISOString().split('T')[0];
+
+      const { data: transactions, error: transactionsError } = await supabase
+        .from('transactions')
+        .select(`
+          id,
+          title,
+          amount,
+          date,
+          user_id,
+          categories!inner(name, color),
+          profiles!inner(id, full_name, email, expense_reminders_enabled)
+        `)
+        .eq('type', 'expense')
+        .eq('date', today)
+        .eq('profiles.expense_reminders_enabled', true);
+
+      if (transactionsError) {
+        console.error('Error fetching transactions:', transactionsError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to fetch transactions' }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      // Group transactions by user
+      const userGroups = new Map();
+
+      transactions?.forEach((transaction: any) => {
+        const userId = transaction.user_id;
+        const profile = transaction.profiles;
+        
+        if (!userGroups.has(userId)) {
+          userGroups.set(userId, {
+            user_id: userId,
+            user_name: profile.full_name || 'Usuário',
+            user_email: profile.email,
+            reminders_enabled: profile.expense_reminders_enabled,
+            expenses_today: [],
+            total_expenses: 0,
+            expenses_count: 0
+          });
+        }
+
+        const userGroup = userGroups.get(userId);
+        userGroup.expenses_today.push({
+          id: transaction.id,
+          title: transaction.title,
+          amount: transaction.amount,
+          category: transaction.categories?.name || 'Sem categoria',
+          category_color: transaction.categories?.color || '#3B82F6',
+          date: transaction.date
+        });
+        
+        userGroup.total_expenses += transaction.amount;
+        userGroup.expenses_count += 1;
+      });
+
+      const usersWithExpenses = Array.from(userGroups.values());
+      const totalAmount = usersWithExpenses.reduce((sum, user) => sum + user.total_expenses, 0);
+
+      const response = {
+        date: today,
+        users_with_expenses: usersWithExpenses,
+        total_users: usersWithExpenses.length,
+        total_amount: totalAmount,
+        message: usersWithExpenses.length > 0 
+          ? `${usersWithExpenses.length} usuário(s) com despesas hoje`
+          : 'Nenhum usuário com despesas hoje'
+      };
+
+      console.log(`Expense reminders check: ${usersWithExpenses.length} users with expenses on ${today}`);
+
+      return new Response(
+        JSON.stringify(response),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
     const userId = pathSegments[2] // /user-financial-api/user/{userId}/...
     const endpoint = pathSegments[3] // balance, transactions, etc.
     

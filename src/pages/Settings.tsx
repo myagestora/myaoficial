@@ -28,9 +28,11 @@ const SettingsPage = () => {
     darkTheme,
     animations,
     notificationSound,
+    expenseReminders,
     handleThemeToggle,
     handleAnimationsToggle,
-    handleNotificationSoundToggle
+    handleNotificationSoundToggle,
+    handleExpenseRemindersToggle
   } = usePreferences();
 
   // Verificar status da conta
@@ -140,9 +142,11 @@ const SettingsPage = () => {
               darkTheme={darkTheme}
               animations={animations}
               notificationSound={notificationSound}
+              expenseReminders={expenseReminders}
               onThemeToggle={handleThemeToggle}
               onAnimationsToggle={handleAnimationsToggle}
               onNotificationSoundToggle={handleNotificationSoundToggle}
+              onExpenseRemindersToggle={handleExpenseRemindersToggle}
             />
           </TabsContent>
         </Tabs>
