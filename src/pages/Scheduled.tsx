@@ -60,10 +60,9 @@ const Scheduled = () => {
     const today = new Date();
     const diffTime = targetDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays >= 0 && diffDays <= 7;
+    // Próximos 7 dias sem incluir hoje (> 0)
+    return diffDays > 0 && diffDays <= 7;
   }).length;
-
-  const overdueScheduled = 0; // Não há mais transações atrasadas, pois só mostramos futuras
 
   const handleToggleStatus = (id: string, isActive: boolean) => {
     // Esta funcionalidade foi removida no novo sistema
@@ -143,7 +142,7 @@ const Scheduled = () => {
       <ScheduledStats 
         totalScheduled={filteredTransactions.length}
         upcomingExecutions={upcomingExecutions}
-        overdueScheduled={overdueScheduled}
+        overdueScheduled={0}
       />
 
       <ScheduledFilters

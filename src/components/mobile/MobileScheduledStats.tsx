@@ -7,7 +7,8 @@ import {
   CheckCircle, 
   PauseCircle,
   TrendingUp,
-  TrendingDown 
+  TrendingDown,
+  CalendarDays
 } from 'lucide-react';
 
 interface MobileScheduledStatsProps {
@@ -15,6 +16,7 @@ interface MobileScheduledStatsProps {
   activeScheduled: number;
   pausedScheduled: number;
   upcomingExecutions: number;
+  todayScheduled: number;
   overdueScheduled: number;
   totalMonthlyIncome: number;
   totalMonthlyExpenses: number;
@@ -24,7 +26,8 @@ export const MobileScheduledStats = ({
   totalScheduled, 
   activeScheduled,
   pausedScheduled,
-  upcomingExecutions, 
+  upcomingExecutions,
+  todayScheduled, 
   overdueScheduled,
   totalMonthlyIncome,
   totalMonthlyExpenses
@@ -38,8 +41,8 @@ export const MobileScheduledStats = ({
 
   return (
     <div className="space-y-4">
-      {/* Main Stats - 3 cards lado a lado */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* Main Stats - 4 cards em 2x2 */}
+      <div className="grid grid-cols-2 gap-3">
         <Card>
           <CardContent className="p-3 text-center">
             <Calendar className="h-6 w-6 text-primary mx-auto mb-1" />
@@ -53,6 +56,14 @@ export const MobileScheduledStats = ({
             <Clock className="h-6 w-6 text-blue-600 mx-auto mb-1" />
             <div className="text-lg font-bold text-blue-600">{upcomingExecutions}</div>
             <p className="text-xs text-muted-foreground">Próximos 7 dias</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-3 text-center">
+            <CalendarDays className="h-6 w-6 text-green-600 mx-auto mb-1" />
+            <div className="text-lg font-bold text-green-600">{todayScheduled}</div>
+            <p className="text-xs text-muted-foreground">Hoje</p>
           </CardContent>
         </Card>
 

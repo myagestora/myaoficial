@@ -145,11 +145,23 @@ export const MobileScheduled = () => {
     const upcoming = scheduledTransactions?.filter(t => {
       const targetDate = t.date; // Usar apenas date em vez de next_recurrence_date
       const transactionDate = startOfDay(new Date(targetDate));
-      // Incluir transações desde hoje (>=) até próximos 7 dias
-      return !isBefore(transactionDate, today) && !isAfter(transactionDate, nextWeek);
+      // Incluir transações desde amanhã até próximos 7 dias (não incluir hoje)
+      return isAfter(transactionDate, today) && !isAfter(transactionDate, nextWeek);
     }).length || 0;
     
-    const overdue = 0; // Não há mais transações atrasadas, pois só mostramos futuras
+    // Transações do dia
+    const todayScheduled = scheduledTransactions?.filter(t => {
+      const targetDate = t.date;
+      const transactionDate = startOfDay(new Date(targetDate));
+      return transactionDate.getTime() === today.getTime();
+    }).length || 0;
+    
+    // Transações atrasadas (antes de hoje)
+    const overdue = scheduledTransactions?.filter(t => {
+      const targetDate = t.date;
+      const transactionDate = startOfDay(new Date(targetDate));
+      return isBefore(transactionDate, today);
+    }).length || 0;
 
     // Calculate monthly impact
     const monthlyIncome = scheduledTransactions?.filter(t => t.type === 'income' && t.is_recurring)
@@ -189,6 +201,7 @@ export const MobileScheduled = () => {
       active,
       paused,
       upcoming,
+      todayScheduled,
       overdue,
       monthlyIncome,
       monthlyExpenses
@@ -290,6 +303,7 @@ export const MobileScheduled = () => {
           activeScheduled={stats.active}
           pausedScheduled={stats.paused}
           upcomingExecutions={stats.upcoming}
+          todayScheduled={stats.todayScheduled}
           overdueScheduled={stats.overdue}
           totalMonthlyIncome={stats.monthlyIncome}
           totalMonthlyExpenses={stats.monthlyExpenses}

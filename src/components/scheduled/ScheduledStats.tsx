@@ -18,12 +18,21 @@ export const ScheduledStats = ({
 }: ScheduledStatsProps) => {
   const { scheduledTransactions } = useScheduledTransactions();
 
-  // Calculate overdue transactions (transações que já passaram da data)
+  // Calculate overdue transactions (transações que passaram da data, excluindo hoje)
   const overdueCount = useMemo(() => {
     const today = startOfDay(new Date());
     return scheduledTransactions?.filter(t => {
       const transactionDate = startOfDay(new Date(t.date));
-      return isBefore(transactionDate, today);
+      return isBefore(transactionDate, today); // Só antes de hoje, não inclui hoje
+    }).length || 0;
+  }, [scheduledTransactions]);
+
+  // Calculate today's transactions
+  const todayCount = useMemo(() => {
+    const today = startOfDay(new Date());
+    return scheduledTransactions?.filter(t => {
+      const transactionDate = startOfDay(new Date(t.date));
+      return transactionDate.getTime() === today.getTime();
     }).length || 0;
   }, [scheduledTransactions]);
 
@@ -74,7 +83,7 @@ export const ScheduledStats = ({
   return (
     <div className="space-y-6">
       {/* Main Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de Agendamentos</CardTitle>
@@ -93,6 +102,17 @@ export const ScheduledStats = ({
           <CardContent>
             <div className="text-2xl font-bold">{upcomingExecutions}</div>
             <p className="text-xs text-muted-foreground">Próximos 7 dias</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Hoje</CardTitle>
+            <Calendar className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">{todayCount}</div>
+            <p className="text-xs text-muted-foreground">Para executar hoje</p>
           </CardContent>
         </Card>
 
