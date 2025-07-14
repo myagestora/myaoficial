@@ -96,12 +96,19 @@ export function shouldUseMobileLayout(): boolean {
   const isSmallScreen = screenWidth <= 768;
   const hasOrientation = typeof window.orientation !== 'undefined';
   
-  // Forçar mobile layout para Android sempre
-  if (isAndroid) {
-    console.log('🤖 Android detectado - forçando layout mobile');
-    return true;
-  }
+  const result = isAndroid || isMobileUA || (hasTouch && isSmallScreen) || hasOrientation;
   
-  // Usar layout mobile para telefones e telas pequenas com toque
-  return isMobileUA || (hasTouch && isSmallScreen) || hasOrientation;
+  // Debug logs
+  console.log('📱 Detecção Mobile:', { 
+    userAgent, 
+    isAndroid, 
+    isMobileUA, 
+    isSmallScreen, 
+    hasTouch, 
+    hasOrientation,
+    screenWidth,
+    finalResult: result 
+  });
+  
+  return result;
 }
