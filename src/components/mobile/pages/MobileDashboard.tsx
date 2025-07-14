@@ -42,7 +42,7 @@ export const MobileDashboard = () => {
   const { user } = useAuth();
   const { goals } = useGoals();
 
-  // Buscar perfil do usuário para obter WhatsApp
+  // Buscar perfil do usuário para obter nome
   const { data: profile } = useQuery({
     queryKey: ['user-profile', user?.id],
     queryFn: async () => {
@@ -50,7 +50,7 @@ export const MobileDashboard = () => {
       
       const { data, error } = await supabase
         .from('profiles')
-        .select('whatsapp, full_name')
+        .select('full_name')
         .eq('id', user.id)
         .single();
       
@@ -58,6 +58,21 @@ export const MobileDashboard = () => {
       return data;
     },
     enabled: !!user?.id
+  });
+
+  // Buscar WhatsApp de suporte das configurações do sistema
+  const { data: supportWhatsapp } = useQuery({
+    queryKey: ['support-whatsapp'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('system_config')
+        .select('value')
+        .eq('key', 'whatsapp_support')
+        .single();
+      
+      if (error) return null;
+      return data?.value as string;
+    }
   });
 
   // Buscar estatísticas detalhadas do usuário baseado no período selecionado
@@ -139,8 +154,8 @@ export const MobileDashboard = () => {
 
   return (
     <MobilePageWrapper className="bg-gradient-to-br from-background to-primary/5">
-      {/* WhatsApp Info Card */}
-      {profile?.whatsapp && (
+      {/* WhatsApp Suporte Info Card */}
+      {supportWhatsapp && (
         <Card className="mb-4 bg-gradient-to-r from-green-500/10 to-green-600/5 border-green-500/20 shadow-md">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -149,14 +164,14 @@ export const MobileDashboard = () => {
                   <MessageCircle className="h-5 w-5 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-green-800 dark:text-green-200">WhatsApp Autorizado</p>
-                  <p className="text-xs text-green-600 dark:text-green-300">Para usar com a Mya (IA)</p>
+                  <p className="text-sm font-medium text-green-800 dark:text-green-200">WhatsApp Suporte</p>
+                  <p className="text-xs text-green-600 dark:text-green-300">Para falar com nossa IA Mya</p>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
                 <Phone className="h-4 w-4 text-green-600" />
                 <Badge variant="outline" className="border-green-500/30 text-green-700 dark:text-green-300">
-                  {profile.whatsapp}
+                  {supportWhatsapp}
                 </Badge>
               </div>
             </div>
