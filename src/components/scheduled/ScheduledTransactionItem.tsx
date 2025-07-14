@@ -56,11 +56,28 @@ export const ScheduledTransactionItem = ({
     return `${frequency}${interval}`;
   };
 
+  // Função para formatar data a partir de string evitando problemas de fuso horário
+  const formatDateFromString = (dateString: string): string => {
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month é 0-indexed
+    return date.toLocaleDateString('pt-BR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric' 
+    });
+  };
+
   const getNextExecutionDate = (transaction: any) => {
     // Usar next_recurrence_date se disponível, senão usar date
     const targetDate = transaction.next_recurrence_date || transaction.date;
-    const transactionDate = new Date(targetDate);
+    
+    // Parse manual para evitar problemas de timezone
+    const [year, month, day] = targetDate.split('-').map(Number);
+    const transactionDate = new Date(year, month - 1, day);
     const today = new Date();
+    today.setHours(0, 0, 0, 0); // Zerar horas para comparação precisa
+    transactionDate.setHours(0, 0, 0, 0);
+    
     const diffTime = transactionDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
@@ -128,7 +145,7 @@ export const ScheduledTransactionItem = ({
               <p className="text-sm text-gray-500 mt-1">{transaction.description}</p>
             )}
             <p className="text-xs text-blue-600 mt-1">
-              Próxima: {new Date(transaction.next_recurrence_date || transaction.date).toLocaleDateString('pt-BR')}
+              Próxima: {formatDateFromString(transaction.next_recurrence_date || transaction.date)}
             </p>
             {transaction.recurrence_count && (
               <p className="text-xs text-gray-500 mt-1">

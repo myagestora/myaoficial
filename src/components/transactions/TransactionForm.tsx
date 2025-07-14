@@ -136,7 +136,7 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
           recurrence_frequency: data.recurrence_frequency,
           recurrence_interval: 1,
           recurrence_count: data.recurrence_count,
-          next_recurrence_date: dates[0] // Primeira execução programada
+          next_recurrence_date: dates.length > 0 ? dates[0] : null // Primeira execução programada
         };
 
         // Criar apenas as transações filhas (execuções)

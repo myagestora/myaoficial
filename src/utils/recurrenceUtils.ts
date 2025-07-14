@@ -29,21 +29,13 @@ export const generateRecurrenceDates = (config: RecurrenceConfig): string[] => {
   const dates: string[] = [];
   const start = parseISO(startDate);
   
+  // Começar da primeira data de recorrência (não incluir a data inicial)
   let currentDate = start;
   const maxOccurrences = Math.min(count, 365); // Limite de segurança
   let generatedCount = 0;
 
   while (generatedCount < maxOccurrences) {
-    // Adicionar a data atual
-    dates.push(currentDate.toISOString().split('T')[0]);
-    generatedCount++;
-
-    // Se chegou ao limite, parar
-    if (generatedCount >= maxOccurrences) {
-      break;
-    }
-
-    // Calcular próxima data baseada na frequência
+    // Calcular próxima data baseada na frequência ANTES de adicionar
     switch (frequency) {
       case 'daily':
         currentDate = addDays(currentDate, interval);
@@ -89,6 +81,10 @@ export const generateRecurrenceDates = (config: RecurrenceConfig): string[] => {
         }
         break;
     }
+
+    // Adicionar a data calculada (próxima recorrência)
+    dates.push(currentDate.toISOString().split('T')[0]);
+    generatedCount++;
   }
 
   return dates;
