@@ -164,7 +164,7 @@ export const MobileDashboard = () => {
                   <MessageCircle className="h-5 w-5 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-green-800 dark:text-green-200">WhatsApp Suporte</p>
+                  <p className="text-sm font-medium text-green-800 dark:text-green-200">WhatsApp</p>
                   <p className="text-xs text-green-600 dark:text-green-300">Para falar com nossa IA Mya</p>
                 </div>
               </div>
