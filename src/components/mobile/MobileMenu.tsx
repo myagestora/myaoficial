@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Home, 
@@ -41,11 +41,42 @@ export const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
   const [isInstalling, setIsInstalling] = useState(false);
   const isIOS = isIOSDevice();
 
+  const handleNavigate = (path: string) => {
+    navigate(path);
+    onClose();
+  };
+
+  const handleInstall = useCallback(async () => {
+    setIsInstalling(true);
+    try {
+      const installed = await pwaInstaller.install();
+      if (installed) {
+        onClose();
+      }
+    } catch (error) {
+      console.error('Erro ao instalar:', error);
+    } finally {
+      setIsInstalling(false);
+    }
+  }, [onClose]);
+
   useEffect(() => {
+    // Listener para status de instalação PWA
     pwaInstaller.onInstallStatusChange((canInstall) => {
       setCanInstall(canInstall);
     });
-  }, []);
+
+    // Listener para evento personalizado de instalação
+    const handlePWAInstall = () => {
+      handleInstall();
+    };
+
+    window.addEventListener('pwa-install', handlePWAInstall);
+
+    return () => {
+      window.removeEventListener('pwa-install', handlePWAInstall);
+    };
+  }, [handleInstall]);
 
   // Prevenir scroll do body quando menu está aberto
   useEffect(() => {
@@ -59,25 +90,6 @@ export const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
       document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
-
-  const handleNavigate = (path: string) => {
-    navigate(path);
-    onClose();
-  };
-
-  const handleInstall = async () => {
-    setIsInstalling(true);
-    try {
-      const installed = await pwaInstaller.install();
-      if (installed) {
-        onClose();
-      }
-    } catch (error) {
-      console.error('Erro ao instalar:', error);
-    } finally {
-      setIsInstalling(false);
-    }
-  };
 
   if (!isOpen) return null;
 

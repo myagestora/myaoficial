@@ -90,7 +90,18 @@ export function shouldUseMobileLayout(): boolean {
   const screenWidth = window.innerWidth;
   const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   
-  // Usar layout mobile apenas para telefones (não tablets)
-  return /android|iphone|ipod|blackberry|iemobile|opera mini|mobile/i.test(userAgent) ||
-         (hasTouch && screenWidth < 768);
+  // Detecção mais agressiva para Android e dispositivos móveis
+  const isAndroid = /android/i.test(userAgent);
+  const isMobileUA = /android|iphone|ipod|blackberry|iemobile|opera mini|mobile|samsung|lg|htc|motorola|nokia/i.test(userAgent);
+  const isSmallScreen = screenWidth <= 768;
+  const hasOrientation = typeof window.orientation !== 'undefined';
+  
+  // Forçar mobile layout para Android sempre
+  if (isAndroid) {
+    console.log('🤖 Android detectado - forçando layout mobile');
+    return true;
+  }
+  
+  // Usar layout mobile para telefones e telas pequenas com toque
+  return isMobileUA || (hasTouch && isSmallScreen) || hasOrientation;
 }

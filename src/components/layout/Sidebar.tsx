@@ -351,6 +351,24 @@ export const Sidebar = ({
 
         {/* WhatsApp Contact Highlight */}
         <WhatsAppContactSection />
+
+        {/* PWA Install Button */}
+        <div className="px-3 py-2">
+          <button
+            onClick={() => {
+              if ('serviceWorker' in navigator) {
+                // Triggerar evento personalizado para instalação PWA
+                window.dispatchEvent(new CustomEvent('pwa-install'));
+              }
+            }}
+            className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Instalar App
+          </button>
+        </div>
       </div>
 
       {/* Informações da Assinatura e Status da Conta no Rodapé */}
