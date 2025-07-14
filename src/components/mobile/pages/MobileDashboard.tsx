@@ -67,7 +67,7 @@ export const MobileDashboard = () => {
       const { data, error } = await supabase
         .from('system_config')
         .select('value')
-        .eq('key', 'whatsapp_support')
+        .eq('key', 'support_phone')
         .maybeSingle();
       
       if (error) {
@@ -75,8 +75,11 @@ export const MobileDashboard = () => {
         return null;
       }
       
-      console.log('WhatsApp suporte encontrado:', data);
-      return data?.value as string;
+      const numberValue = data?.value;
+      if (typeof numberValue === 'string') {
+        return numberValue.replace(/^"|"$/g, '').replace(/\+/, '');
+      }
+      return numberValue ? JSON.stringify(numberValue).replace(/^"|"$/g, '').replace(/\+/, '') : null;
     }
   });
 
