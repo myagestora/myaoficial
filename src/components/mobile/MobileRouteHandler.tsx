@@ -7,7 +7,6 @@ import { MobileGoals } from './pages/MobileGoals';
 import { MobileGoalForm } from './pages/MobileGoalForm';
 import { MobileReports } from './pages/MobileReports';
 import { MobileScheduled } from './pages/MobileScheduled';
-import { MobileScheduledTransactionForm } from './pages/MobileScheduledTransactionForm';
 import { MobileCategories } from './pages/MobileCategories';
 import { MobileSettings } from './pages/MobileSettings';
 
@@ -24,8 +23,6 @@ export const MobileRouteHandler = () => {
       <Route path="reports" element={<MobileReports />} />
       <Route path="settings" element={<MobileSettings />} />
       <Route path="scheduled" element={<MobileScheduled />} />
-      <Route path="scheduled/nova" element={<MobileScheduledTransactionForm />} />
-      <Route path="scheduled/editar/:id" element={<MobileScheduledTransactionForm />} />
       <Route path="categories" element={<MobileCategories />} />
       <Route path="*" element={<MobileDashboard />} />
     </Routes>

@@ -64,7 +64,7 @@ const MobileListSelect = ({ value, onValueChange, placeholder, options }: Mobile
 
       {/* Options List */}
       {isOpen && (
-        <div className="absolute top-full mt-1 z-50 w-full rounded-lg border border-border bg-popover text-popover-foreground shadow-lg animate-in fade-in-0 zoom-in-95">
+        <div className="absolute z-50 w-full rounded-lg border border-border bg-popover text-popover-foreground shadow-lg animate-in fade-in-0 zoom-in-95">
           <div className="p-1 max-h-60 overflow-y-auto">
             {options.map((option) => {
               const isSelected = value === option.value
