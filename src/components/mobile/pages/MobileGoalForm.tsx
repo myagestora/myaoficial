@@ -6,8 +6,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { MobileListSelect } from '../MobileListSelect';
 import { toast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -262,18 +262,15 @@ export const MobileGoalForm = () => {
         {/* Tipo */}
         <div className="space-y-2">
           <Label htmlFor="goal_type">Tipo de Meta</Label>
-          <Select
+          <MobileListSelect
+            options={[
+              { value: 'savings', label: 'Meta de Economia' },
+              { value: 'monthly_budget', label: 'Orçamento Mensal' }
+            ]}
             value={goalType}
             onValueChange={(value) => setValue('goal_type', value as 'savings' | 'monthly_budget')}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione o tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="savings">Meta de Economia</SelectItem>
-              <SelectItem value="monthly_budget">Orçamento Mensal</SelectItem>
-            </SelectContent>
-          </Select>
+            placeholder="Selecione o tipo"
+          />
           {errors.goal_type && (
             <p className="text-sm text-destructive">{errors.goal_type.message}</p>
           )}
@@ -284,27 +281,19 @@ export const MobileGoalForm = () => {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="category_id">Categoria</Label>
-              <Select 
-                value={watch('category_id') || ''} 
+              <MobileListSelect
+                options={[
+                  { value: '', label: 'Selecione a categoria' },
+                  ...(categories?.map(category => ({ 
+                    value: category.id, 
+                    label: category.name,
+                    color: category.color 
+                  })) || [])
+                ]}
+                value={watch('category_id') || ''}
                 onValueChange={(value) => setValue('category_id', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories?.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded-full" 
-                          style={{ backgroundColor: category.color }}
-                        />
-                        <span>{category.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Selecione a categoria"
+              />
             </div>
 
             <div className="space-y-2">
