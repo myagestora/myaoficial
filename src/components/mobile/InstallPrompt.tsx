@@ -8,6 +8,7 @@ export const InstallPrompt = () => {
   const [canInstall, setCanInstall] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     // Verificar se já foi dispensado
@@ -22,15 +23,28 @@ export const InstallPrompt = () => {
 
   const handleInstall = async () => {
     setIsInstalling(true);
+    setHasError(false);
+    
     try {
       const installed = await pwaInstaller.install();
       if (installed) {
         setIsVisible(false);
+      } else {
+        setHasError(true);
+        // Reset após 3 segundos
+        setTimeout(() => {
+          setIsInstalling(false);
+          setHasError(false);
+        }, 3000);
       }
     } catch (error) {
       console.error('Erro ao instalar:', error);
-    } finally {
-      setIsInstalling(false);
+      setHasError(true);
+      // Reset após 3 segundos
+      setTimeout(() => {
+        setIsInstalling(false);
+        setHasError(false);
+      }, 3000);
     }
   };
 
@@ -63,7 +77,9 @@ export const InstallPrompt = () => {
                 className="flex items-center space-x-1"
               >
                 <Download size={14} />
-                <span>{isInstalling ? 'Instalando...' : 'Instalar'}</span>
+                <span>
+                  {hasError ? 'Erro ao instalar' : isInstalling ? 'Instalando...' : 'Instalar'}
+                </span>
               </Button>
               <Button
                 size="sm"

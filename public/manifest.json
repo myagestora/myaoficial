@@ -14,13 +14,25 @@
       "src": "https://api.myagestora.com.br/storage/v1/object/public/logos/logo-1751933896307.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "https://api.myagestora.com.br/storage/v1/object/public/logos/logo-1751933896307.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "https://api.myagestora.com.br/storage/v1/object/public/logos/logo-1751933896307.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "https://api.myagestora.com.br/storage/v1/object/public/logos/logo-1751933896307.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "shortcuts": [

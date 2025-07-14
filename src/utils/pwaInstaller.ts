@@ -117,7 +117,7 @@ export class PWAInstaller {
       console.log('⚠️ PWA: Tentando forçar instalação sem prompt disponível');
       
       // Tentar aguardar um pouco para ver se o prompt aparece
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       if (!this.deferredPrompt) {
         console.error('❌ PWA: Nenhum prompt de instalação disponível após aguardar');
@@ -148,7 +148,7 @@ export class PWAInstaller {
         userChoice = await Promise.race([
           currentPrompt.userChoice,
           new Promise<{outcome: string}>((_, reject) => 
-            setTimeout(() => reject(new Error('timeout')), 10000)
+            setTimeout(() => reject(new Error('timeout')), 5000)
           )
         ]);
         console.log('📋 PWA: Resposta do usuário:', userChoice);
@@ -158,7 +158,7 @@ export class PWAInstaller {
       }
       
       // Aguardar um pouco antes de verificar instalação
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Verificar se foi instalado independente da resposta
       const wasInstalled = await this.checkInstallationStatus();
@@ -251,7 +251,7 @@ export class PWAInstaller {
           resolved = true;
           resolve(false);
         }
-      }, 4000);
+      }, 3000);
     });
   }
 
