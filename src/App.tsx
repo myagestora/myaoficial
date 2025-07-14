@@ -13,6 +13,7 @@ import { MobileAppLayout } from "@/components/mobile/MobileAppLayout";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { SEOHead } from "@/components/SEOHead";
 import { shouldUseMobileLayout } from "@/hooks/useMobileDetection";
+import React from "react";
 
 // Regular pages
 import Index from "./pages/Index";
@@ -44,10 +45,42 @@ const queryClient = new QueryClient();
 const LayoutWrapper = () => {
   const useMobile = shouldUseMobileLayout();
   
-  console.log('🎯 LayoutWrapper (UNIFIED):', { 
+  // Força refresh Android se necessário
+  React.useEffect(() => {
+    const isAndroid = /android/i.test(navigator.userAgent);
+    const appVersion = localStorage.getItem('app-version');
+    const currentVersion = 'v6-force-android';
+    
+    if (isAndroid && appVersion !== currentVersion) {
+      console.log('🔥 ANDROID: Forçando refresh completo');
+      localStorage.clear();
+      sessionStorage.clear();
+      localStorage.setItem('app-version', currentVersion);
+      
+      // Force service worker update
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          registrations.forEach(registration => {
+            registration.update();
+            if (registration.waiting) {
+              registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            }
+          });
+        });
+      }
+      
+      // Force reload em 1 segundo
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    }
+  }, []);
+  
+  console.log('🎯 LayoutWrapper v6 ANDROID FORCE:', { 
     useMobile, 
     userAgent: navigator.userAgent.substring(0, 50) + '...',
     screenWidth: window.innerWidth,
+    isAndroid: /android/i.test(navigator.userAgent),
     href: window.location.href 
   });
   

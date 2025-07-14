@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mya-gestora-v5-unified';
+const CACHE_NAME = 'mya-gestora-v6-force-android';
 const urlsToCache = [
   '/',
   '/dashboard',
@@ -68,29 +68,41 @@ self.addEventListener('fetch', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('🔄 Service Worker ativando - limpeza completa de cache');
+  console.log('🔥 Service Worker v6 - FORÇA ANDROID REFRESH');
   
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      console.log('📋 Caches encontrados:', cacheNames);
+    Promise.all([
+      // 1. Deletar TODOS os caches
+      caches.keys().then((cacheNames) => {
+        console.log('🗑️ Deletando caches:', cacheNames);
+        return Promise.all(cacheNames.map(name => caches.delete(name)));
+      }),
       
-      // Delete ALL caches to force fresh start
-      const deletePromises = cacheNames.map((cacheName) => {
-        console.log('🗑️ Deletando cache:', cacheName);
-        return caches.delete(cacheName);
-      });
-      
-      return Promise.all(deletePromises);
-    }).then(() => {
-      console.log('✅ Todos os caches foram limpos');
-      // Recriar cache com recursos básicos
+      // 2. Limpar todos os storages
+      self.clients.matchAll().then(clients => {
+        clients.forEach(client => {
+          client.postMessage({
+            type: 'FORCE_ANDROID_REFRESH',
+            timestamp: Date.now()
+          });
+        });
+      })
+    ]).then(() => {
+      console.log('✅ Limpeza completa realizada');
+      // 3. Recriar cache mínimo
       return caches.open(CACHE_NAME).then(cache => {
-        console.log('📦 Recriando cache básico');
         return cache.addAll(['/']);
       });
     }).then(() => {
-      console.log('🎯 Assumindo controle de todas as páginas');
+      console.log('🎯 Assumindo controle - Android forçado');
       return self.clients.claim();
     })
   );
+});
+
+// Listener para mensagens do app
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });

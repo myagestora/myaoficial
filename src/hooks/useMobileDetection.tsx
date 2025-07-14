@@ -90,24 +90,29 @@ export function shouldUseMobileLayout(): boolean {
   const screenWidth = window.innerWidth;
   const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   
-  // Detecção unificada para todos os dispositivos móveis
+  // Detecção AGRESSIVA para Android
   const isAndroid = /android/i.test(userAgent);
   const isMobileUA = /android|iphone|ipod|blackberry|iemobile|opera mini|mobile|samsung|lg|htc|motorola|nokia/i.test(userAgent);
   const isSmallScreen = screenWidth <= 768;
   const hasOrientation = typeof window.orientation !== 'undefined';
   
-  // Forçar mobile layout para Android sempre
-  const result = isAndroid || isMobileUA || (hasTouch && isSmallScreen) || hasOrientation;
+  // FORÇA Android SEMPRE usar mobile layout
+  if (isAndroid) {
+    console.log('🔥 ANDROID DETECTADO - FORÇANDO MOBILE LAYOUT');
+    return true;
+  }
   
-  console.log('📱 Mobile Detection (UNIFIED):', { 
+  const result = isMobileUA || (hasTouch && isSmallScreen) || hasOrientation;
+  
+  console.log('📱 Mobile Detection v6 FORCE ANDROID:', { 
     userAgent: userAgent.substring(0, 50) + '...', 
-    isAndroid, 
+    isAndroid: `🔥 ${isAndroid}`, 
     isMobileUA, 
     isSmallScreen, 
     hasTouch, 
-    hasOrientation,
+    hasOrientation, 
     screenWidth,
-    finalResult: result 
+    result: isAndroid ? '🔥 ANDROID FORCED TRUE' : result
   });
   
   return result;
