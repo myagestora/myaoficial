@@ -364,9 +364,20 @@ const Index = () => {
         </div>
 
         {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+        <button
+          onClick={() => {
+            const nextSection = document.querySelector('.py-20.bg-gradient-to-br');
+            if (nextSection) {
+              nextSection.scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+              });
+            }
+          }}
+          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce hover:text-gray-600 transition-colors cursor-pointer"
+        >
           <ChevronDown className="w-6 h-6 text-gray-400" />
-        </div>
+        </button>
       </section>
 
       {/* WhatsApp Demo Section - Enhanced */}
