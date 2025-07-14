@@ -119,14 +119,7 @@ export const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
-          <div className="flex flex-col">
-            <h2 className="text-lg font-semibold text-foreground">Menu</h2>
-            {isAndroid && (
-              <span className="text-xs text-green-500 font-mono">
-                📱 Android {menuVersion} - {debugTimestamp}
-              </span>
-            )}
-          </div>
+          <h2 className="text-lg font-semibold text-foreground">Menu</h2>
           <Button
             variant="ghost"
             size="icon"
