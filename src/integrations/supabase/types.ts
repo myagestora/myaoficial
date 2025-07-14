@@ -367,6 +367,7 @@ export type Database = {
           is_recurring: boolean | null
           next_recurrence_date: string | null
           parent_transaction_id: string | null
+          recurrence_count: number | null
           recurrence_end_date: string | null
           recurrence_frequency:
             | Database["public"]["Enums"]["recurrence_frequency"]
@@ -388,6 +389,7 @@ export type Database = {
           is_recurring?: boolean | null
           next_recurrence_date?: string | null
           parent_transaction_id?: string | null
+          recurrence_count?: number | null
           recurrence_end_date?: string | null
           recurrence_frequency?:
             | Database["public"]["Enums"]["recurrence_frequency"]
@@ -409,6 +411,7 @@ export type Database = {
           is_recurring?: boolean | null
           next_recurrence_date?: string | null
           parent_transaction_id?: string | null
+          recurrence_count?: number | null
           recurrence_end_date?: string | null
           recurrence_frequency?:
             | Database["public"]["Enums"]["recurrence_frequency"]
@@ -606,6 +609,9 @@ export type Database = {
         | "monthly"
         | "quarterly"
         | "yearly"
+        | "biweekly"
+        | "semiannual"
+        | "custom"
       subscription_status: "active" | "inactive" | "canceled" | "past_due"
       transaction_type: "income" | "expense"
     }
@@ -742,6 +748,9 @@ export const Constants = {
         "monthly",
         "quarterly",
         "yearly",
+        "biweekly",
+        "semiannual",
+        "custom",
       ],
       subscription_status: ["active", "inactive", "canceled", "past_due"],
       transaction_type: ["income", "expense"],

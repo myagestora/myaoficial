@@ -24,7 +24,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { format, addDays, addWeeks, addMonths, addYears } from 'date-fns';
-import { generateRecurrenceDates } from '@/utils/recurrenceUtils';
+import { generateRecurrenceDates, calculateTotalDuration } from '@/utils/recurrenceUtils';
 
 const scheduledTransactionSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
@@ -33,26 +33,27 @@ const scheduledTransactionSchema = z.object({
   category_id: z.string().min(1, 'Categoria é obrigatória'),
   description: z.string().optional(),
   is_recurring: z.boolean().default(false),
-  recurrence_frequency: z.enum(['daily', 'weekly', 'monthly', 'quarterly', 'yearly']).optional(),
+  recurrence_frequency: z.enum(['daily', 'weekly', 'biweekly', 'monthly', 'quarterly', 'semiannual', 'yearly', 'custom']).optional(),
   recurrence_interval: z.number().min(1).default(1).optional(),
+  recurrence_count: z.number().min(1).max(365).optional(),
+  custom_days: z.number().min(1).optional(),
   start_date: z.string().min(1, 'Data é obrigatória'),
-  end_date: z.string().optional(),
 }).refine((data) => {
   if (data.is_recurring) {
-    return data.recurrence_frequency !== undefined && data.end_date !== undefined && data.end_date !== '';
+    return data.recurrence_frequency !== undefined && data.recurrence_count !== undefined && data.recurrence_count > 0;
   }
   return true;
 }, {
-  message: 'Frequência e data final são obrigatórias para transações recorrentes',
+  message: 'Frequência e número de repetições são obrigatórios para transações recorrentes',
   path: ['recurrence_frequency']
 }).refine((data) => {
-  if (data.is_recurring && data.end_date) {
-    return new Date(data.end_date) > new Date(data.start_date);
+  if (data.is_recurring && data.recurrence_frequency === 'custom') {
+    return data.custom_days !== undefined && data.custom_days > 0;
   }
   return true;
 }, {
-  message: 'Data final deve ser posterior à data inicial',
-  path: ['end_date']
+  message: 'Número de dias é obrigatório para frequência personalizada',
+  path: ['custom_days']
 });
 
 type ScheduledTransactionFormData = z.infer<typeof scheduledTransactionSchema>;
@@ -78,6 +79,8 @@ export const MobileScheduledTransactionForm = () => {
       is_recurring: false,
       recurrence_frequency: 'monthly',
       recurrence_interval: 1,
+      recurrence_count: 12,
+      custom_days: 1,
       start_date: format(new Date(), 'yyyy-MM-dd'),
     }
   });
@@ -85,6 +88,8 @@ export const MobileScheduledTransactionForm = () => {
   const watchedType = watch('type');
   const watchedFrequency = watch('recurrence_frequency');
   const watchedInterval = watch('recurrence_interval');
+  const watchedCount = watch('recurrence_count');
+  const watchedCustomDays = watch('custom_days');
   const watchedIsRecurring = watch('is_recurring');
 
   // Fetch categories
@@ -136,8 +141,9 @@ export const MobileScheduledTransactionForm = () => {
         is_recurring: existingTransaction.is_recurring || false,
         recurrence_frequency: existingTransaction.recurrence_frequency || 'monthly',
         recurrence_interval: existingTransaction.recurrence_interval || 1,
+        recurrence_count: existingTransaction.recurrence_count || 12,
+        custom_days: 1,
         start_date: existingTransaction.date,
-        end_date: existingTransaction.recurrence_end_date || '',
       });
     }
   }, [existingTransaction, isEditing, reset]);
@@ -165,7 +171,7 @@ export const MobileScheduledTransactionForm = () => {
         if (data.is_recurring && data.recurrence_frequency) {
           transactionData.recurrence_frequency = data.recurrence_frequency;
           transactionData.recurrence_interval = data.recurrence_interval || 1;
-          transactionData.recurrence_end_date = data.end_date || null;
+          transactionData.recurrence_count = data.recurrence_count || 12;
         }
 
         const { error } = await supabase
@@ -192,13 +198,14 @@ export const MobileScheduledTransactionForm = () => {
             .from('transactions')
             .insert(transactionData);
           if (error) throw error;
-        } else if (data.recurrence_frequency && data.end_date) {
+        } else if (data.recurrence_frequency && data.recurrence_count) {
           // Transação recorrente - gerar todas as datas e criar transações
           const recurrenceDates = generateRecurrenceDates({
             frequency: data.recurrence_frequency,
             interval: data.recurrence_interval || 1,
             startDate: data.start_date,
-            endDate: data.end_date
+            count: data.recurrence_count,
+            customDays: data.custom_days
           });
 
           if (recurrenceDates.length === 0) {
@@ -218,7 +225,7 @@ export const MobileScheduledTransactionForm = () => {
             is_parent_template: true,
             recurrence_frequency: data.recurrence_frequency,
             recurrence_interval: data.recurrence_interval || 1,
-            recurrence_end_date: data.end_date,
+            recurrence_count: data.recurrence_count,
           };
 
           const { data: parentTransaction, error: parentError } = await supabase
@@ -282,9 +289,12 @@ export const MobileScheduledTransactionForm = () => {
   const frequencyOptions = [
     { value: 'daily', label: 'Diária' },
     { value: 'weekly', label: 'Semanal' },
+    { value: 'biweekly', label: 'Quinzenal' },
     { value: 'monthly', label: 'Mensal' },
     { value: 'quarterly', label: 'Trimestral' },
-    { value: 'yearly', label: 'Anual' }
+    { value: 'semiannual', label: 'Semestral' },
+    { value: 'yearly', label: 'Anual' },
+    { value: 'custom', label: 'Personalizada' }
   ];
 
   const categoryOptions = filteredCategories.map(cat => ({
@@ -296,13 +306,20 @@ export const MobileScheduledTransactionForm = () => {
   const getFrequencyDescription = () => {
     const interval = watchedInterval || 1;
     const freq = watchedFrequency;
+    const customDays = watchedCustomDays || 1;
+    
+    if (freq === 'custom') {
+      return `A cada ${customDays} dias`;
+    }
     
     if (interval === 1) {
       switch (freq) {
         case 'daily': return 'Todo dia';
         case 'weekly': return 'Toda semana';
+        case 'biweekly': return 'A cada 2 semanas';
         case 'monthly': return 'Todo mês';
         case 'quarterly': return 'Todo trimestre';
+        case 'semiannual': return 'A cada 6 meses';
         case 'yearly': return 'Todo ano';
         default: return '';
       }
@@ -310,12 +327,25 @@ export const MobileScheduledTransactionForm = () => {
       switch (freq) {
         case 'daily': return `A cada ${interval} dias`;
         case 'weekly': return `A cada ${interval} semanas`;
+        case 'biweekly': return `A cada ${interval * 2} semanas`;
         case 'monthly': return `A cada ${interval} meses`;
         case 'quarterly': return `A cada ${interval} trimestres`;
+        case 'semiannual': return `A cada ${interval * 6} meses`;
         case 'yearly': return `A cada ${interval} anos`;
         default: return '';
       }
     }
+  };
+
+  const getPreviewInfo = () => {
+    if (!watchedIsRecurring || !watchedFrequency || !watchedCount) return '';
+    
+    const count = watchedCount;
+    const interval = watchedInterval || 1;
+    const customDays = watchedCustomDays || 1;
+    
+    const duration = calculateTotalDuration(watchedFrequency, interval, count, customDays);
+    return `${count} repetições • Duração: ${duration}`;
   };
 
   return (
@@ -485,21 +515,51 @@ export const MobileScheduledTransactionForm = () => {
                     </Badge>
                   )}
 
-                  {/* Data de Fim específica para recorrência */}
+                  {/* Campo personalizado para frequência custom */}
+                  {watchedFrequency === 'custom' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="custom_days">Repetir a cada quantos dias?</Label>
+                      <Input
+                        id="custom_days"
+                        type="number"
+                        min="1"
+                        {...register('custom_days', { valueAsNumber: true })}
+                        placeholder="7"
+                      />
+                      {errors.custom_days && (
+                        <p className="text-sm text-destructive">{errors.custom_days.message}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Número de Repetições */}
                   <div className="space-y-2">
-                    <Label htmlFor="end_date">Data de Fim *</Label>
+                    <Label htmlFor="recurrence_count">Número de Repetições *</Label>
                     <Input
-                      id="end_date"
-                      type="date"
-                      {...register('end_date')}
+                      id="recurrence_count"
+                      type="number"
+                      min="1"
+                      max="365"
+                      {...register('recurrence_count', { valueAsNumber: true })}
+                      placeholder="12"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Obrigatório para definir até quando criar as transações
+                      Quantas transações serão criadas (máximo 365)
                     </p>
-                    {errors.end_date && (
-                      <p className="text-sm text-destructive">{errors.end_date.message}</p>
+                    {errors.recurrence_count && (
+                      <p className="text-sm text-destructive">{errors.recurrence_count.message}</p>
                     )}
                   </div>
+
+                  {/* Preview das transações */}
+                  {getPreviewInfo() && (
+                    <div className="p-3 bg-background/50 rounded-lg border-2 border-dashed border-primary/30">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Calendar className="h-4 w-4" />
+                        <span>{getPreviewInfo()}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

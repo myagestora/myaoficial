@@ -268,7 +268,7 @@ export const MobileTransactionForm = () => {
         date: transaction.date,
         description: transaction.description || '',
         is_recurring: transaction.is_recurring || false,
-        recurrence_frequency: transaction.recurrence_frequency || undefined,
+        recurrence_frequency: transaction.recurrence_frequency as any || undefined,
         recurrence_interval: transaction.recurrence_interval || 1,
         recurrence_end_date: transaction.recurrence_end_date || '',
       });

@@ -7,8 +7,6 @@ import {
   Clock,
   Repeat,
   Plus,
-  Play,
-  Pause,
   Edit,
   Trash2,
   AlertCircle
@@ -67,9 +65,12 @@ export const MobileScheduled = () => {
     const frequencies: Record<string, string> = {
       daily: 'Diária',
       weekly: 'Semanal',
+      biweekly: 'Quinzenal',
       monthly: 'Mensal',
       quarterly: 'Trimestral',
-      yearly: 'Anual'
+      semiannual: 'Semestral',
+      yearly: 'Anual',
+      custom: 'Personalizada'
     };
     return frequencies[frequency] || frequency;
   };
@@ -130,8 +131,11 @@ export const MobileScheduled = () => {
         switch (t.recurrence_frequency) {
           case 'daily': monthlyAmount = t.amount * 30; break;
           case 'weekly': monthlyAmount = t.amount * 4; break;
+          case 'biweekly': monthlyAmount = t.amount * 2; break;
           case 'quarterly': monthlyAmount = t.amount / 3; break;
+          case 'semiannual': monthlyAmount = t.amount / 6; break;
           case 'yearly': monthlyAmount = t.amount / 12; break;
+          case 'custom': monthlyAmount = t.amount * (30 / ((t.recurrence_interval || 1) * 1)); break; // aproximação
           default: monthlyAmount = t.amount; // monthly
         }
         return sum + monthlyAmount;
@@ -143,8 +147,11 @@ export const MobileScheduled = () => {
         switch (t.recurrence_frequency) {
           case 'daily': monthlyAmount = t.amount * 30; break;
           case 'weekly': monthlyAmount = t.amount * 4; break;
+          case 'biweekly': monthlyAmount = t.amount * 2; break;
           case 'quarterly': monthlyAmount = t.amount / 3; break;
+          case 'semiannual': monthlyAmount = t.amount / 6; break;
           case 'yearly': monthlyAmount = t.amount / 12; break;
+          case 'custom': monthlyAmount = t.amount * (30 / ((t.recurrence_interval || 1) * 1)); break; // aproximação
           default: monthlyAmount = t.amount; // monthly
         }
         return sum + monthlyAmount;
@@ -314,14 +321,6 @@ export const MobileScheduled = () => {
                   >
                     <Edit size={14} className="mr-1" />
                     Editar
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleToggleStatus(transaction)}
-                    disabled={false}
-                  >
-                    {transaction.is_recurring ? <Pause size={14} /> : <Play size={14} />}
                   </Button>
                   <Button 
                     variant="outline" 

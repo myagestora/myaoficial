@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUpCircle, ArrowDownCircle, Edit, Trash2, Repeat, Play, Pause } from 'lucide-react';
+import { ArrowUpCircle, ArrowDownCircle, Edit, Trash2, Repeat } from 'lucide-react';
 
 interface ScheduledTransactionItemProps {
   transaction: any;
@@ -18,13 +18,16 @@ export const ScheduledTransactionItem = ({
   const formatRecurrenceInfo = (transaction: any) => {
     const frequencyMap = {
       daily: 'Diário',
-      weekly: 'Semanal', 
+      weekly: 'Semanal',
+      biweekly: 'Quinzenal',
       monthly: 'Mensal',
       quarterly: 'Trimestral',
-      yearly: 'Anual'
+      semiannual: 'Semestral',
+      yearly: 'Anual',
+      custom: 'Personalizado'
     };
     
-    const frequency = frequencyMap[transaction.recurrence_frequency as keyof typeof frequencyMap];
+    const frequency = frequencyMap[transaction.recurrence_frequency as keyof typeof frequencyMap] || transaction.recurrence_frequency;
     const interval = transaction.recurrence_interval > 1 ? ` (${transaction.recurrence_interval}x)` : '';
     
     return `${frequency}${interval}`;
@@ -101,9 +104,9 @@ export const ScheduledTransactionItem = ({
           <p className="text-xs text-blue-600 mt-1">
             Data: {new Date(transaction.date).toLocaleDateString('pt-BR')}
           </p>
-          {transaction.recurrence_end_date && (
+          {transaction.recurrence_count && (
             <p className="text-xs text-gray-500 mt-1">
-              Termina em: {new Date(transaction.recurrence_end_date).toLocaleDateString('pt-BR')}
+              {transaction.recurrence_count} repetições
             </p>
           )}
         </div>
@@ -115,14 +118,6 @@ export const ScheduledTransactionItem = ({
           {transaction.type === 'income' ? '+' : ''}R$ {Math.abs(Number(transaction.amount)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
         </span>
         <div className="flex space-x-2">
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => onToggleStatus(transaction.id, !transaction.is_recurring)}
-            title={transaction.is_recurring ? 'Pausar agendamento' : 'Ativar agendamento'}
-          >
-            {transaction.is_recurring ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-          </Button>
           <Button variant="ghost" size="sm" title="Editar agendamento">
             <Edit className="h-4 w-4" />
           </Button>
