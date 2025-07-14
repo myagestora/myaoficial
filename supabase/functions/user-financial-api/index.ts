@@ -119,11 +119,26 @@ serve(async (req) => {
           });
         }
         
-        // Calcular saldo (receitas - despesas)
-        const { data: transactions } = await supabase
+        let requestData = { period: 'all' };
+        requestData = { ...requestData, ...await req.json() };
+
+        // Definir filtros de data baseado no período
+        let query = supabase
           .from('transactions')
-          .select('amount, type')
-          .eq('user_id', userId)
+          .select('amount, type, date')
+          .eq('user_id', userId);
+
+        if (requestData.period === 'month') {
+          query = query.gte('date', monthStart).lte('date', monthEnd);
+        } else if (requestData.period === 'week') {
+          const weekStart = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          query = query.gte('date', weekStart);
+        } else if (requestData.period === 'year') {
+          query = query.gte('date', `${currentYear}-01-01`).lte('date', `${currentYear}-12-31`);
+        }
+        // Para 'all', não adiciona filtros de data
+
+        const { data: transactions } = await query;
 
         const income = transactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0
         const expenses = transactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0
@@ -134,6 +149,7 @@ serve(async (req) => {
             balance,
             total_income: income,
             total_expenses: expenses,
+            period: requestData.period,
             currency: 'BRL'
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -396,14 +412,27 @@ serve(async (req) => {
       }
 
       case 'goals': {
-        // Apenas GET permitido
-        if (req.method !== 'GET') {
-          return new Response(JSON.stringify({ error: 'Method not allowed. Use GET.' }), {
+        // Aceita GET e POST
+        if (req.method !== 'GET' && req.method !== 'POST') {
+          return new Response(JSON.stringify({ error: 'Method not allowed. Use GET or POST.' }), {
             status: 405,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
-        const { data: goals } = await supabase
+
+        let period = null;
+        let goal_type = null;
+
+        if (req.method === 'POST') {
+          const requestData = await req.json();
+          period = requestData.period;
+          goal_type = requestData.goal_type;
+        } else {
+          period = url.searchParams.get('period');
+          goal_type = url.searchParams.get('goal_type');
+        }
+
+        let query = supabase
           .from('goals')
           .select(`
             id, title, target_amount, current_amount, target_date,
@@ -411,7 +440,32 @@ serve(async (req) => {
             categories (name, color)
           `)
           .eq('user_id', userId)
-          .eq('status', 'active')
+          .eq('status', 'active');
+
+        // Filtrar por tipo de meta se especificado
+        if (goal_type) {
+          query = query.eq('goal_type', goal_type);
+        }
+
+        // Filtrar por período se especificado
+        if (period) {
+          if (period === 'month') {
+            const currentMonthYear = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+            query = query.eq('month_year', currentMonthYear);
+          } else if (period === 'year') {
+            query = query.like('month_year', `${currentYear}-%`);
+          }
+          // Para savings goals, filtrar por target_date se necessário
+          if (goal_type === 'savings' && period !== 'all') {
+            if (period === 'month') {
+              query = query.gte('target_date', monthStart).lte('target_date', monthEnd);
+            } else if (period === 'year') {
+              query = query.gte('target_date', `${currentYear}-01-01`).lte('target_date', `${currentYear}-12-31`);
+            }
+          }
+        }
+
+        const { data: goals } = await query;
 
         // Para metas mensais, calcular progresso atual
         for (const goal of goals || []) {
