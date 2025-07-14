@@ -67,26 +67,23 @@ O app será instalado na sua tela inicial!`);
       return;
     }
 
-    // For Android - try native installation first
-    if (pwaInstaller.canInstall()) {
-      console.log('✅ PWA can be installed, attempting native installation...');
-      setIsInstalling(true);
-      
-      const success = await pwaInstaller.install();
-      setIsInstalling(false);
-      
-      if (success) {
-        console.log('✅ PWA installed successfully');
-        onClose();
-        return;
-      } else {
-        console.log('❌ PWA installation failed or was cancelled');
-        return;
-      }
-    }
+    // For Android - SEMPRE tentar instalação, independente de canInstall()
+    console.log('🎯 Forçando instalação PWA no Android...');
+    setIsInstalling(true);
     
-    // If no native installation available, don't show confusing alerts
-    console.log('❌ PWA installation not available');
+    const success = await pwaInstaller.install();
+    setIsInstalling(false);
+    
+    if (success) {
+      console.log('✅ PWA installed successfully');
+      onClose();
+    } else {
+      console.log('❌ PWA installation failed or was cancelled');
+      // Aguardar um pouco e tentar disparar o evento personalizado
+      setTimeout(() => {
+        window.dispatchEvent(new Event('beforeinstallprompt'));
+      }, 1000);
+    }
   };
 
   useEffect(() => {

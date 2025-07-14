@@ -112,15 +112,28 @@ export class PWAInstaller {
   public async install(): Promise<boolean> {
     console.log('🚀 Tentativa de instalação PWA iniciada');
     
-    if (!this.canInstall()) {
-      console.error('❌ PWA: Cannot install - requirements not met');
+    // Tentar forçar instalação mesmo se canInstall() retornar false
+    if (!this.deferredPrompt && !this.canInstall()) {
+      console.log('⚠️ PWA: Tentando forçar instalação sem prompt disponível');
+      
+      // Tentar aguardar um pouco para ver se o prompt aparece
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      if (!this.deferredPrompt) {
+        console.error('❌ PWA: Nenhum prompt de instalação disponível após aguardar');
+        return false;
+      }
+    }
+
+    if (!this.deferredPrompt) {
+      console.error('❌ PWA: Prompt de instalação não disponível');
       return false;
     }
 
     try {
       console.log('🎯 Disparando prompt de instalação...');
-      await this.deferredPrompt!.prompt();
-      const choiceResult = await this.deferredPrompt!.userChoice;
+      await this.deferredPrompt.prompt();
+      const choiceResult = await this.deferredPrompt.userChoice;
       
       console.log('📋 Resultado da escolha do usuário:', choiceResult);
       
