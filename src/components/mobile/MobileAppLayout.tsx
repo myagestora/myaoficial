@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { MobileRouteHandler } from './MobileRouteHandler';
 import { 
@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { InstallPrompt } from './InstallPrompt';
+import { isIOSDevice } from '@/utils/mobileDetection';
 
 
 interface MobileAppLayoutProps {
@@ -40,8 +41,21 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [forceRender, setForceRender] = useState(0);
 
   const currentPath = location.pathname;
+  const isIOS = isIOSDevice();
+
+  // Forçar re-render quando menu abre no iOS
+  useEffect(() => {
+    if (isMenuOpen && isIOS) {
+      // Pequeno delay para garantir que a animação iniciou
+      const timer = setTimeout(() => {
+        setForceRender(prev => prev + 1);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isMenuOpen, isIOS]);
 
   const NavItem = ({ path, icon: Icon, label, onClick }: {
     path: string;
@@ -89,7 +103,14 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
               <Menu size={20} />
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="w-72 z-[60] bg-background border-l">
+          <SheetContent 
+            side="right" 
+            className={cn(
+              "w-72 z-[60] bg-background border-l sheet-content",
+              isIOS && "ios-optimized"
+            )}
+            key={isIOS ? `menu-${forceRender}` : undefined}
+          >
             <div className="flex items-center justify-between mb-6 pt-4">
               <h2 className="text-lg font-semibold text-foreground">Menu</h2>
             </div>

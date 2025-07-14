@@ -27,6 +27,23 @@ export const isMobileDevice = (): boolean => {
   return hasKeswordsMatch || isSmallScreen || hasTouchCapability || hasOrientationAPI;
 };
 
+// Detectar especificamente iOS/Safari
+export const isIOSDevice = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  
+  const userAgent = navigator.userAgent.toLowerCase();
+  return /iphone|ipad|ipod/.test(userAgent) || 
+         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+};
+
+// Detectar Safari
+export const isSafari = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  
+  const userAgent = navigator.userAgent.toLowerCase();
+  return /safari/.test(userAgent) && !/chrome|chromium|edg/.test(userAgent);
+};
+
 // Forçar aplicação de estilos mobile
 export const forceMobileStyles = (): void => {
   if (!isMobileDevice()) return;
@@ -41,6 +58,11 @@ export const forceMobileStyles = (): void => {
   
   // Adicionar classe mobile ao body
   document.body.classList.add('mobile-device');
+  
+  // Adicionar classe específica para iOS
+  if (isIOSDevice()) {
+    document.body.classList.add('ios-device');
+  }
   
   // Prevenir zoom em inputs
   const style = document.createElement('style');
@@ -60,6 +82,29 @@ export const forceMobileStyles = (): void => {
     
     .mobile-device * {
       -webkit-overflow-scrolling: touch !important;
+    }
+    
+    /* Otimizações específicas para iOS */
+    .ios-device {
+      -webkit-transform: translateZ(0) !important;
+      will-change: transform !important;
+    }
+    
+    .ios-device .sheet-content {
+      -webkit-transform: translateZ(0) !important;
+      will-change: transform, opacity !important;
+      -webkit-backface-visibility: hidden !important;
+      backface-visibility: hidden !important;
+    }
+    
+    .ios-device .sheet-content * {
+      -webkit-transform: translateZ(0) !important;
+      will-change: auto !important;
+    }
+    
+    /* Simplificar animações no iOS para melhor renderização */
+    .ios-device [data-state="open"] {
+      animation-duration: 0.2s !important;
     }
   `;
   document.head.appendChild(style);
