@@ -1,12 +1,13 @@
-const CACHE_NAME = 'mya-gestora-v1';
+const CACHE_NAME = 'mya-gestora-v2';
 const urlsToCache = [
   '/',
   '/dashboard',
   '/transactions',
   '/goals',
   '/reports',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
+  '/categories',
+  '/settings',
+  '/scheduled',
   '/manifest.json'
 ];
 
@@ -15,12 +16,28 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Cache aberto');
-        return cache.addAll(urlsToCache);
+        // Fazer cache apenas dos recursos que realmente existem
+        return cache.addAll(urlsToCache.filter(url => {
+          // Não tentar fazer cache de arquivos estáticos que podem não existir
+          return !url.includes('/static/');
+        }));
+      })
+      .catch((error) => {
+        console.log('Erro ao fazer cache:', error);
       })
   );
+  // Forçar ativação imediata do novo service worker
+  self.skipWaiting();
 });
 
 self.addEventListener('fetch', (event) => {
+  // Só interceptar requests GET e ignorar requests de APIs
+  if (event.request.method !== 'GET' || 
+      event.request.url.includes('supabase.co') ||
+      event.request.url.includes('/api/')) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
@@ -28,9 +45,14 @@ self.addEventListener('fetch', (event) => {
         if (response) {
           return response;
         }
-        return fetch(event.request);
-      }
-    )
+        
+        return fetch(event.request).catch(() => {
+          // Se falhar ao buscar da rede, retornar página offline básica para navegação
+          if (event.request.destination === 'document') {
+            return caches.match('/');
+          }
+        });
+      })
   );
 });
 
@@ -47,4 +69,6 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
+  // Assumir controle imediatamente
+  return self.clients.claim();
 });
