@@ -1,10 +1,19 @@
 
 import { useState, useMemo } from 'react';
 import { DateRange } from 'react-day-picker';
+import { startOfMonth, endOfMonth } from 'date-fns';
+
+const getCurrentMonthRange = (): DateRange => {
+  const now = new Date();
+  return {
+    from: startOfMonth(now),
+    to: endOfMonth(now)
+  };
+};
 
 export const useTransactionFilters = (transactions: any[]) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(getCurrentMonthRange());
   const [selectedType, setSelectedType] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
@@ -43,14 +52,17 @@ export const useTransactionFilters = (transactions: any[]) => {
     searchTerm || 
     (selectedType && selectedType !== 'all') || 
     (selectedCategory && selectedCategory !== 'all') || 
-    (dateRange?.from && dateRange?.to)
+    (dateRange?.from && dateRange?.to && (
+      dateRange.from.getTime() !== getCurrentMonthRange().from?.getTime() ||
+      dateRange.to.getTime() !== getCurrentMonthRange().to?.getTime()
+    ))
   );
 
   const clearFilters = () => {
     setSearchTerm('');
     setSelectedType('all');
     setSelectedCategory('all');
-    setDateRange(undefined);
+    setDateRange(getCurrentMonthRange());
   };
 
   return {
