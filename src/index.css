@@ -250,18 +250,11 @@ All colors MUST be HSL.
   }
 }
 
-/* Mobile-specific optimizations */
-.mobile-device * {
-  -webkit-overflow-scrolling: touch !important;
-  -webkit-transform: translate3d(0, 0, 0) !important;
-}
-
+/* Simplified mobile optimizations */
 .mobile-device input,
 .mobile-device select, 
 .mobile-device textarea {
   font-size: 16px !important;
-  -webkit-appearance: none !important;
-  border-radius: 8px !important;
 }
 
 .mobile-device {
