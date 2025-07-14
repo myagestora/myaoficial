@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -30,10 +31,19 @@ const scheduledTransactionSchema = z.object({
   type: z.enum(['income', 'expense'], { required_error: 'Tipo é obrigatório' }),
   category_id: z.string().min(1, 'Categoria é obrigatória'),
   description: z.string().optional(),
-  recurrence_frequency: z.enum(['daily', 'weekly', 'monthly', 'quarterly', 'yearly'], { required_error: 'Frequência é obrigatória' }),
-  recurrence_interval: z.number().min(1, 'Intervalo deve ser maior que zero').default(1),
-  start_date: z.string().min(1, 'Data de início é obrigatória'),
+  is_recurring: z.boolean().default(false),
+  recurrence_frequency: z.enum(['daily', 'weekly', 'monthly', 'quarterly', 'yearly']).optional(),
+  recurrence_interval: z.number().min(1).default(1).optional(),
+  start_date: z.string().min(1, 'Data é obrigatória'),
   end_date: z.string().optional(),
+}).refine((data) => {
+  if (data.is_recurring) {
+    return data.recurrence_frequency !== undefined;
+  }
+  return true;
+}, {
+  message: 'Frequência é obrigatória para transações recorrentes',
+  path: ['recurrence_frequency']
 });
 
 type ScheduledTransactionFormData = z.infer<typeof scheduledTransactionSchema>;
@@ -56,6 +66,7 @@ export const MobileScheduledTransactionForm = () => {
     resolver: zodResolver(scheduledTransactionSchema),
     defaultValues: {
       type: 'expense',
+      is_recurring: false,
       recurrence_frequency: 'monthly',
       recurrence_interval: 1,
       start_date: format(new Date(), 'yyyy-MM-dd'),
@@ -65,6 +76,7 @@ export const MobileScheduledTransactionForm = () => {
   const watchedType = watch('type');
   const watchedFrequency = watch('recurrence_frequency');
   const watchedInterval = watch('recurrence_interval');
+  const watchedIsRecurring = watch('is_recurring');
 
   // Fetch categories
   const { data: categories = [] } = useQuery({
@@ -112,6 +124,7 @@ export const MobileScheduledTransactionForm = () => {
         type: existingTransaction.type,
         category_id: existingTransaction.category_id || '',
         description: existingTransaction.description || '',
+        is_recurring: existingTransaction.is_recurring || false,
         recurrence_frequency: existingTransaction.recurrence_frequency || 'monthly',
         recurrence_interval: existingTransaction.recurrence_interval || 1,
         start_date: existingTransaction.date,
@@ -127,29 +140,7 @@ export const MobileScheduledTransactionForm = () => {
     mutationFn: async (data: ScheduledTransactionFormData) => {
       if (!user?.id) throw new Error('User not authenticated');
 
-      // Calculate next recurrence date
-      const startDate = new Date(data.start_date);
-      let nextRecurrenceDate = startDate;
-
-      switch (data.recurrence_frequency) {
-        case 'daily':
-          nextRecurrenceDate = addDays(startDate, data.recurrence_interval);
-          break;
-        case 'weekly':
-          nextRecurrenceDate = addWeeks(startDate, data.recurrence_interval);
-          break;
-        case 'monthly':
-          nextRecurrenceDate = addMonths(startDate, data.recurrence_interval);
-          break;
-        case 'quarterly':
-          nextRecurrenceDate = addMonths(startDate, data.recurrence_interval * 3);
-          break;
-        case 'yearly':
-          nextRecurrenceDate = addYears(startDate, data.recurrence_interval);
-          break;
-      }
-
-      const transactionData = {
+      let transactionData: any = {
         user_id: user.id,
         title: data.title,
         description: data.description || '',
@@ -157,12 +148,40 @@ export const MobileScheduledTransactionForm = () => {
         type: data.type,
         category_id: data.category_id,
         date: data.start_date,
-        is_recurring: true,
-        recurrence_frequency: data.recurrence_frequency,
-        recurrence_interval: data.recurrence_interval,
-        recurrence_end_date: data.end_date || null,
-        next_recurrence_date: format(nextRecurrenceDate, 'yyyy-MM-dd')
+        is_recurring: data.is_recurring || false,
       };
+
+      // Adicionar dados de recorrência apenas se for recorrente
+      if (data.is_recurring && data.recurrence_frequency) {
+        const startDate = new Date(data.start_date);
+        let nextRecurrenceDate = startDate;
+
+        switch (data.recurrence_frequency) {
+          case 'daily':
+            nextRecurrenceDate = addDays(startDate, data.recurrence_interval || 1);
+            break;
+          case 'weekly':
+            nextRecurrenceDate = addWeeks(startDate, data.recurrence_interval || 1);
+            break;
+          case 'monthly':
+            nextRecurrenceDate = addMonths(startDate, data.recurrence_interval || 1);
+            break;
+          case 'quarterly':
+            nextRecurrenceDate = addMonths(startDate, (data.recurrence_interval || 1) * 3);
+            break;
+          case 'yearly':
+            nextRecurrenceDate = addYears(startDate, data.recurrence_interval || 1);
+            break;
+        }
+
+        transactionData = {
+          ...transactionData,
+          recurrence_frequency: data.recurrence_frequency,
+          recurrence_interval: data.recurrence_interval || 1,
+          recurrence_end_date: data.end_date || null,
+          next_recurrence_date: format(nextRecurrenceDate, 'yyyy-MM-dd')
+        };
+      }
 
       if (isEditing && id) {
         const { error } = await supabase
@@ -260,10 +279,10 @@ export const MobileScheduledTransactionForm = () => {
         <div>
           <h1 className="text-xl font-bold flex items-center">
             <Repeat className="h-5 w-5 mr-2" />
-            {isEditing ? 'Editar Agendamento' : 'Nova Transação Agendada'}
+            {isEditing ? 'Editar Transação' : 'Nova Transação'}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Configure uma transação que se repete automaticamente
+            Configure uma transação única ou recorrente
           </p>
         </div>
       </div>
@@ -354,79 +373,93 @@ export const MobileScheduledTransactionForm = () => {
         </div>
 
         {/* Configuração de Recorrência */}
-        <Card className="bg-primary/5 border-primary/20">
-          <CardContent className="p-4">
-            <div className="flex items-center mb-4">
-              <Repeat className="h-5 w-5 mr-2 text-primary" />
-              <span className="font-medium">Configuração de Recorrência</span>
-            </div>
-            
-            <div className="space-y-4">
-              {/* Frequência e Intervalo */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Frequência</Label>
-                  <MobileListSelect
-                    value={watchedFrequency}
-                    onValueChange={(value) => setValue('recurrence_frequency', value as any)}
-                    options={frequencyOptions}
-                    placeholder="Selecione a frequência"
-                  />
-                  {errors.recurrence_frequency && (
-                    <p className="text-sm text-destructive">{errors.recurrence_frequency.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="interval">A cada</Label>
-                  <Input
-                    id="interval"
-                    type="number"
-                    min="1"
-                    {...register('recurrence_interval', { valueAsNumber: true })}
-                    placeholder="1"
-                  />
-                  {errors.recurrence_interval && (
-                    <p className="text-sm text-destructive">{errors.recurrence_interval.message}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Preview da frequência */}
-              {watchedFrequency && (
-                <Badge variant="secondary" className="w-fit">
-                  {getFrequencyDescription()}
-                </Badge>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Datas */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="start_date">Data de Início</Label>
-            <Input
-              id="start_date"
-              type="date"
-              {...register('start_date')}
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="is_recurring"
+              checked={watchedIsRecurring}
+              onCheckedChange={(checked) => setValue('is_recurring', !!checked)}
             />
-            {errors.start_date && (
-              <p className="text-sm text-destructive">{errors.start_date.message}</p>
-            )}
+            <Label htmlFor="is_recurring" className="text-base font-medium cursor-pointer">
+              Transação recorrente
+            </Label>
           </div>
+          
+          {watchedIsRecurring && (
+            <Card className="bg-primary/5 border-primary/20">
+              <CardContent className="p-4">
+                <div className="flex items-center mb-4">
+                  <Repeat className="h-5 w-5 mr-2 text-primary" />
+                  <span className="font-medium">Configuração de Recorrência</span>
+                </div>
+                
+                <div className="space-y-4">
+                  {/* Frequência e Intervalo */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Frequência</Label>
+                      <MobileListSelect
+                        value={watchedFrequency || ''}
+                        onValueChange={(value) => setValue('recurrence_frequency', value as any)}
+                        options={frequencyOptions}
+                        placeholder="Selecione a frequência"
+                      />
+                      {errors.recurrence_frequency && (
+                        <p className="text-sm text-destructive">{errors.recurrence_frequency.message}</p>
+                      )}
+                    </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="end_date">Data de Fim (opcional)</Label>
-            <Input
-              id="end_date"
-              type="date"
-              {...register('end_date')}
-            />
-            {errors.end_date && (
-              <p className="text-sm text-destructive">{errors.end_date.message}</p>
-            )}
-          </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="interval">A cada</Label>
+                      <Input
+                        id="interval"
+                        type="number"
+                        min="1"
+                        {...register('recurrence_interval', { valueAsNumber: true })}
+                        placeholder="1"
+                      />
+                      {errors.recurrence_interval && (
+                        <p className="text-sm text-destructive">{errors.recurrence_interval.message}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Preview da frequência */}
+                  {watchedFrequency && (
+                    <Badge variant="secondary" className="w-fit">
+                      {getFrequencyDescription()}
+                    </Badge>
+                  )}
+
+                  {/* Data de Fim específica para recorrência */}
+                  <div className="space-y-2">
+                    <Label htmlFor="end_date">Data de Fim (opcional)</Label>
+                    <Input
+                      id="end_date"
+                      type="date"
+                      {...register('end_date')}
+                    />
+                    {errors.end_date && (
+                      <p className="text-sm text-destructive">{errors.end_date.message}</p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Data de Início */}
+        <div className="space-y-2">
+          <Label htmlFor="start_date">{watchedIsRecurring ? 'Data de Início' : 'Data'}</Label>
+          <Input
+            id="start_date"
+            type="date"
+            {...register('start_date')}
+          />
+          {errors.start_date && (
+            <p className="text-sm text-destructive">{errors.start_date.message}</p>
+          )}
         </div>
 
         {/* Botão de salvar */}
