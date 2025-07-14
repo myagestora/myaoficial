@@ -344,7 +344,7 @@ export const MobileScheduled = () => {
                 </div>
 
                 {/* Ações */}
-                <div className="flex space-x-2 pt-2 border-t relative">
+                <div className="flex space-x-2 pt-2 border-t">
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -354,38 +354,39 @@ export const MobileScheduled = () => {
                     <Edit size={14} className="mr-1" />
                     Editar
                   </Button>
-                  <div className="relative">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleDelete(transaction)}
-                      disabled={deleteScheduledTransaction.isPending}
-                    >
-                      <Trash2 size={14} />
-                    </Button>
-                    
-                    {/* Confirmação inline para transações não recorrentes */}
-                    {deletingId === transaction.id && (
-                      <InlineConfirmation
-                        message="Confirmar exclusão?"
-                        onConfirm={handleConfirmDelete}
-                        onCancel={handleCancelDelete}
-                        confirmText="Excluir"
-                        cancelText="Cancelar"
-                      />
-                    )}
-                    
-                    {/* Opções para transações recorrentes */}
-                    {recurringDeletingId === transaction.id && (
-                      <RecurringDeletionOptions
-                        onDeleteSingle={handleDeleteSingle}
-                        onDeleteSeries={handleDeleteSeries}
-                        onCancel={handleCancelDelete}
-                        isParent={transaction.is_recurring}
-                      />
-                    )}
-                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleDelete(transaction)}
+                    disabled={deleteScheduledTransaction.isPending}
+                  >
+                    <Trash2 size={14} />
+                  </Button>
                 </div>
+                
+                {/* Confirmações abaixo das ações - empurram conteúdo para baixo */}
+                {deletingId === transaction.id && (
+                  <div className="border-t pt-3">
+                    <InlineConfirmation
+                      message="Confirmar exclusão?"
+                      onConfirm={handleConfirmDelete}
+                      onCancel={handleCancelDelete}
+                      confirmText="Excluir"
+                      cancelText="Cancelar"
+                    />
+                  </div>
+                )}
+                
+                {recurringDeletingId === transaction.id && (
+                  <div className="border-t pt-3">
+                    <RecurringDeletionOptions
+                      onDeleteSingle={handleDeleteSingle}
+                      onDeleteSeries={handleDeleteSeries}
+                      onCancel={handleCancelDelete}
+                      isParent={transaction.is_recurring}
+                    />
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

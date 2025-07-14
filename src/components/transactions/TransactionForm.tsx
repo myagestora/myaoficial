@@ -122,13 +122,13 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
           customDays: data.custom_days
         });
 
-        // Criar transação template (pai)
+        // Criar transação template (pai) - não usar data de execução
         const templateTransaction = {
           title: data.title,
           amount: data.amount,
           type: data.type,
           category_id: data.category_id,
-          date: data.date,
+          date: data.date, // Data original do formulário
           description: data.description || null,
           user_id: user.id,
           is_recurring: true,
@@ -136,9 +136,10 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
           recurrence_frequency: data.recurrence_frequency,
           recurrence_interval: 1,
           recurrence_count: data.recurrence_count,
-          next_recurrence_date: dates[0] // Primeira execução
+          next_recurrence_date: dates[0] // Primeira execução programada
         };
 
+        // Criar apenas as transações filhas (execuções)
         const childTransactions = dates.map((date) => ({
           title: data.title,
           amount: data.amount,

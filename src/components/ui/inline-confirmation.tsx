@@ -20,7 +20,7 @@ export const InlineConfirmation = ({
   variant = 'destructive'
 }: InlineConfirmationProps) => {
   return (
-    <div className="absolute top-full left-0 right-0 z-50 mt-1 p-3 bg-card border rounded-lg shadow-lg">
+    <div className="w-full bg-card border rounded-lg shadow-lg p-3">
       <div className="flex items-center justify-between mb-3">
         <p className="text-sm font-medium">{message}</p>
         <Button
