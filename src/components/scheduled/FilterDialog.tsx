@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -22,8 +22,8 @@ interface FilterDialogProps {
 }
 
 export const FilterDialog = ({ filters, onFiltersChange, categories }: FilterDialogProps) => {
-  const [isOpen, setIsOpen] = React.useState(false);
-  const [localFilters, setLocalFilters] = React.useState<FilterOptions>(filters);
+  const [isOpen, setIsOpen] = useState(false);
+  const [localFilters, setLocalFilters] = useState<FilterOptions>(filters);
 
   const frequencyOptions = [
     { value: 'daily', label: 'Diário' },
