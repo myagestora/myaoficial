@@ -53,7 +53,7 @@ serve(async (req) => {
     console.log('Processed config map:', configMap);
 
     // Determinar URL base baseada na configuração da API
-    let baseUrl = 'https://fimgalqlsezgxqbmktpz.supabase.co';
+    let baseUrl = 'https://api.myagestora.com.br';
     if (configMap.api_enabled === 'true' && configMap.api_domain?.trim()) {
       const domain = configMap.api_domain.trim();
       baseUrl = domain.startsWith('http') ? domain : `https://${domain}`;
@@ -71,7 +71,7 @@ serve(async (req) => {
       name: `${appName} - Controle Financeiro`,
       short_name: appName,
       description: description,
-      start_url: "/?utm_source=pwa",
+      start_url: "https://app.myagestora.com.br/?utm_source=pwa",
       display: "standalone",
       background_color: "#000000",
       theme_color: "#000000",
@@ -124,7 +124,7 @@ serve(async (req) => {
       name: "Mya Gestora - Controle Financeiro",
       short_name: "Mya Gestora",
       description: "Sistema inteligente de controle financeiro pessoal",
-      start_url: "/?utm_source=pwa",
+      start_url: "https://app.myagestora.com.br/?utm_source=pwa",
       display: "standalone",
       background_color: "#000000",
       theme_color: "#000000",
@@ -134,25 +134,25 @@ serve(async (req) => {
       lang: "pt-BR",
       icons: [
         {
-          src: "https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png",
+          src: "https://api.myagestora.com.br/storage/v1/object/public/logos/logo-1751933896307.png",
           sizes: "192x192",
           type: "image/png",
           purpose: "any"
         },
         {
-          src: "https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png",
+          src: "https://api.myagestora.com.br/storage/v1/object/public/logos/logo-1751933896307.png",
           sizes: "512x512",
           type: "image/png",
           purpose: "any"
         },
         {
-          src: "https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png",
+          src: "https://api.myagestora.com.br/storage/v1/object/public/logos/logo-1751933896307.png",
           sizes: "192x192",
           type: "image/png",
           purpose: "maskable"
         },
         {
-          src: "https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png",
+          src: "https://api.myagestora.com.br/storage/v1/object/public/logos/logo-1751933896307.png",
           sizes: "512x512",
           type: "image/png",
           purpose: "maskable"
