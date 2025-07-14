@@ -250,20 +250,11 @@ All colors MUST be HSL.
   }
 }
 
-/* Simplified mobile optimizations */
+/* Basic mobile styles only */
 .mobile-device input,
 .mobile-device select, 
 .mobile-device textarea {
   font-size: 16px !important;
-}
-
-.mobile-device {
-  -webkit-text-size-adjust: 100% !important;
-  -moz-text-size-adjust: 100% !important;
-  text-size-adjust: 100% !important;
-  touch-action: manipulation !important;
-  overscroll-behavior: contain !important;
-  overflow-x: hidden !important;
 }
 
 /* Mobile touch targets */
