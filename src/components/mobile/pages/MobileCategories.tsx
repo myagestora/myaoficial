@@ -1,60 +1,230 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { 
-  Grid3X3,
-  Plus,
-  TrendingUp,
-  TrendingDown,
-  Edit,
-  Trash2,
-  DollarSign
-} from 'lucide-react';
-import { MobilePageWrapper } from '../MobilePageWrapper';
-import { useQuery } from '@tanstack/react-query';
+  MobileSelect, 
+  MobileSelectTrigger, 
+  MobileSelectValue, 
+  MobileSelectContent, 
+  MobileSelectItem 
+} from '@/components/mobile/MobileSelect';
+import { Badge } from '@/components/ui/badge';
+import { Trash2, Plus, ArrowLeft, Grid3X3 } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { MobileOptimizedCard } from '@/components/ui/mobile-optimized-card';
+import { MobilePageWrapper } from '../MobilePageWrapper';
+
+const COLORS = [
+  '#F44336', '#E91E63', '#9C27B0', '#673AB7',
+  '#3F51B5', '#2196F3', '#03A9F4', '#00BCD4',
+  '#009688', '#4CAF50', '#8BC34A', '#CDDC39',
+  '#FFEB3B', '#FFC107', '#FF9800', '#FF5722',
+];
+
+const ICONS = [
+  'circle', 'home', 'car', 'utensils', 'heart', 'book',
+  'briefcase', 'gamepad-2', 'shopping-cart', 'banknote',
+  'trending-up', 'coffee', 'plane', 'music', 'camera',
+];
 
 export const MobileCategories = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [isCreating, setIsCreating] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'income' | 'expense'>('expense');
+  const [newCategory, setNewCategory] = useState({
+    name: '',
+    type: 'expense' as 'income' | 'expense',
+    color: '#2196F3',
+    icon: 'circle',
+  });
 
   const { data: categories, isLoading } = useQuery({
-    queryKey: ['categories', user?.id],
+    queryKey: ['all-categories', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('categories')
         .select('*')
-        .or(`user_id.eq.${user?.id},is_default.eq.true`)
+        .or(`user_id.is.null,user_id.eq.${user!.id}`)
+        .order('is_default', { ascending: false })
+        .order('type')
         .order('name');
       
       if (error) throw error;
       return data;
     },
-    enabled: !!user?.id
+    enabled: !!user,
   });
 
-  const filteredCategories = categories?.filter(cat => cat.type === selectedTab) || [];
+  const createCategoryMutation = useMutation({
+    mutationFn: async (categoryData: typeof newCategory) => {
+      if (!user) throw new Error('Usuário não autenticado');
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(Math.abs(value));
-  };
+      const { error } = await supabase
+        .from('categories')
+        .insert({
+          ...categoryData,
+          user_id: user.id,
+          is_default: false,
+        });
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['all-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      setIsCreating(false);
+      setNewCategory({ name: '', type: 'expense', color: '#2196F3', icon: 'circle' });
+      toast({
+        title: 'Sucesso',
+        description: 'Categoria criada com sucesso',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Erro',
+        description: 'Erro ao criar categoria',
+        variant: 'destructive',
+      });
+    }
+  });
+
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (categoryId: string) => {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', categoryId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['all-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast({
+        title: 'Sucesso',
+        description: 'Categoria removida com sucesso',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Erro',
+        description: 'Erro ao remover categoria',
+        variant: 'destructive',
+      });
+    }
+  });
+
+  const incomeCategories = categories?.filter(cat => cat.type === 'income') || [];
+  const expenseCategories = categories?.filter(cat => cat.type === 'expense') || [];
+  const filteredCategories = selectedTab === 'income' ? incomeCategories : expenseCategories;
+
 
   if (isLoading) {
     return (
       <MobilePageWrapper>
         <div className="space-y-4">
           {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-4">
+            <MobileOptimizedCard key={i} className="animate-pulse">
+              <div className="p-4">
                 <div className="h-16 bg-muted rounded" />
-              </CardContent>
-            </Card>
+              </div>
+            </MobileOptimizedCard>
           ))}
+        </div>
+      </MobilePageWrapper>
+    );
+  }
+
+  if (isCreating) {
+    return (
+      <MobilePageWrapper>
+        <div className="space-y-4">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsCreating(false)}
+              className="p-2"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-lg font-semibold">Nova Categoria</h1>
+            <div className="w-9" /> {/* Spacer */}
+          </div>
+
+          <MobileOptimizedCard>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Nome da Categoria</Label>
+                <Input
+                  placeholder="Digite o nome da categoria"
+                  value={newCategory.name}
+                  onChange={(e) => setNewCategory(prev => ({ ...prev, name: e.target.value }))}
+                  className="text-base"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Tipo</Label>
+                <MobileSelect
+                  value={newCategory.type}
+                  onValueChange={(value: 'income' | 'expense') => 
+                    setNewCategory(prev => ({ ...prev, type: value }))
+                  }
+                >
+                  <MobileSelectTrigger>
+                    <MobileSelectValue placeholder="Selecione o tipo" />
+                  </MobileSelectTrigger>
+                  <MobileSelectContent>
+                    <MobileSelectItem value="income">Receita</MobileSelectItem>
+                    <MobileSelectItem value="expense">Despesa</MobileSelectItem>
+                  </MobileSelectContent>
+                </MobileSelect>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Cor</Label>
+                <div className="grid grid-cols-8 gap-3">
+                  {COLORS.map(color => (
+                    <button
+                      key={color}
+                      type="button"
+                      className={`w-8 h-8 rounded-full border-2 transition-all ${
+                        newCategory.color === color 
+                          ? 'border-foreground scale-110' 
+                          : 'border-muted-foreground/30'
+                      }`}
+                      style={{ backgroundColor: color }}
+                      onClick={() => setNewCategory(prev => ({ ...prev, color }))}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 pt-4">
+                <Button 
+                  onClick={() => createCategoryMutation.mutate(newCategory)}
+                  disabled={!newCategory.name.trim() || createCategoryMutation.isPending}
+                  className="w-full h-12 text-base"
+                >
+                  {createCategoryMutation.isPending ? 'Criando...' : 'Criar Categoria'}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsCreating(false)}
+                  className="w-full h-12 text-base"
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          </MobileOptimizedCard>
         </div>
       </MobilePageWrapper>
     );
@@ -68,16 +238,9 @@ export const MobileCategories = () => {
           <Grid3X3 className="h-6 w-6 mr-2" />
           Categorias
         </h1>
-        <Button 
-          size="sm" 
-          className="flex items-center space-x-2"
-          onClick={() => {
-            // TODO: Implementar modal de criação de categoria
-            console.log('Criar nova categoria');
-          }}
-        >
-          <Plus size={16} />
-          <span>Nova</span>
+        <Button onClick={() => setIsCreating(true)} size="sm">
+          <Plus className="mr-2 h-4 w-4" />
+          Nova
         </Button>
       </div>
 
@@ -89,8 +252,7 @@ export const MobileCategories = () => {
           className="flex-1"
           onClick={() => setSelectedTab('expense')}
         >
-          <TrendingDown size={16} className="mr-2" />
-          Despesas
+          Despesas ({expenseCategories.length})
         </Button>
         <Button
           variant={selectedTab === 'income' ? 'default' : 'outline'}
@@ -98,110 +260,61 @@ export const MobileCategories = () => {
           className="flex-1"
           onClick={() => setSelectedTab('income')}
         >
-          <TrendingUp size={16} className="mr-2" />
-          Receitas
+          Receitas ({incomeCategories.length})
         </Button>
       </div>
 
-      {/* Resumo */}
-      <Card className="mb-6 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">
-            Categorias de {selectedTab === 'income' ? 'Receitas' : 'Despesas'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-primary">{filteredCategories.length}</p>
-              <p className="text-xs text-muted-foreground">Total</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-blue-600">
-                {filteredCategories.filter(cat => !cat.is_default).length}
-              </p>
-              <p className="text-xs text-muted-foreground">Personalizadas</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Lista de categorias */}
-      <div className="grid grid-cols-1 gap-3">
-        {filteredCategories.map((category) => (
-          <Card key={category.id} className="hover:shadow-sm transition-shadow">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div 
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white"
-                    style={{ backgroundColor: category.color || '#3B82F6' }}
-                  >
-                    <span className="text-lg">{category.icon || '📁'}</span>
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm">{category.name}</p>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <Badge 
-                        variant={category.is_default ? 'secondary' : 'outline'}
-                        className="text-xs"
-                      >
-                        {category.is_default ? 'Padrão' : 'Personalizada'}
-                      </Badge>
-                      <Badge 
-                        variant={category.type === 'income' ? 'default' : 'destructive'}
-                        className="text-xs"
-                      >
-                        {category.type === 'income' ? 'Receita' : 'Despesa'}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  {!category.is_default && (
-                    <>
-                      <Button variant="ghost" size="sm">
-                        <Edit size={16} />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <Trash2 size={16} />
-                      </Button>
-                    </>
+      <div className="space-y-3">
+        {filteredCategories.map(category => (
+          <MobileOptimizedCard key={category.id}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-4 h-4 rounded-full border border-muted-foreground/20"
+                  style={{ backgroundColor: category.color }}
+                />
+                <div className="flex flex-col">
+                  <span className="font-medium">{category.name}</span>
+                  {(category as any).is_default && (
+                    <Badge variant="secondary" className="text-xs w-fit">
+                      Padrão
+                    </Badge>
                   )}
                 </div>
               </div>
-
-              {/* Estatísticas da categoria (placeholder para dados reais) */}
-              <div className="mt-3 pt-3 border-t flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Usado este mês</span>
-                <span className="font-medium flex items-center">
-                  <DollarSign size={12} className="mr-1" />
-                  {formatCurrency(Math.random() * 1000)} {/* Substituir por dados reais */}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+              {!(category as any).is_default && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => deleteCategoryMutation.mutate(category.id)}
+                  className="p-2 h-auto text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </MobileOptimizedCard>
         ))}
+        
+        {filteredCategories.length === 0 && (
+          <MobileOptimizedCard className="p-6">
+            <div className="text-center">
+              <Grid3X3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="font-medium text-lg mb-2">
+                Nenhuma categoria de {selectedTab === 'income' ? 'receita' : 'despesa'}
+              </h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Crie categorias personalizadas para organizar melhor suas transações
+              </p>
+              <Button onClick={() => setIsCreating(true)}>
+                <Plus size={16} className="mr-2" />
+                Criar primeira categoria
+              </Button>
+            </div>
+          </MobileOptimizedCard>
+        )}
       </div>
-
-      {filteredCategories.length === 0 && (
-        <Card className="mt-6">
-          <CardContent className="p-8 text-center">
-            <Grid3X3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="font-medium text-lg mb-2">
-              Nenhuma categoria de {selectedTab === 'income' ? 'receita' : 'despesa'}
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Crie categorias personalizadas para organizar melhor suas transações
-            </p>
-            <Button>
-              <Plus size={16} className="mr-2" />
-              Criar primeira categoria
-            </Button>
-          </CardContent>
-        </Card>
-      )}
     </MobilePageWrapper>
   );
 };
