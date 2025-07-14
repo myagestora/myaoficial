@@ -23,14 +23,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { format, addDays, isBefore, isAfter, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
-import { MobileScheduledTransactionForm } from '../MobileScheduledTransactionForm';
+import { useNavigate } from 'react-router-dom';
 
 export const MobileScheduled = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { scheduledTransactions, isLoading, toggleRecurringStatus, deleteScheduledTransaction } = useScheduledTransactions();
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [showCreateForm, setShowCreateForm] = useState(false);
   const [filters, setFilters] = useState({
     type: '',
     category: '',
@@ -187,15 +187,11 @@ export const MobileScheduled = () => {
   };
 
   const handleEdit = (transaction: any) => {
-    toast.info('Funcionalidade de edição será implementada em breve');
+    navigate(`/scheduled/editar/${transaction.id}`);
   };
 
   const handleCreateNew = () => {
-    setShowCreateForm(true);
-  };
-
-  const handleCloseForm = () => {
-    setShowCreateForm(false);
+    navigate('/scheduled/nova');
   };
 
   if (isLoading) {
@@ -382,12 +378,6 @@ export const MobileScheduled = () => {
           </CardContent>
         </Card>
       )}
-
-      {/* Formulário de criação */}
-      <MobileScheduledTransactionForm
-        isOpen={showCreateForm}
-        onClose={handleCloseForm}
-      />
     </MobilePageWrapper>
   );
 };
