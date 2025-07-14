@@ -135,6 +135,7 @@ export const ScheduledFilters = ({
                       ...filters, 
                       period: { ...filters.period, from: date } 
                     })}
+                    locale={ptBR}
                     className={cn("p-3 pointer-events-auto")}
                     initialFocus
                   />
@@ -166,6 +167,7 @@ export const ScheduledFilters = ({
                       ...filters, 
                       period: { ...filters.period, to: date } 
                     })}
+                    locale={ptBR}
                     className={cn("p-3 pointer-events-auto")}
                     initialFocus
                     disabled={(date) => filters.period.from ? date < filters.period.from : false}
