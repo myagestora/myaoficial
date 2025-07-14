@@ -95,7 +95,7 @@ const Index = () => {
   }, {
     icon: Shield,
     title: 'Segurança Total',
-    description: 'Seus dados financeiros protegidos com criptografia avançada e total privacidade.'
+    description: 'Seus dados financeiros protegidos com criptografia bancária de última geração.'
   }];
   const organizationFeatures = [{
     icon: Calculator,
@@ -591,15 +591,10 @@ const Index = () => {
                     "{testimonial.text}"
                   </p>
                    <div className="flex items-center">
-                     <img 
-                       src={testimonial.image} 
-                       alt={testimonial.name}
-                       className="w-12 h-12 rounded-full object-cover mr-4 border-2 border-gray-200" 
-                       onError={(e) => {
-                         const target = e.target as HTMLImageElement;
-                         target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${testimonial.name}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd93d,ffdfbf`;
-                       }}
-                     />
+                     <img src={testimonial.image} alt={testimonial.name} className="w-12 h-12 rounded-full object-cover mr-4 border-2 border-gray-200" onError={e => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${testimonial.name}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd93d,ffdfbf`;
+                }} />
                      <div>
                       <p className="font-semibold text-gray-900 dark:text-white">{testimonial.name}</p>
                       <p className="text-gray-600 dark:text-gray-400 text-sm">Cliente verificado</p>
@@ -807,8 +802,8 @@ const Index = () => {
                 <span className="font-semibold">Configuração em 2 minutos</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Users className="w-5 h-5" />
-                <span className="font-semibold">Suporte 24/7</span>
+                
+                
               </div>
             </div>
           </div>
