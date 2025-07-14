@@ -314,15 +314,20 @@ const Index = () => {
               </div>
               <div className="flex items-center space-x-2">
                 <div className="flex -space-x-2">
-                  {[1, 2, 3, 4].map((i) => (
+                  {[
+                    'https://randomuser.me/api/portraits/women/1.jpg',
+                    'https://randomuser.me/api/portraits/men/2.jpg', 
+                    'https://randomuser.me/api/portraits/women/3.jpg',
+                    'https://randomuser.me/api/portraits/men/4.jpg'
+                  ].map((src, i) => (
                     <img 
                       key={i}
-                      src={`https://images.unsplash.com/photo-164997290434${i}-6e44c42644a7?w=32&h=32&fit=crop&crop=face`}
-                      alt={`Usuário ${i}`}
+                      src={src}
+                      alt={`Usuário ${i + 1}`}
                       className="w-8 h-8 rounded-full border-2 border-white object-cover"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        target.src = `https://ui-avatars.com/api/?name=U${i}&background=4f46e5&color=fff&size=32`;
+                        target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=user${i + 1}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd93d,ffdfbf`;
                       }}
                     />
                   ))}
