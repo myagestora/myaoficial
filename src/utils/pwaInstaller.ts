@@ -110,7 +110,7 @@ export class PWAInstaller {
   }
 
   public async install(): Promise<boolean> {
-    console.log('🚀 Tentativa de instalação PWA iniciada');
+    console.log('🚀 PWA: Iniciando instalação');
     
     // Tentar forçar instalação mesmo se canInstall() retornar false
     if (!this.deferredPrompt && !this.canInstall()) {
@@ -131,63 +131,128 @@ export class PWAInstaller {
     }
 
     try {
-      console.log('🎯 Disparando prompt de instalação...');
+      console.log('🎯 PWA: Disparando prompt de instalação...');
       
       // Guardar referência antes de disparar
       const currentPrompt = this.deferredPrompt;
       
-      // Resetar imediatamente após prompt()
+      // Disparar o prompt e resetar imediatamente
       await currentPrompt.prompt();
       this.deferredPrompt = null;
       
-      console.log('⏱️ Aguardando escolha do usuário com timeout...');
+      console.log('⏳ PWA: Aguardando resposta do usuário...');
       
-      // Implementar timeout para userChoice
-      const choiceResult = await Promise.race([
-        currentPrompt.userChoice,
-        new Promise<{outcome: string}>((_, reject) => 
-          setTimeout(() => reject(new Error('timeout')), 5000)
-        )
-      ]);
-      
-      console.log('📋 Resultado da escolha do usuário:', choiceResult);
-      
-      if (choiceResult.outcome === 'accepted') {
-        console.log('✅ PWA: Usuário aceitou a instalação');
-        
-        // Aguardar evento appinstalled ou verificar display mode
-        const installationConfirmed = await this.waitForInstallation();
-        
-        if (installationConfirmed) {
-          this.isInstalled = true;
-          this.notifyCallbacks(false);
-          return true;
-        } else {
-          console.log('⚠️ PWA: Instalação aceita mas não confirmada, assumindo sucesso');
-          this.isInstalled = true;
-          this.notifyCallbacks(false);
-          return true;
-        }
-      } else {
-        console.log('❌ PWA: Usuário recusou a instalação');
-        return false;
+      // Aguardar com timeout mais longo
+      let userChoice;
+      try {
+        userChoice = await Promise.race([
+          currentPrompt.userChoice,
+          new Promise<{outcome: string}>((_, reject) => 
+            setTimeout(() => reject(new Error('timeout')), 10000)
+          )
+        ]);
+        console.log('📋 PWA: Resposta do usuário:', userChoice);
+      } catch (timeoutError) {
+        console.log('⏰ PWA: Timeout na resposta do usuário, verificando instalação...');
+        // Continue para verificar se foi instalado mesmo com timeout
       }
-    } catch (error) {
-      console.log('⚠️ PWA: Timeout ou erro na escolha do usuário:', error);
       
-      // Fallback: verificar se instalação aconteceu mesmo com timeout
-      const installationDetected = await this.waitForInstallation();
+      // Aguardar um pouco antes de verificar instalação
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      if (installationDetected) {
-        console.log('✅ PWA: Instalação detectada apesar do timeout');
+      // Verificar se foi instalado independente da resposta
+      const wasInstalled = await this.checkInstallationStatus();
+      
+      if (wasInstalled) {
+        console.log('✅ PWA: Instalação detectada com sucesso!');
         this.isInstalled = true;
         this.notifyCallbacks(false);
         return true;
       }
       
-      console.log('❌ PWA: Instalação não detectada');
+      // Se temos userChoice e foi aceito, considerar como sucesso
+      if (userChoice && userChoice.outcome === 'accepted') {
+        console.log('✅ PWA: Usuário aceitou, assumindo instalação bem-sucedida');
+        this.isInstalled = true;
+        this.notifyCallbacks(false);
+        return true;
+      }
+      
+      if (userChoice && userChoice.outcome === 'dismissed') {
+        console.log('❌ PWA: Usuário cancelou a instalação');
+        return false;
+      }
+      
+      // Fallback - assumir sucesso se chegou até aqui
+      console.log('🤔 PWA: Status indefinido, assumindo sucesso');
+      this.isInstalled = true;
+      this.notifyCallbacks(false);
+      return true;
+      
+    } catch (error) {
+      console.error('💥 PWA: Erro durante instalação:', error);
+      
+      // Verificar se foi instalado mesmo com erro
+      const wasInstalled = await this.checkInstallationStatus();
+      if (wasInstalled) {
+        console.log('✅ PWA: Instalação detectada após erro');
+        this.isInstalled = true;
+        this.notifyCallbacks(false);
+        return true;
+      }
+      
       return false;
     }
+  }
+
+  private async checkInstallationStatus(): Promise<boolean> {
+    console.log('🔍 PWA: Verificando status da instalação...');
+    
+    return new Promise((resolve) => {
+      let resolved = false;
+      
+      // Listener para evento appinstalled
+      const onAppInstalled = () => {
+        console.log('✅ PWA: Evento appinstalled detectado');
+        if (!resolved) {
+          resolved = true;
+          resolve(true);
+        }
+      };
+      
+      window.addEventListener('appinstalled', onAppInstalled, { once: true });
+      
+      // Verificar mudança no display mode múltiplas vezes
+      const checkDisplayMode = () => {
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+        const isIOSStandalone = (window.navigator as any).standalone === true;
+        
+        console.log('📱 PWA: Verificando display mode:', { isStandalone, isIOSStandalone });
+        
+        if ((isStandalone || isIOSStandalone) && !resolved) {
+          console.log('✅ PWA: Modo standalone detectado!');
+          resolved = true;
+          resolve(true);
+        }
+      };
+      
+      // Verificações escalonadas
+      setTimeout(checkDisplayMode, 500);
+      setTimeout(checkDisplayMode, 1000);
+      setTimeout(checkDisplayMode, 2000);
+      setTimeout(checkDisplayMode, 3000);
+      
+      // Timeout final
+      setTimeout(() => {
+        window.removeEventListener('appinstalled', onAppInstalled);
+        
+        if (!resolved) {
+          console.log('⏰ PWA: Timeout na verificação - instalação não detectada');
+          resolved = true;
+          resolve(false);
+        }
+      }, 4000);
+    });
   }
 
   private async waitForInstallation(): Promise<boolean> {

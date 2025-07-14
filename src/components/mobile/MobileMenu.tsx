@@ -53,7 +53,7 @@ export const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
   };
 
   const handleInstall = async () => {
-    console.log('🚀 Starting PWA installation...');
+    console.log('🚀 PWA: Iniciando instalação via menu mobile...');
     
     // For iOS - always show manual instructions
     if (isIOS) {
@@ -68,21 +68,29 @@ O app será instalado na sua tela inicial!`);
     }
 
     // For Android - SEMPRE tentar instalação, independente de canInstall()
-    console.log('🎯 Forçando instalação PWA no Android...');
+    console.log('🎯 PWA: Forçando instalação no Android...');
     setIsInstalling(true);
     
-    const success = await pwaInstaller.install();
-    setIsInstalling(false);
-    
-    if (success) {
-      console.log('✅ PWA installed successfully');
-      onClose();
-    } else {
-      console.log('❌ PWA installation failed or was cancelled');
-      // Aguardar um pouco e tentar disparar o evento personalizado
+    try {
+      const success = await pwaInstaller.install();
+      console.log('📱 PWA: Resultado da instalação:', success);
+      
+      if (success) {
+        console.log('✅ PWA: Instalação concluída com sucesso!');
+        // Aguardar um pouco antes de fechar o menu para dar feedback visual
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      } else {
+        console.log('❌ PWA: Instalação não foi concluída');
+      }
+    } catch (error) {
+      console.error('💥 PWA: Erro durante instalação:', error);
+    } finally {
+      // Resetar estado após um delay maior para dar tempo do processo completar
       setTimeout(() => {
-        window.dispatchEvent(new Event('beforeinstallprompt'));
-      }, 1000);
+        setIsInstalling(false);
+      }, 3000);
     }
   };
 
