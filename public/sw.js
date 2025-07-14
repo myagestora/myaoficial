@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mya-gestora-v7-stable';
+const CACHE_NAME = 'mya-gestora-v8-android-fix';
 const urlsToCache = [
   '/',
   '/dashboard',
@@ -66,7 +66,7 @@ self.addEventListener('fetch', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('✅ Service Worker v7 - Stable');
+  console.log('✅ Service Worker v8 - Android Menu Fix');
   
   event.waitUntil(
     // Clean old caches but keep newer ones

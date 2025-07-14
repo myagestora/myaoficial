@@ -13,6 +13,7 @@ import { MobileAppLayout } from "@/components/mobile/MobileAppLayout";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { SEOHead } from "@/components/SEOHead";
 import { shouldUseMobileLayout } from "@/hooks/useMobileDetection";
+import { checkAndroidUpdate } from "@/utils/androidRefresh";
 import React from "react";
 
 // Regular pages
@@ -45,25 +46,9 @@ const queryClient = new QueryClient();
 const LayoutWrapper = () => {
   const useMobile = shouldUseMobileLayout();
   
-  // One-time cache refresh for Android (não interfere com auth)
+  // Verificar e atualizar Android apenas uma vez
   React.useEffect(() => {
-    const isAndroid = /android/i.test(navigator.userAgent);
-    const cacheVersion = localStorage.getItem('cache-version');
-    const currentVersion = 'v7-stable';
-    
-    if (isAndroid && cacheVersion !== currentVersion) {
-      console.log('📱 Android: Cache update (stable)');
-      localStorage.setItem('cache-version', currentVersion);
-      
-      // Gentle service worker update
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(registrations => {
-          registrations.forEach(registration => {
-            registration.update();
-          });
-        });
-      }
-    }
+    checkAndroidUpdate();
   }, []);
   
   if (useMobile) {

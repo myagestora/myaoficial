@@ -40,6 +40,12 @@ export const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
   const [canInstall, setCanInstall] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
   const isIOS = isIOSDevice();
+  
+  // Debug visual para Android
+  const userAgent = navigator.userAgent.toLowerCase();
+  const isAndroid = /android/i.test(userAgent);
+  const menuVersion = "v8-android-fix";
+  const debugTimestamp = Date.now();
 
   const handleNavigate = (path: string) => {
     navigate(path);
@@ -113,7 +119,14 @@ export const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold text-foreground">Menu</h2>
+          <div className="flex flex-col">
+            <h2 className="text-lg font-semibold text-foreground">Menu</h2>
+            {isAndroid && (
+              <span className="text-xs text-green-500 font-mono">
+                📱 Android {menuVersion} - {debugTimestamp}
+              </span>
+            )}
+          </div>
           <Button
             variant="ghost"
             size="icon"
@@ -162,33 +175,38 @@ export const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
             </button>
           ))}
 
-          {/* PWA Install Button */}
-          {(canInstall || isIOS) && (
-            <>
-              <div className="my-4 border-t border-muted" />
-              <button
-                onClick={isIOS ? () => {
-                  // Para iOS, mostrar instruções
-                  alert('Para instalar no iOS:\n1. Toque no ícone de compartilhar\n2. Selecione "Adicionar à Tela de Início"');
-                  onClose();
-                } : handleInstall}
-                disabled={isInstalling}
-                className="flex items-center space-x-3 w-full p-3 rounded-lg transition-colors text-left bg-primary/5 hover:bg-primary/10 text-primary"
-              >
-                <Download size={20} />
-                <div className="flex flex-col">
-                  <span className="font-medium">
-                    {isInstalling ? 'Instalando...' : 'Instalar App'}
-                  </span>
-                  {isIOS && (
-                    <span className="text-xs text-muted-foreground">
-                      Toque para ver instruções
-                    </span>
-                  )}
-                </div>
-              </button>
-            </>
-          )}
+          {/* PWA Install Button - SEMPRE VISÍVEL no Android */}
+          <div className="my-4 border-t border-muted" />
+          <button
+            onClick={isIOS ? () => {
+              // Para iOS, mostrar instruções
+              alert('Para instalar no iOS:\n1. Toque no ícone de compartilhar\n2. Selecione "Adicionar à Tela de Início"');
+              onClose();
+            } : isAndroid ? () => {
+              // Para Android, sempre tentar instalar
+              if (canInstall) {
+                handleInstall();
+              } else {
+                // Fallback: mostrar como adicionar atalho manualmente
+                alert('Para adicionar à tela inicial:\n1. Toque nos 3 pontos do navegador\n2. Selecione "Adicionar à tela inicial"');
+                onClose();
+              }
+            } : handleInstall}
+            disabled={isInstalling}
+            className="flex items-center space-x-3 w-full p-3 rounded-lg transition-colors text-left bg-primary/5 hover:bg-primary/10 text-primary"
+          >
+            <Download size={20} />
+            <div className="flex flex-col">
+              <span className="font-medium">
+                {isInstalling ? 'Instalando...' : 'Instalar App'}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {isIOS ? 'Toque para ver instruções' : 
+                 isAndroid ? (canInstall ? 'Instalar PWA' : 'Adicionar atalho') : 
+                 'Adicionar à tela inicial'}
+              </span>
+            </div>
+          </button>
         </nav>
       </div>
     </div>
