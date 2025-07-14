@@ -18,6 +18,8 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    console.log('Fetching system config...');
+
     // Buscar configurações do sistema
     const { data: configs, error } = await supabase
       .from('system_config')
@@ -28,18 +30,34 @@ serve(async (req) => {
       console.error('Error fetching system config:', error);
     }
 
+    console.log('System configs fetched:', configs);
+
     // Processar configurações
     const configMap: Record<string, string> = {};
     configs?.forEach(config => {
-      if (config.value && typeof config.value === 'string') {
-        configMap[config.key] = config.value;
+      if (config.value) {
+        // Verificar se o valor é string ou objeto
+        let stringValue: string;
+        if (typeof config.value === 'string') {
+          stringValue = config.value;
+        } else if (typeof config.value === 'object' && config.value !== null) {
+          // Se for objeto, tentar extrair uma propriedade ou usar JSON.stringify
+          stringValue = JSON.stringify(config.value);
+        } else {
+          stringValue = String(config.value);
+        }
+        configMap[config.key] = stringValue;
       }
     });
+
+    console.log('Processed config map:', configMap);
 
     // Valores padrão
     const appName = configMap.app_name || configMap.seo_title || 'Mya Gestora';
     const description = configMap.seo_description || 'Sistema inteligente de controle financeiro pessoal';
     const faviconUrl = configMap.app_favicon || 'https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png';
+
+    console.log('Final values:', { appName, description, faviconUrl });
 
     // Gerar manifest dinâmico
     const manifest = {
@@ -59,13 +77,19 @@ serve(async (req) => {
           src: faviconUrl,
           sizes: "192x192",
           type: "image/png",
-          purpose: "any maskable"
+          purpose: "any"
         },
         {
           src: faviconUrl,
-          sizes: "512x512",
+          sizes: "512x512", 
           type: "image/png",
-          purpose: "any maskable"
+          purpose: "any"
+        },
+        {
+          src: faviconUrl,
+          sizes: "192x192",
+          type: "image/png",
+          purpose: "maskable"
         }
       ],
       shortcuts: [
@@ -73,30 +97,18 @@ serve(async (req) => {
           name: "Nova Transação",
           short_name: "Transação",
           description: "Adicionar uma nova transação",
-          url: "/transactions",
-          icons: [
-            {
-              src: faviconUrl,
-              sizes: "96x96",
-              type: "image/png"
-            }
-          ]
+          url: "/transactions"
         },
         {
-          name: "Dashboard",
+          name: "Dashboard", 
           short_name: "Início",
           description: "Ver visão geral das finanças",
-          url: "/dashboard",
-          icons: [
-            {
-              src: faviconUrl,
-              sizes: "96x96",
-              type: "image/png"
-            }
-          ]
+          url: "/dashboard"
         }
       ]
     };
+
+    console.log('Generated manifest:', manifest);
 
     return new Response(JSON.stringify(manifest), {
       headers: {
