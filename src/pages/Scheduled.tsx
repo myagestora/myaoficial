@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { TransactionForm } from '@/components/transactions/TransactionForm';
 import { ScheduledHeader } from '@/components/scheduled/ScheduledHeader';
-import { ScheduledStats } from '@/components/scheduled/ScheduledStats';
+
 import { ScheduledFilters } from '@/components/scheduled/ScheduledFilters';
 import { ScheduledTransactionsList } from '@/components/scheduled/ScheduledTransactionsList';
 import { useScheduledTransactions } from '@/hooks/useScheduledTransactions';
@@ -152,10 +152,6 @@ const Scheduled = () => {
     <div className="p-6 space-y-6">
       <ScheduledHeader onNewSchedule={() => setIsFormOpen(true)} />
       
-      <ScheduledStats 
-        upcomingExecutions={upcomingExecutions}
-        todayCount={todayCount}
-      />
 
       <ScheduledFilters
         searchTerm={searchTerm}

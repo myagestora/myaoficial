@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { MobilePageWrapper } from '../MobilePageWrapper';
 import { MobileScheduledFilters } from '../MobileScheduledFilters';
-import { MobileScheduledStats } from '../MobileScheduledStats';
+
 import { useScheduledTransactions } from '@/hooks/useScheduledTransactions';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -183,29 +183,9 @@ export const MobileScheduled = () => {
       return t.date === todayString;
     }).length || 0;
 
-    // Calculate monthly impact - transações do mês atual
-    const currentMonth = new Date().getMonth() + 1;
-    const currentYear = new Date().getFullYear();
-    const currentMonthStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
-    
-    // Filtrar transações do mês atual
-    const currentMonthTransactions = scheduledTransactions?.filter(t => {
-      return t.date && t.date.startsWith(currentMonthStr);
-    }) || [];
-
-    const monthlyIncome = currentMonthTransactions
-      .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    const monthlyExpenses = currentMonthTransactions
-      .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
-
     return {
       upcoming,
-      todayScheduled,
-      monthlyIncome,
-      monthlyExpenses
+      todayScheduled
     };
   }, [scheduledTransactions]);
 
@@ -301,15 +281,6 @@ export const MobileScheduled = () => {
         </Button>
       </div>
 
-      {/* Statistics */}
-      <div className="mb-6">
-        <MobileScheduledStats
-          upcomingExecutions={stats.upcoming}
-          todayScheduled={stats.todayScheduled}
-          totalMonthlyIncome={stats.monthlyIncome}
-          totalMonthlyExpenses={stats.monthlyExpenses}
-        />
-      </div>
 
       {/* Filters */}
       <div className="mb-6">
