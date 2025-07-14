@@ -151,18 +151,29 @@ export const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
           ))}
 
           {/* PWA Install Button */}
-          {canInstall && (
+          {(canInstall || isIOS) && (
             <>
               <div className="my-4 border-t border-muted" />
               <button
-                onClick={handleInstall}
+                onClick={isIOS ? () => {
+                  // Para iOS, mostrar instruções
+                  alert('Para instalar no iOS:\n1. Toque no ícone de compartilhar\n2. Selecione "Adicionar à Tela de Início"');
+                  onClose();
+                } : handleInstall}
                 disabled={isInstalling}
                 className="flex items-center space-x-3 w-full p-3 rounded-lg transition-colors text-left bg-primary/5 hover:bg-primary/10 text-primary"
               >
                 <Download size={20} />
-                <span className="font-medium">
-                  {isInstalling ? 'Instalando...' : 'Instalar App'}
-                </span>
+                <div className="flex flex-col">
+                  <span className="font-medium">
+                    {isInstalling ? 'Instalando...' : 'Instalar App'}
+                  </span>
+                  {isIOS && (
+                    <span className="text-xs text-muted-foreground">
+                      Toque para ver instruções
+                    </span>
+                  )}
+                </div>
               </button>
             </>
           )}
