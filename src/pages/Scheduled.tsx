@@ -53,17 +53,27 @@ const Scheduled = () => {
 
   // Calcular estatísticas
   const upcomingExecutions = filteredTransactions.filter(t => {
-    const nextDate = new Date(t.next_recurrence_date);
+    // Para transações recorrentes, usar next_recurrence_date
+    // Para transações únicas, usar date
+    const targetDate = t.is_recurring && t.next_recurrence_date 
+      ? new Date(t.next_recurrence_date)
+      : new Date(t.date);
+    
     const today = new Date();
-    const diffTime = nextDate.getTime() - today.getTime();
+    const diffTime = targetDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays >= 0 && diffDays <= 7;
   }).length;
 
   const overdueScheduled = filteredTransactions.filter(t => {
-    const nextDate = new Date(t.next_recurrence_date);
+    // Para transações recorrentes, usar next_recurrence_date
+    // Para transações únicas, usar date
+    const targetDate = t.is_recurring && t.next_recurrence_date 
+      ? new Date(t.next_recurrence_date)
+      : new Date(t.date);
+    
     const today = new Date();
-    return nextDate < today;
+    return targetDate < today;
   }).length;
 
   const handleToggleStatus = (id: string, isActive: boolean) => {

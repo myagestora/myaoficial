@@ -33,8 +33,8 @@ export const useScheduledTransactions = () => {
           )
         `)
         .eq('user_id', user.id)
-        .eq('is_recurring', true)
-        .order('next_recurrence_date', { ascending: true });
+        .or(`is_recurring.eq.true,date.gte.${new Date().toISOString().split('T')[0]}`)
+        .order('date', { ascending: true });
 
       if (error) {
         console.error('Error fetching scheduled transactions:', error);
