@@ -36,12 +36,23 @@ const MobileExpandableSelect = ({ value, onValueChange, children, placeholder }:
     })
   }, [])
 
+  // Log para debug
+  React.useEffect(() => {
+    console.log('🔄 MobileExpandableSelect - Value changed:', value)
+    console.log('📋 Items registry:', Array.from(itemsRegistry.entries()))
+  }, [value, itemsRegistry])
+
   // Atualizar o selectedLabel quando o value ou itemsRegistry mudarem
   React.useEffect(() => {
     if (value && itemsRegistry.has(value)) {
-      setSelectedLabel(itemsRegistry.get(value) || "")
+      const label = itemsRegistry.get(value) || ""
+      console.log('✅ Setting selected label:', label, 'for value:', value)
+      setSelectedLabel(label)
     } else if (!value) {
+      console.log('🔄 Clearing selected label (no value)')
       setSelectedLabel("")
+    } else if (value && !itemsRegistry.has(value)) {
+      console.log('⚠️ Value exists but not in registry yet:', value)
     }
   }, [value, itemsRegistry])
 
@@ -172,6 +183,7 @@ const MobileExpandableSelectItem = React.forwardRef<
   // Registrar este item no mapa quando montado
   React.useEffect(() => {
     if (itemLabel) {
+      console.log('📋 Registering item:', value, '→', itemLabel)
       registerItem(value, itemLabel)
     }
   }, [value, itemLabel, registerItem])
@@ -179,6 +191,7 @@ const MobileExpandableSelectItem = React.forwardRef<
   // Atualizar o label selecionado quando este item estiver selecionado
   React.useEffect(() => {
     if (isSelected && itemLabel) {
+      console.log('✅ Item selected, updating label:', itemLabel)
       setSelectedLabel(itemLabel)
     }
   }, [isSelected, itemLabel, setSelectedLabel])
