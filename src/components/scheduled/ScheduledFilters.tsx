@@ -37,13 +37,13 @@ export const ScheduledFilters = ({
   const clearFilters = () => {
     setSearchTerm('');
     onFiltersChange({
-      type: '',
-      category: '',
+      type: 'all',
+      category: 'all',
       period: { from: null, to: null }
     });
   };
 
-  const hasActiveFilters = searchTerm || filters.type || filters.category || filters.period.from || filters.period.to;
+  const hasActiveFilters = searchTerm || (filters.type !== 'all') || (filters.category !== 'all') || filters.period.from || filters.period.to;
 
   return (
     <Card>
@@ -75,7 +75,7 @@ export const ScheduledFilters = ({
                   <SelectValue placeholder="Todos os tipos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os tipos</SelectItem>
+                  <SelectItem value="all">Todos os tipos</SelectItem>
                   <SelectItem value="income">Receita</SelectItem>
                   <SelectItem value="expense">Despesa</SelectItem>
                 </SelectContent>
@@ -95,7 +95,7 @@ export const ScheduledFilters = ({
                   <SelectValue placeholder="Todas as categorias" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as categorias</SelectItem>
+                  <SelectItem value="all">Todas as categorias</SelectItem>
                   {categories.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       <div className="flex items-center">

@@ -32,8 +32,8 @@ export const MobileScheduled = () => {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
-    type: '',
-    category: '',
+    type: 'all',
+    category: 'all',
     period: {
       from: null as Date | null,
       to: null as Date | null
@@ -128,10 +128,10 @@ export const MobileScheduled = () => {
       }
 
       // Type filter
-      if (filters.type && transaction.type !== filters.type) return false;
+      if (filters.type && filters.type !== 'all' && transaction.type !== filters.type) return false;
 
       // Category filter
-      if (filters.category && transaction.category_id !== filters.category) return false;
+      if (filters.category && filters.category !== 'all' && transaction.category_id !== filters.category) return false;
 
       // Period filter
       if (filters.period.from || filters.period.to) {

@@ -13,8 +13,8 @@ interface FilterOptions {
 export const useScheduledFilters = (transactions: any[]) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<FilterOptions>({
-    type: '',
-    category: '',
+    type: 'all',
+    category: 'all',
     period: {
       from: null,
       to: null
@@ -23,12 +23,12 @@ export const useScheduledFilters = (transactions: any[]) => {
 
   const applyFilters = (transaction: any) => {
     // Filtro por tipo
-    if (filters.type && transaction.type !== filters.type) {
+    if (filters.type && filters.type !== 'all' && transaction.type !== filters.type) {
       return false;
     }
 
     // Filtro por categoria
-    if (filters.category && transaction.category_id !== filters.category) {
+    if (filters.category && filters.category !== 'all' && transaction.category_id !== filters.category) {
       return false;
     }
 
@@ -67,7 +67,7 @@ export const useScheduledFilters = (transactions: any[]) => {
     });
   }, [transactions, searchTerm, filters]);
 
-  const hasFiltersOrSearch = Boolean(searchTerm !== '' || filters.type !== '' || filters.category !== '' || filters.period.from || filters.period.to);
+  const hasFiltersOrSearch = Boolean(searchTerm !== '' || (filters.type !== 'all') || (filters.category !== 'all') || filters.period.from || filters.period.to);
 
   return {
     searchTerm,
