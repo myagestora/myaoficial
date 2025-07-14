@@ -15,15 +15,26 @@ interface MobileExpandableSelectContextType {
   isOpen: boolean
   setIsOpen: (open: boolean) => void
   placeholder?: string
+  selectedLabel: string
+  setSelectedLabel: (label: string) => void
 }
 
 const MobileExpandableSelectContext = React.createContext<MobileExpandableSelectContextType | null>(null)
 
 const MobileExpandableSelect = ({ value, onValueChange, children, placeholder }: MobileExpandableSelectProps) => {
   const [isOpen, setIsOpen] = React.useState(false)
+  const [selectedLabel, setSelectedLabel] = React.useState<string>("")
 
   return (
-    <MobileExpandableSelectContext.Provider value={{ value, onValueChange, isOpen, setIsOpen, placeholder }}>
+    <MobileExpandableSelectContext.Provider value={{ 
+      value, 
+      onValueChange, 
+      isOpen, 
+      setIsOpen, 
+      placeholder, 
+      selectedLabel, 
+      setSelectedLabel 
+    }}>
       <div className="space-y-2">
         {children}
       </div>
@@ -65,27 +76,7 @@ const MobileExpandableSelectValue = React.forwardRef<
   const context = React.useContext(MobileExpandableSelectContext)
   if (!context) throw new Error("MobileExpandableSelectValue must be used within MobileExpandableSelect")
 
-  const { value, placeholder } = context
-  const [selectedLabel, setSelectedLabel] = React.useState<string>("")
-
-  React.useEffect(() => {
-    if (value) {
-      // Encontrar o label do valor selecionado
-      const findSelectedLabel = () => {
-        const optionsContainer = document.querySelector(`[data-expandable-select-options]`)
-        if (optionsContainer) {
-          const selectedOption = optionsContainer.querySelector(`[data-value="${value}"]`)
-          if (selectedOption) {
-            setSelectedLabel(selectedOption.textContent || "")
-          }
-        }
-      }
-      // Delay para garantir que os options foram renderizados
-      setTimeout(findSelectedLabel, 0)
-    } else {
-      setSelectedLabel("")
-    }
-  }, [value])
+  const { value, placeholder, selectedLabel } = context
 
   return (
     <span
@@ -130,16 +121,43 @@ MobileExpandableSelectContent.displayName = "MobileExpandableSelectContent"
 
 const MobileExpandableSelectItem = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & { value: string }
->(({ className, children, value, ...props }, ref) => {
+  React.HTMLAttributes<HTMLDivElement> & { value: string; label?: string }
+>(({ className, children, value, label, ...props }, ref) => {
   const context = React.useContext(MobileExpandableSelectContext)
   if (!context) throw new Error("MobileExpandableSelectItem must be used within MobileExpandableSelect")
 
-  const { value: selectedValue, onValueChange, setIsOpen } = context
+  const { value: selectedValue, onValueChange, setIsOpen, setSelectedLabel } = context
   const isSelected = selectedValue === value
+
+  // Extrair o texto do children para usar como label
+  const getTextContent = (node: React.ReactNode): string => {
+    if (typeof node === 'string') return node
+    if (typeof node === 'number') return String(node)
+    if (React.isValidElement(node)) {
+      if (typeof node.props.children === 'string') return node.props.children
+      if (Array.isArray(node.props.children)) {
+        return node.props.children.map(getTextContent).join(' ')
+      }
+      return getTextContent(node.props.children)
+    }
+    if (Array.isArray(node)) {
+      return node.map(getTextContent).join(' ')
+    }
+    return ''
+  }
+
+  const itemLabel = label || getTextContent(children)
+
+  // Atualizar o label selecionado quando este item estiver selecionado
+  React.useEffect(() => {
+    if (isSelected && itemLabel) {
+      setSelectedLabel(itemLabel)
+    }
+  }, [isSelected, itemLabel, setSelectedLabel])
 
   const handleClick = () => {
     onValueChange?.(value)
+    setSelectedLabel(itemLabel)
     setIsOpen(false)
   }
 

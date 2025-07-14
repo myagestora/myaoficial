@@ -424,9 +424,6 @@ export const MobileTransactionForm = () => {
                         style={{ backgroundColor: category.color }}
                       />
                       <span>{category.name}</span>
-                      {(category as any).is_default && (
-                        <span className="text-xs text-muted-foreground">(padrão)</span>
-                      )}
                     </div>
                   </MobileExpandableSelectItem>
                 ))}
