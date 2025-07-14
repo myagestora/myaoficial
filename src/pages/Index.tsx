@@ -117,7 +117,7 @@ const Index = () => {
   const whyChooseFeatures = [{
     icon: Shield,
     title: 'Proteção Máxima',
-    description: 'Tecnologia de segurança bancária para proteger seus dados com certificação ISO'
+    description: 'Seus dados protegidos com criptografia de ponta e total privacidade garantida'
   }, {
     icon: Clock,
     title: 'Praticidade Total',
