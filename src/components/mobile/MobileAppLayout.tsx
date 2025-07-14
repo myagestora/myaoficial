@@ -70,7 +70,7 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
             className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
           >
             <img 
-              src="https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png" 
+              src="https://api.myagestora.com.br/storage/v1/object/public/logos/logo-1751933896307.png" 
               alt="Mya Gestora" 
               className="h-12 w-auto object-contain"
             />

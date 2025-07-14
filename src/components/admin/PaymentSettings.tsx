@@ -21,7 +21,7 @@ export const PaymentSettings = ({ settings, onInputChange, onSave, isLoading }: 
   };
 
   // URL correta da Edge Function do Supabase para webhook de assinatura
-  const webhookUrl = 'https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1/mercado-pago-subscription-webhook';
+  const webhookUrl = 'https://api.myagestora.com.br/functions/v1/mercado-pago-subscription-webhook';
 
   const copyWebhookUrl = async () => {
     try {
@@ -180,11 +180,11 @@ export const PaymentSettings = ({ settings, onInputChange, onSave, isLoading }: 
             <div className="text-sm text-amber-800 dark:text-amber-200 space-y-2">
               <p><strong>Para Assinaturas:</strong></p>
               <p className="font-mono bg-amber-100 dark:bg-amber-800 p-2 rounded text-xs break-all">
-                https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1/mercado-pago-subscription-webhook
+                https://api.myagestora.com.br/functions/v1/mercado-pago-subscription-webhook
               </p>
               <p><strong>Para Pagamentos Únicos:</strong></p>
               <p className="font-mono bg-amber-100 dark:bg-amber-800 p-2 rounded text-xs break-all">
-                https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1/mercado-pago-webhook
+                https://api.myagestora.com.br/functions/v1/mercado-pago-webhook
               </p>
             </div>
           </div>

@@ -42,7 +42,7 @@ export const MobileAppLayoutDynamic = () => {
       } catch (error) {
         console.warn('Error loading logo:', error);
         // Fallback para URL estática
-        setLogoUrl('https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png');
+        setLogoUrl('https://api.myagestora.com.br/storage/v1/object/public/logos/logo-1751933896307.png');
       }
     };
 
