@@ -63,17 +63,20 @@ serve(async (req) => {
       .limit(1);
 
     // Fetch user's expense transactions for today
+    // Only include transactions that were created before today (scheduled transactions)
     const { data: transactions, error: transactionsError } = await supabase
       .from('transactions')
       .select(`
         id,
         title,
         amount,
+        created_at,
         categories(name, color)
       `)
       .eq('user_id', user_id)
       .eq('type', 'expense')
-      .eq('date', today);
+      .eq('date', today)
+      .lt('created_at', today + 'T00:00:00.000Z');
 
     if (transactionsError) {
       console.error('Error fetching transactions:', transactionsError);

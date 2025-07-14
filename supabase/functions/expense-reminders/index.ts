@@ -60,6 +60,7 @@ serve(async (req) => {
     const today = new Date().toISOString().split('T')[0];
 
     // Fetch all expense transactions for today with user profiles
+    // Only include transactions that were created before today (scheduled transactions)
     const { data: transactions, error: transactionsError } = await supabase
       .from('transactions')
       .select(`
@@ -68,11 +69,13 @@ serve(async (req) => {
         amount,
         date,
         user_id,
+        created_at,
         categories!inner(name, color),
         profiles!inner(id, full_name, email, expense_reminders_enabled)
       `)
       .eq('type', 'expense')
       .eq('date', today)
+      .lt('created_at', today + 'T00:00:00.000Z')
       .eq('profiles.expense_reminders_enabled', true);
 
     if (transactionsError) {
