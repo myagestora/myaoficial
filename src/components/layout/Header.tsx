@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, NavLink } from 'react-router-dom';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -112,7 +112,9 @@ export const Header = ({
           
           {/* Logo/Brand area for mobile */}
           <div className="lg:hidden">
-            <h1 className="text-white font-semibold text-lg">MYA</h1>
+            <NavLink to="/dashboard" className="text-white hover:text-gray-200 transition-colors">
+              <h1 className="font-semibold text-lg">MYA</h1>
+            </NavLink>
           </div>
         </div>
 
