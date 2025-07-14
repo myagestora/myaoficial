@@ -10,9 +10,6 @@ import { Search, X } from 'lucide-react';
 interface FilterOptions {
   type: string;
   category: string;
-  frequency: string;
-  status: string;
-  nextExecution: string;
 }
 
 interface ScheduledFiltersProps {
@@ -37,48 +34,18 @@ export const ScheduledFilters = ({
     { value: 'expense', label: 'Despesa' }
   ];
 
-  const frequencyOptions = [
-    { value: '', label: 'Todas as frequências' },
-    { value: 'daily', label: 'Diário' },
-    { value: 'weekly', label: 'Semanal' },
-    { value: 'biweekly', label: 'Quinzenal' },
-    { value: 'monthly', label: 'Mensal' },
-    { value: 'quarterly', label: 'Trimestral' },
-    { value: 'semiannual', label: 'Semestral' },
-    { value: 'yearly', label: 'Anual' },
-    { value: 'custom', label: 'Personalizado' }
-  ];
-
-  const statusOptions = [
-    { value: '', label: 'Todos os status' },
-    { value: 'active', label: 'Ativo' },
-    { value: 'inactive', label: 'Inativo' }
-  ];
-
-  const nextExecutionOptions = [
-    { value: '', label: 'Todos os períodos' },
-    { value: 'today', label: 'Hoje' },
-    { value: 'tomorrow', label: 'Amanhã' },
-    { value: 'week', label: 'Próximos 7 dias' },
-    { value: 'month', label: 'Próximos 30 dias' },
-    { value: 'overdue', label: 'Atrasados' }
-  ];
-
   const clearFilters = () => {
     onFiltersChange({
       type: '',
-      category: '',
-      frequency: '',
-      status: '',
-      nextExecution: ''
+      category: ''
     });
     onSearchChange('');
   };
 
-  const hasActiveFilters = filters.type || filters.category || filters.frequency || filters.status || filters.nextExecution || searchTerm;
+  const hasActiveFilters = filters.type || filters.category || searchTerm;
 
   const getActiveFiltersCount = () => {
-    return [filters.type, filters.category, filters.frequency, filters.status, filters.nextExecution, searchTerm].filter(Boolean).length;
+    return [filters.type, filters.category, searchTerm].filter(Boolean).length;
   };
 
   return (
@@ -116,7 +83,7 @@ export const ScheduledFilters = ({
           </div>
 
           {/* Campos de filtro em grid responsivo */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* Tipo */}
             <div className="space-y-1">
               <Label htmlFor="type" className="text-xs text-muted-foreground">Tipo</Label>
@@ -145,38 +112,6 @@ export const ScheduledFilters = ({
                 {categories.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Frequência */}
-            <div className="space-y-1">
-              <Label htmlFor="frequency" className="text-xs text-muted-foreground">Frequência</Label>
-              <select 
-                value={filters.frequency} 
-                onChange={(e) => onFiltersChange({ ...filters, frequency: e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                {frequencyOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Status */}
-            <div className="space-y-1">
-              <Label htmlFor="status" className="text-xs text-muted-foreground">Status</Label>
-              <select 
-                value={filters.status} 
-                onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                {statusOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
                   </option>
                 ))}
               </select>

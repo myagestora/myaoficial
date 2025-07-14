@@ -33,9 +33,7 @@ export const MobileScheduled = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
     type: '',
-    category: '',
-    frequency: '',
-    status: ''
+    category: ''
   });
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [recurringDeletingId, setRecurringDeletingId] = useState<string | null>(null);
@@ -130,15 +128,6 @@ export const MobileScheduled = () => {
 
       // Category filter
       if (filters.category && transaction.categories?.name !== categories.find(c => c.id === filters.category)?.name) return false;
-
-      // Frequency filter
-      if (filters.frequency && transaction.recurrence_frequency !== filters.frequency) return false;
-
-      // Status filter
-      if (filters.status) {
-        if (filters.status === 'active' && !transaction.is_recurring) return false;
-        if (filters.status === 'paused' && transaction.is_recurring) return false;
-      }
 
       return true;
     }) || [];

@@ -6,11 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Search, 
   Filter, 
-  Calendar, 
-  Clock, 
   ArrowUpCircle, 
   ArrowDownCircle,
-  RefreshCw,
   X
 } from 'lucide-react';
 import { MobileListSelect } from './MobileListSelect';
@@ -18,8 +15,6 @@ import { MobileListSelect } from './MobileListSelect';
 interface FilterOptions {
   type: string;
   category: string;
-  frequency: string;
-  status: string;
 }
 
 interface MobileScheduledFiltersProps {
@@ -45,21 +40,6 @@ export const MobileScheduledFilters = ({
     { value: 'expense', label: 'Despesa' }
   ];
 
-  const frequencyOptions = [
-    { value: '', label: 'Todas as frequências' },
-    { value: 'daily', label: 'Diária' },
-    { value: 'weekly', label: 'Semanal' },
-    { value: 'monthly', label: 'Mensal' },
-    { value: 'quarterly', label: 'Trimestral' },
-    { value: 'yearly', label: 'Anual' }
-  ];
-
-  const statusOptions = [
-    { value: '', label: 'Todos os status' },
-    { value: 'active', label: 'Ativo' },
-    { value: 'paused', label: 'Pausado' }
-  ];
-
   const categoryOptions = [
     { value: '', label: 'Todas as categorias', color: undefined },
     ...categories.map(cat => ({ value: cat.id, label: cat.name, color: cat.color }))
@@ -68,14 +48,12 @@ export const MobileScheduledFilters = ({
   const clearFilters = () => {
     onFiltersChange({
       type: '',
-      category: '',
-      frequency: '',
-      status: ''
+      category: ''
     });
     onSearchChange('');
   };
 
-  const hasActiveFilters = filters.type || filters.category || filters.frequency || filters.status || searchTerm;
+  const hasActiveFilters = filters.type || filters.category || searchTerm;
 
   return (
     <Card>
@@ -103,7 +81,7 @@ export const MobileScheduledFilters = ({
             <span>Filtros</span>
             {hasActiveFilters && (
               <Badge variant="secondary" className="ml-1 h-4 text-xs">
-                {[filters.type, filters.category, filters.frequency, filters.status, searchTerm].filter(Boolean).length}
+                {[filters.type, filters.category, searchTerm].filter(Boolean).length}
               </Badge>
             )}
           </Button>
@@ -131,12 +109,6 @@ export const MobileScheduledFilters = ({
                 <span>{typeOptions.find(opt => opt.value === filters.type)?.label}</span>
               </Badge>
             )}
-            {filters.frequency && (
-              <Badge variant="secondary" className="flex items-center space-x-1">
-                <RefreshCw size={12} />
-                <span>{frequencyOptions.find(opt => opt.value === filters.frequency)?.label}</span>
-              </Badge>
-            )}
             {filters.category && (
               <Badge variant="secondary" className="flex items-center space-x-1">
                 <div 
@@ -144,12 +116,6 @@ export const MobileScheduledFilters = ({
                   style={{ backgroundColor: categories.find(cat => cat.id === filters.category)?.color }}
                 />
                 <span>{categories.find(cat => cat.id === filters.category)?.name}</span>
-              </Badge>
-            )}
-            {filters.status && (
-              <Badge variant="secondary" className="flex items-center space-x-1">
-                <Clock size={12} />
-                <span>{statusOptions.find(opt => opt.value === filters.status)?.label}</span>
               </Badge>
             )}
           </div>
@@ -175,26 +141,6 @@ export const MobileScheduledFilters = ({
                 onValueChange={(value) => onFiltersChange({ ...filters, category: value })}
                 options={categoryOptions}
                 placeholder="Selecione a categoria"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Frequência</label>
-              <MobileListSelect
-                value={filters.frequency}
-                onValueChange={(value) => onFiltersChange({ ...filters, frequency: value })}
-                options={frequencyOptions}
-                placeholder="Selecione a frequência"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Status</label>
-              <MobileListSelect
-                value={filters.status}
-                onValueChange={(value) => onFiltersChange({ ...filters, status: value })}
-                options={statusOptions}
-                placeholder="Selecione o status"
               />
             </div>
           </div>
