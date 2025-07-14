@@ -10,13 +10,14 @@ import {
   MobileSelectItem 
 } from '@/components/mobile/MobileSelect';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Plus, ArrowLeft, Grid3X3 } from 'lucide-react';
+import { Trash2, Plus, ArrowLeft, Grid3X3, Edit } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { MobileOptimizedCard } from '@/components/ui/mobile-optimized-card';
 import { MobilePageWrapper } from '../MobilePageWrapper';
+import { InlineConfirmation } from '@/components/ui/inline-confirmation';
 
 const COLORS = [
   '#F44336', '#E91E63', '#9C27B0', '#673AB7',
@@ -35,6 +36,9 @@ export const MobileCategories = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<'income' | 'expense'>('expense');
   const [newCategory, setNewCategory] = useState({
     name: '',
@@ -78,6 +82,8 @@ export const MobileCategories = () => {
       queryClient.invalidateQueries({ queryKey: ['all-categories'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       setIsCreating(false);
+      setIsEditing(false);
+      setEditingCategory(null);
       setNewCategory({ name: '', type: 'expense', color: '#2196F3', icon: 'circle' });
       toast({
         title: 'Sucesso',
@@ -105,6 +111,7 @@ export const MobileCategories = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['all-categories'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+      setDeletingId(null);
       toast({
         title: 'Sucesso',
         description: 'Categoria removida com sucesso',
@@ -119,9 +126,76 @@ export const MobileCategories = () => {
     }
   });
 
+  const updateCategoryMutation = useMutation({
+    mutationFn: async ({ id, categoryData }: { id: string; categoryData: typeof newCategory }) => {
+      if (!user) throw new Error('Usuário não autenticado');
+
+      const { error } = await supabase
+        .from('categories')
+        .update({
+          name: categoryData.name,
+          type: categoryData.type,
+          color: categoryData.color,
+          icon: categoryData.icon,
+        })
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['all-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      setIsEditing(false);
+      setEditingCategory(null);
+      setNewCategory({ name: '', type: 'expense', color: '#2196F3', icon: 'circle' });
+      toast({
+        title: 'Sucesso',
+        description: 'Categoria atualizada com sucesso',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Erro',
+        description: 'Erro ao atualizar categoria',
+        variant: 'destructive',
+      });
+    }
+  });
+
   const incomeCategories = categories?.filter(cat => cat.type === 'income') || [];
   const expenseCategories = categories?.filter(cat => cat.type === 'expense') || [];
   const filteredCategories = selectedTab === 'income' ? incomeCategories : expenseCategories;
+
+  // Funções de confirmação para exclusão
+  const confirmDelete = (categoryId: string) => {
+    setDeletingId(categoryId);
+  };
+
+  const cancelDelete = () => {
+    setDeletingId(null);
+  };
+
+  const handleDelete = (categoryId: string) => {
+    deleteCategoryMutation.mutate(categoryId);
+  };
+
+  // Funções de edição
+  const startEdit = (category: any) => {
+    setEditingCategory(category);
+    setNewCategory({
+      name: category.name,
+      type: category.type,
+      color: category.color,
+      icon: category.icon || 'circle',
+    });
+    setIsEditing(true);
+  };
+
+  const cancelEdit = () => {
+    setIsEditing(false);
+    setEditingCategory(null);
+    setNewCategory({ name: '', type: 'expense', color: '#2196F3', icon: 'circle' });
+  };
 
 
   if (isLoading) {
@@ -140,7 +214,7 @@ export const MobileCategories = () => {
     );
   }
 
-  if (isCreating) {
+  if (isCreating || isEditing) {
     return (
       <MobilePageWrapper>
         <div className="space-y-4">
@@ -149,12 +223,12 @@ export const MobileCategories = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setIsCreating(false)}
+              onClick={() => isCreating ? setIsCreating(false) : cancelEdit()}
               className="p-2"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-lg font-semibold">Nova Categoria</h1>
+            <h1 className="text-lg font-semibold">{isCreating ? 'Nova Categoria' : 'Editar Categoria'}</h1>
             <div className="w-9" /> {/* Spacer */}
           </div>
 
@@ -209,15 +283,24 @@ export const MobileCategories = () => {
 
               <div className="flex flex-col gap-3 pt-4">
                 <Button 
-                  onClick={() => createCategoryMutation.mutate(newCategory)}
-                  disabled={!newCategory.name.trim() || createCategoryMutation.isPending}
+                  onClick={() => {
+                    if (isCreating) {
+                      createCategoryMutation.mutate(newCategory);
+                    } else {
+                      updateCategoryMutation.mutate({ id: editingCategory.id, categoryData: newCategory });
+                    }
+                  }}
+                  disabled={!newCategory.name.trim() || createCategoryMutation.isPending || updateCategoryMutation.isPending}
                   className="w-full h-12 text-base"
                 >
-                  {createCategoryMutation.isPending ? 'Criando...' : 'Criar Categoria'}
+                  {createCategoryMutation.isPending || updateCategoryMutation.isPending 
+                    ? (isCreating ? 'Criando...' : 'Salvando...') 
+                    : (isCreating ? 'Criar Categoria' : 'Salvar Alterações')
+                  }
                 </Button>
                 <Button 
                   variant="outline" 
-                  onClick={() => setIsCreating(false)}
+                  onClick={() => isCreating ? setIsCreating(false) : cancelEdit()}
                   className="w-full h-12 text-base"
                 >
                   Cancelar
@@ -267,34 +350,57 @@ export const MobileCategories = () => {
       {/* Lista de categorias */}
       <div className="space-y-3">
         {filteredCategories.map(category => (
-          <MobileOptimizedCard key={category.id}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-4 h-4 rounded-full border border-muted-foreground/20"
-                  style={{ backgroundColor: category.color }}
-                />
-                <div className="flex flex-col">
-                  <span className="font-medium">{category.name}</span>
-                  {(category as any).is_default && (
-                    <Badge variant="secondary" className="text-xs w-fit">
-                      Padrão
-                    </Badge>
-                  )}
+          <div key={category.id} className="space-y-2">
+            <MobileOptimizedCard>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-4 h-4 rounded-full border border-muted-foreground/20"
+                    style={{ backgroundColor: category.color }}
+                  />
+                  <div className="flex flex-col">
+                    <span className="font-medium">{category.name}</span>
+                    {(category as any).is_default && (
+                      <Badge variant="secondary" className="text-xs w-fit">
+                        Padrão
+                      </Badge>
+                    )}
+                  </div>
                 </div>
+                {!(category as any).is_default && (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => startEdit(category)}
+                      className="p-2 h-auto text-muted-foreground hover:text-foreground"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => confirmDelete(category.id)}
+                      className="p-2 h-auto text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
-              {!(category as any).is_default && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => deleteCategoryMutation.mutate(category.id)}
-                  className="p-2 h-auto text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </MobileOptimizedCard>
+            </MobileOptimizedCard>
+            
+            {/* Confirmação de exclusão */}
+            {deletingId === category.id && (
+              <InlineConfirmation
+                message={`Confirmar exclusão da categoria "${category.name}"?`}
+                onConfirm={() => handleDelete(category.id)}
+                onCancel={cancelDelete}
+                confirmText="Excluir"
+                cancelText="Cancelar"
+              />
+            )}
+          </div>
         ))}
         
         {filteredCategories.length === 0 && (
