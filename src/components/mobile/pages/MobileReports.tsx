@@ -296,18 +296,20 @@ export const MobileReports = () => {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
 
   return (
-    <MobilePageWrapper>
+    <MobilePageWrapper className="bg-gradient-to-br from-background to-primary/5">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold flex items-center">
-          <BarChart3 className="h-6 w-6 mr-2" />
+        <h1 className="text-2xl font-bold flex items-center text-foreground">
+          <div className="p-2 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg mr-3">
+            <BarChart3 className="h-6 w-6 text-primary" />
+          </div>
           Relatórios
         </h1>
-        <div className="flex space-x-1">
-          <Button variant="outline" size="sm" onClick={handleExportCSV}>
+        <div className="flex space-x-2">
+          <Button variant="outline" size="sm" onClick={handleExportCSV} className="shadow-md border-primary/20">
             <Download size={16} />
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExportPDF}>
+          <Button variant="outline" size="sm" onClick={handleExportPDF} className="shadow-md border-primary/20">
             <FileText size={16} />
           </Button>
         </div>
@@ -354,26 +356,30 @@ export const MobileReports = () => {
         <>
           {/* Cards de resumo */}
           <div className="grid grid-cols-2 gap-3 mb-6">
-            <Card className="bg-green-50 border-green-200">
+            <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-emerald-500/20 shadow-lg">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-green-700 mb-1">Receitas</p>
-                    <p className="text-lg font-bold text-green-800">{formatCurrency(reportData.totalIncome)}</p>
+                    <p className="text-sm text-emerald-700 mb-1">Receitas</p>
+                    <p className="text-lg font-bold text-emerald-800">{formatCurrency(reportData.totalIncome)}</p>
                   </div>
-                  <TrendingUp className="h-8 w-8 text-green-600" />
+                  <div className="p-2 bg-emerald-500/20 rounded-lg">
+                    <TrendingUp className="h-6 w-6 text-emerald-600" />
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-red-50 border-red-200">
+            <Card className="bg-gradient-to-br from-red-500/10 to-red-500/5 border-red-500/20 shadow-lg">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-red-700 mb-1">Despesas</p>
                     <p className="text-lg font-bold text-red-800">{formatCurrency(reportData.totalExpenses)}</p>
                   </div>
-                  <TrendingDown className="h-8 w-8 text-red-600" />
+                  <div className="p-2 bg-red-500/20 rounded-lg">
+                    <TrendingDown className="h-6 w-6 text-red-600" />
+                  </div>
                 </div>
               </CardContent>
             </Card>

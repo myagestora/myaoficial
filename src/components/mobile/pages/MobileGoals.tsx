@@ -54,16 +54,18 @@ export const MobileGoals = () => {
   };
 
   return (
-    <MobilePageWrapper>
+    <MobilePageWrapper className="bg-gradient-to-br from-background to-primary/5">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold flex items-center">
-          <Target className="h-6 w-6 mr-2" />
+        <h1 className="text-2xl font-bold flex items-center text-foreground">
+          <div className="p-2 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg mr-3">
+            <Target className="h-6 w-6 text-primary" />
+          </div>
           Metas
         </h1>
         <Button 
           size="sm" 
-          className="flex items-center space-x-2"
+          className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md border-0"
           onClick={() => navigate('/goals/nova')}
         >
           <Plus size={16} />
@@ -72,24 +74,24 @@ export const MobileGoals = () => {
       </div>
 
       {/* Resumo das metas */}
-      <Card className="mb-6 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+      <Card className="mb-6 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 shadow-lg">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Resumo das Metas</CardTitle>
+          <CardTitle className="text-base text-foreground">Resumo das Metas</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-3 gap-4">
-            <div className="text-center">
+            <div className="text-center p-3 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg">
               <p className="text-2xl font-bold text-primary">{goals.length}</p>
               <p className="text-xs text-muted-foreground">Total</p>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">
+            <div className="text-center p-3 bg-gradient-to-br from-emerald-500/20 to-emerald-500/10 rounded-lg">
+              <p className="text-2xl font-bold text-emerald-600">
                 {goals.filter(g => getStatusFromProgress(g.current_amount, g.target_amount, g.goal_type) === 'on_track').length}
               </p>
               <p className="text-xs text-muted-foreground">No prazo</p>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-yellow-600">
+            <div className="text-center p-3 bg-gradient-to-br from-amber-500/20 to-amber-500/10 rounded-lg">
+              <p className="text-2xl font-bold text-amber-600">
                 {goals.filter(g => getStatusFromProgress(g.current_amount, g.target_amount, g.goal_type) === 'warning').length}
               </p>
               <p className="text-xs text-muted-foreground">Atenção</p>

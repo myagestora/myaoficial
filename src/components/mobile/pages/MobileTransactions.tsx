@@ -99,13 +99,13 @@ export const MobileTransactions = () => {
   const expenses = (transactions || []).filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
 
   return (
-    <MobilePageWrapper>
+    <MobilePageWrapper className="bg-gradient-to-br from-background to-primary/5">
       {/* Header com botão de nova transação */}
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">Transações</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-foreground">Transações</h1>
         <Button 
           size="sm" 
-          className="flex items-center space-x-2"
+          className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md border-0"
           onClick={() => navigate('/transactions/nova')}
         >
           <Plus size={16} />

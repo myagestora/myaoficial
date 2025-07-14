@@ -160,31 +160,33 @@ export const MobileSettings = () => {
   // Seção Principal
   if (currentSection === 'main') {
     return (
-      <MobilePageWrapper>
+      <MobilePageWrapper className="bg-gradient-to-br from-background to-primary/5">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold flex items-center">
-            <Settings className="h-6 w-6 mr-2" />
+          <h1 className="text-2xl font-bold flex items-center text-foreground">
+            <div className="p-2 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg mr-3">
+              <Settings className="h-6 w-6 text-primary" />
+            </div>
             Configurações
           </h1>
         </div>
 
         {/* Status da Conta */}
-        <MobileOptimizedCard className="mb-4">
+        <MobileOptimizedCard className="mb-6 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 shadow-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Avatar className="h-12 w-12">
+              <Avatar className="h-12 w-12 border-2 border-primary/20">
                 <AvatarImage src={profile?.avatar_url} />
-                <AvatarFallback className="text-sm">
+                <AvatarFallback className="text-sm bg-gradient-to-br from-primary/20 to-primary/10 text-primary">
                   {profile?.full_name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <p className="font-medium">{profile?.full_name || 'Usuário'}</p>
+                <p className="font-medium text-foreground">{profile?.full_name || 'Usuário'}</p>
                 <p className="text-sm text-muted-foreground">{user?.email}</p>
               </div>
             </div>
-            <Badge variant={accountStatus?.accountActive ? 'default' : 'destructive'}>
+            <Badge variant={accountStatus?.accountActive ? 'default' : 'destructive'} className="shadow-sm">
               {accountStatus?.accountActive ? 'Ativo' : 'Inativo'}
             </Badge>
           </div>
@@ -192,17 +194,17 @@ export const MobileSettings = () => {
 
         {/* Menu de Opções */}
         <div className="space-y-3">
-          <MobileOptimizedCard>
+          <MobileOptimizedCard className="shadow-md border-primary/10 hover:shadow-lg transition-shadow">
             <button
               onClick={() => setCurrentSection('profile')}
               className="w-full flex items-center justify-between p-0 bg-transparent border-none text-left"
             >
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-full">
+                <div className="p-3 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl">
                   <User className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium">Perfil</p>
+                  <p className="font-medium text-foreground">Perfil</p>
                   <p className="text-sm text-muted-foreground">
                     Informações pessoais e contato
                   </p>
@@ -212,17 +214,17 @@ export const MobileSettings = () => {
             </button>
           </MobileOptimizedCard>
 
-          <MobileOptimizedCard>
+          <MobileOptimizedCard className="shadow-md border-orange-500/10 hover:shadow-lg transition-shadow">
             <button
               onClick={() => setCurrentSection('security')}
               className="w-full flex items-center justify-between p-0 bg-transparent border-none text-left"
             >
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-orange-500/10 rounded-full">
+                <div className="p-3 bg-gradient-to-br from-orange-500/20 to-orange-500/10 rounded-xl">
                   <Shield className="h-5 w-5 text-orange-500" />
                 </div>
                 <div>
-                  <p className="font-medium">Segurança</p>
+                  <p className="font-medium text-foreground">Segurança</p>
                   <p className="text-sm text-muted-foreground">
                     Senha e configurações de segurança
                   </p>
@@ -232,17 +234,17 @@ export const MobileSettings = () => {
             </button>
           </MobileOptimizedCard>
 
-          <MobileOptimizedCard>
+          <MobileOptimizedCard className="shadow-md border-purple-500/10 hover:shadow-lg transition-shadow">
             <button
               onClick={() => setCurrentSection('preferences')}
               className="w-full flex items-center justify-between p-0 bg-transparent border-none text-left"
             >
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-500/10 rounded-full">
+                <div className="p-3 bg-gradient-to-br from-purple-500/20 to-purple-500/10 rounded-xl">
                   <Palette className="h-5 w-5 text-purple-500" />
                 </div>
                 <div>
-                  <p className="font-medium">Preferências</p>
+                  <p className="font-medium text-foreground">Preferências</p>
                   <p className="text-sm text-muted-foreground">
                     Tema, animações e notificações
                   </p>

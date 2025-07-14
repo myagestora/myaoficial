@@ -321,25 +321,27 @@ export const MobileCategories = () => {
   }
 
   return (
-    <MobilePageWrapper>
+    <MobilePageWrapper className="bg-gradient-to-br from-background to-primary/5">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold flex items-center">
-          <Grid3X3 className="h-6 w-6 mr-2" />
+        <h1 className="text-2xl font-bold flex items-center text-foreground">
+          <div className="p-2 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg mr-3">
+            <Grid3X3 className="h-6 w-6 text-primary" />
+          </div>
           Categorias
         </h1>
-        <Button onClick={() => setIsCreating(true)} size="sm">
+        <Button onClick={() => setIsCreating(true)} size="sm" className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md border-0">
           <Plus className="mr-2 h-4 w-4" />
           Nova
         </Button>
       </div>
 
       {/* Tabs */}
-      <div className="flex space-x-2 mb-6">
+      <div className="flex space-x-3 mb-6">
         <Button
           variant={selectedTab === 'expense' ? 'default' : 'outline'}
           size="sm"
-          className="flex-1"
+          className={`flex-1 shadow-md ${selectedTab === 'expense' ? 'bg-gradient-to-r from-primary to-primary/80' : 'border-primary/20'}`}
           onClick={() => setSelectedTab('expense')}
         >
           Despesas ({expenseCategories.length})
@@ -347,7 +349,7 @@ export const MobileCategories = () => {
         <Button
           variant={selectedTab === 'income' ? 'default' : 'outline'}
           size="sm"
-          className="flex-1"
+          className={`flex-1 shadow-md ${selectedTab === 'income' ? 'bg-gradient-to-r from-primary to-primary/80' : 'border-primary/20'}`}
           onClick={() => setSelectedTab('income')}
         >
           Receitas ({incomeCategories.length})

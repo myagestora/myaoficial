@@ -265,16 +265,18 @@ export const MobileScheduled = () => {
   }
 
   return (
-    <MobilePageWrapper>
+    <MobilePageWrapper className="bg-gradient-to-br from-background to-primary/5">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold flex items-center">
-          <Calendar className="h-6 w-6 mr-2" />
+        <h1 className="text-2xl font-bold flex items-center text-foreground">
+          <div className="p-2 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg mr-3">
+            <Calendar className="h-6 w-6 text-primary" />
+          </div>
           Agendadas
         </h1>
         <Button 
           size="sm" 
-          className="flex items-center space-x-2"
+          className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md border-0"
           onClick={handleCreateNew}
         >
           <Plus size={16} />
