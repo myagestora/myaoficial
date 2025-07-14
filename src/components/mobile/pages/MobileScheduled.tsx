@@ -135,19 +135,20 @@ export const MobileScheduled = () => {
 
       // Period filter
       if (filters.period.from || filters.period.to) {
-        const transactionDate = new Date(transaction.date);
+        // Parse manual da data para evitar problemas de timezone
+        const [year, month, day] = transaction.date.split('-').map(Number);
+        const transactionDate = new Date(year, month - 1, day);
+        transactionDate.setHours(0, 0, 0, 0);
         
         if (filters.period.from) {
           const fromDate = new Date(filters.period.from);
           fromDate.setHours(0, 0, 0, 0);
-          transactionDate.setHours(0, 0, 0, 0);
           if (transactionDate < fromDate) return false;
         }
         
         if (filters.period.to) {
           const toDate = new Date(filters.period.to);
           toDate.setHours(23, 59, 59, 999);
-          transactionDate.setHours(0, 0, 0, 0);
           if (transactionDate > toDate) return false;
         }
       }
