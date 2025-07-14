@@ -119,7 +119,7 @@ serve(async (req) => {
           });
         }
         
-        let requestData = { period: 'all' };
+        let requestData = { period: 'month' };
         requestData = { ...requestData, ...await req.json() };
 
         // Definir filtros de data baseado no período

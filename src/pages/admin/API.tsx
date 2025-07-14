@@ -213,7 +213,7 @@ const AdminAPI = () => {
               description: "Período para cálculo do saldo",
               example: "month",
               required: false,
-              default: "all",
+              default: "month",
               options: ["week", "month", "year", "all"]
             }
           },
