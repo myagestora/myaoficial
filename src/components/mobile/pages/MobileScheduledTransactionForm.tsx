@@ -478,34 +478,18 @@ export const MobileScheduledTransactionForm = () => {
                 </div>
                 
                 <div className="space-y-4">
-                  {/* Frequência e Intervalo */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Frequência</Label>
-                      <MobileListSelect
-                        value={watchedFrequency || ''}
-                        onValueChange={(value) => setValue('recurrence_frequency', value as any)}
-                        options={frequencyOptions}
-                        placeholder="Selecione a frequência"
-                      />
-                      {errors.recurrence_frequency && (
-                        <p className="text-sm text-destructive">{errors.recurrence_frequency.message}</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="interval">A cada</Label>
-                      <Input
-                        id="interval"
-                        type="number"
-                        min="1"
-                        {...register('recurrence_interval', { valueAsNumber: true })}
-                        placeholder="1"
-                      />
-                      {errors.recurrence_interval && (
-                        <p className="text-sm text-destructive">{errors.recurrence_interval.message}</p>
-                      )}
-                    </div>
+                   {/* Frequência */}
+                  <div className="space-y-2">
+                    <Label>Frequência</Label>
+                    <MobileListSelect
+                      value={watchedFrequency || ''}
+                      onValueChange={(value) => setValue('recurrence_frequency', value as any)}
+                      options={frequencyOptions}
+                      placeholder="Selecione a frequência"
+                    />
+                    {errors.recurrence_frequency && (
+                      <p className="text-sm text-destructive">{errors.recurrence_frequency.message}</p>
+                    )}
                   </div>
 
                   {/* Preview da frequência */}
