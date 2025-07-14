@@ -7,27 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { SEOHead } from '@/components/SEOHead';
 import { SubscriptionFlow } from '@/components/landing/SubscriptionFlow';
-import { 
-  CheckCircle, 
-  DollarSign, 
-  BarChart3, 
-  Target, 
-  CreditCard, 
-  Shield,
-  Users,
-  Zap,
-  Star,
-  ArrowRight,
-  MessageCircle,
-  Clock,
-  TrendingUp,
-  PieChart,
-  Calculator,
-  Bell,
-  Play,
-  ChevronDown
-} from 'lucide-react';
-
+import { CheckCircle, DollarSign, BarChart3, Target, CreditCard, Shield, Users, Zap, Star, ArrowRight, MessageCircle, Clock, TrendingUp, PieChart, Calculator, Bell, Play, ChevronDown } from 'lucide-react';
 interface SubscriptionPlan {
   id: string;
   name: string;
@@ -36,155 +16,135 @@ interface SubscriptionPlan {
   price_yearly?: number;
   features: string[] | any;
 }
-
 const Index = () => {
   const [showSubscriptionFlow, setShowSubscriptionFlow] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
 
   // Buscar configurações do sistema
-  const { data: systemConfig } = useQuery({
+  const {
+    data: systemConfig
+  } = useQuery({
     queryKey: ['system-config-landing'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('system_config')
-        .select('*')
-        .in('key', ['app_name', 'app_logo', 'primary_color', 'secondary_color']);
-      
+      const {
+        data,
+        error
+      } = await supabase.from('system_config').select('*').in('key', ['app_name', 'app_logo', 'primary_color', 'secondary_color']);
       if (error) throw error;
-      
       const configObj: Record<string, string> = {};
       data.forEach(item => {
-        configObj[item.key] = typeof item.value === 'string' ? 
-          item.value.replace(/^"|"$/g, '') : 
-          JSON.stringify(item.value).replace(/^"|"$/g, '');
+        configObj[item.key] = typeof item.value === 'string' ? item.value.replace(/^"|"$/g, '') : JSON.stringify(item.value).replace(/^"|"$/g, '');
       });
-      
       return configObj;
     }
   });
 
   // Buscar planos de assinatura ativos
-  const { data: subscriptionPlans } = useQuery({
+  const {
+    data: subscriptionPlans
+  } = useQuery({
     queryKey: ['subscription-plans-landing'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('subscription_plans')
-        .select('*')
-        .eq('is_active', true)
-        .eq('is_special', false) // Excluir planos especiais
-        .order('price_monthly', { ascending: true });
-      
+      const {
+        data,
+        error
+      } = await supabase.from('subscription_plans').select('*').eq('is_active', true).eq('is_special', false) // Excluir planos especiais
+      .order('price_monthly', {
+        ascending: true
+      });
       if (error) throw error;
       return data?.map(plan => ({
         ...plan,
-        features: Array.isArray(plan.features) ? plan.features : 
-                  (plan.features ? JSON.parse(String(plan.features)) : [])
+        features: Array.isArray(plan.features) ? plan.features : plan.features ? JSON.parse(String(plan.features)) : []
       }));
     }
   });
-
   const appName = systemConfig?.app_name || 'MYA Gestora';
   const appLogo = systemConfig?.app_logo;
   const primaryColor = systemConfig?.primary_color || '#3B82F6';
   const secondaryColor = systemConfig?.secondary_color || '#10B981';
-
   const handlePlanSelect = (plan: SubscriptionPlan) => {
     setSelectedPlan(plan);
     setShowSubscriptionFlow(true);
   };
-
   const handleStartFree = () => {
     setSelectedPlan(null);
     setShowSubscriptionFlow(true);
   };
-
   const scrollToPlans = () => {
     const plansSection = document.getElementById('pricing-section');
     if (plansSection) {
-      plansSection.scrollIntoView({ 
+      plansSection.scrollIntoView({
         behavior: 'smooth',
         block: 'start'
       });
     }
   };
-
-  const features = [
-    {
-      icon: BarChart3,
-      title: 'Controle Total',
-      description: 'Monitore todas as suas transações em tempo real com relatórios detalhados e insights inteligentes.'
-    },
-    {
-      icon: Target,
-      title: 'Metas Inteligentes',
-      description: 'Defina objetivos financeiros e acompanhe seu progresso automaticamente com alertas personalizados.'
-    },
-    {
-      icon: CreditCard,
-      title: 'Transações Agendadas',
-      description: 'Programe pagamentos recorrentes e nunca mais esqueça uma conta importante.'
-    },
-    {
-      icon: Shield,
-      title: 'Segurança Total',
-      description: 'Seus dados financeiros protegidos com criptografia bancária de última geração.'
-    }
-  ];
-
-  const organizationFeatures = [
-    {
-      icon: Calculator,
-      title: 'Orçamento Inteligente',
-      description: 'Crie e gerencie seu orçamento mensal com facilidade total e previsões automáticas'
-    },
-    {
-      icon: PieChart,
-      title: 'Relatórios Visuais',
-      description: 'Gráficos intuitivos e dashboards interativos para entender seus hábitos financeiros'
-    },
-    {
-      icon: Bell,
-      title: 'Alertas Personalizados',
-      description: 'Receba avisos inteligentes sobre gastos, prazos e oportunidades de economia'
-    },
-    {
-      icon: TrendingUp,
-      title: 'Crescimento Financeiro',
-      description: 'Acompanhe sua evolução patrimonial e receba dicas para acelerar seus resultados'
-    }
-  ];
-
-  const whyChooseFeatures = [
-    {
-      icon: Shield,
-      title: 'Proteção Máxima',
-      description: 'Tecnologia de segurança bancária para proteger seus dados com certificação ISO'
-    },
-    {
-      icon: Clock,
-      title: 'Praticidade Total',
-      description: 'Gerencie tudo pelo WhatsApp em segundos, sem complicação ou aplicativos extras'
-    },
-    {
-      icon: Users,
-      title: 'Suporte Humano',
-      description: 'Equipe dedicada e especializada para tirar suas dúvidas em tempo real'
-    },
-    {
-      icon: Zap,
-      title: 'Sempre Evoluindo',
-      description: 'Melhorias constantes e novas funcionalidades baseadas no seu feedback'
-    }
-  ];
-
-  const testimonials = [
-    { name: 'Maria Silva', text: 'Organizei minhas finanças em 1 semana! Incrível como é simples.', rating: 5 },
-    { name: 'João Santos', text: 'Economizei R$ 800 no primeiro mês usando o planejamento inteligente.', rating: 5 },
-    { name: 'Ana Costa', text: 'Finalmente consigo controlar meus gastos sem estresse. Recomendo!', rating: 5 }
-  ];
-
-  return (
-    <div className="min-h-screen min-h-[100dvh] bg-white dark:bg-gray-900">
+  const features = [{
+    icon: BarChart3,
+    title: 'Controle Total',
+    description: 'Monitore todas as suas transações em tempo real com relatórios detalhados e insights inteligentes.'
+  }, {
+    icon: Target,
+    title: 'Metas Inteligentes',
+    description: 'Defina objetivos financeiros e acompanhe seu progresso automaticamente com alertas personalizados.'
+  }, {
+    icon: CreditCard,
+    title: 'Transações Agendadas',
+    description: 'Programe pagamentos recorrentes e nunca mais esqueça uma conta importante.'
+  }, {
+    icon: Shield,
+    title: 'Segurança Total',
+    description: 'Seus dados financeiros protegidos com criptografia bancária de última geração.'
+  }];
+  const organizationFeatures = [{
+    icon: Calculator,
+    title: 'Orçamento Inteligente',
+    description: 'Crie e gerencie seu orçamento mensal com facilidade total e previsões automáticas'
+  }, {
+    icon: PieChart,
+    title: 'Relatórios Visuais',
+    description: 'Gráficos intuitivos e dashboards interativos para entender seus hábitos financeiros'
+  }, {
+    icon: Bell,
+    title: 'Alertas Personalizados',
+    description: 'Receba avisos inteligentes sobre gastos, prazos e oportunidades de economia'
+  }, {
+    icon: TrendingUp,
+    title: 'Crescimento Financeiro',
+    description: 'Acompanhe sua evolução patrimonial e receba dicas para acelerar seus resultados'
+  }];
+  const whyChooseFeatures = [{
+    icon: Shield,
+    title: 'Proteção Máxima',
+    description: 'Tecnologia de segurança bancária para proteger seus dados com certificação ISO'
+  }, {
+    icon: Clock,
+    title: 'Praticidade Total',
+    description: 'Gerencie tudo pelo WhatsApp em segundos, sem complicação ou aplicativos extras'
+  }, {
+    icon: Users,
+    title: 'Suporte Humano',
+    description: 'Equipe dedicada e especializada para tirar suas dúvidas em tempo real'
+  }, {
+    icon: Zap,
+    title: 'Sempre Evoluindo',
+    description: 'Melhorias constantes e novas funcionalidades baseadas no seu feedback'
+  }];
+  const testimonials = [{
+    name: 'Maria Silva',
+    text: 'Organizei minhas finanças em 1 semana! Incrível como é simples.',
+    rating: 5
+  }, {
+    name: 'João Santos',
+    text: 'Economizei R$ 800 no primeiro mês usando o planejamento inteligente.',
+    rating: 5
+  }, {
+    name: 'Ana Costa',
+    text: 'Finalmente consigo controlar meus gastos sem estresse. Recomendo!',
+    rating: 5
+  }];
+  return <div className="min-h-screen min-h-[100dvh] bg-white dark:bg-gray-900">
       <SEOHead />
       
       {/* Header - Mobile Optimized */}
@@ -192,29 +152,19 @@ const Index = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-3 min-h-[60px]">
             <div className="flex items-center space-x-2 lg:space-x-3">
-              {appLogo && appLogo.trim() !== '' ? (
-                <img 
-                  src={appLogo} 
-                  alt={appName}
-                  className="h-8 sm:h-10 lg:h-12 w-auto object-contain"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    const fallback = target.parentElement?.querySelector('.logo-fallback') as HTMLElement;
-                    if (fallback) {
-                      fallback.style.display = 'flex';
-                    }
-                  }}
-                />
-              ) : null}
+              {appLogo && appLogo.trim() !== '' ? <img src={appLogo} alt={appName} className="h-8 sm:h-10 lg:h-12 w-auto object-contain" onError={e => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              const fallback = target.parentElement?.querySelector('.logo-fallback') as HTMLElement;
+              if (fallback) {
+                fallback.style.display = 'flex';
+              }
+            }} /> : null}
               
               <div className={`flex items-center space-x-2 logo-fallback ${appLogo && appLogo.trim() !== '' ? 'hidden' : ''}`}>
-                <div 
-                  className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center shadow-lg"
-                  style={{ 
-                    background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` 
-                  }}
-                >
+                <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center shadow-lg" style={{
+                background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
+              }}>
                   <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 lg:w-7 lg:h-7 text-white" />
                 </div>
                 <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
@@ -225,10 +175,7 @@ const Index = () => {
             
             <div className="flex items-center space-x-3 lg:space-x-6">
               <nav className="hidden md:flex items-center space-x-6">
-                <button
-                  onClick={scrollToPlans}
-                  className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors cursor-pointer touch-manipulation"
-                >
+                <button onClick={scrollToPlans} className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors cursor-pointer touch-manipulation">
                   Planos
                 </button>
               </nav>
@@ -239,14 +186,10 @@ const Index = () => {
                     Entrar
                   </Button>
                 </Link>
-                <Button 
-                  onClick={handleStartFree}
-                  className="font-semibold shadow-lg hover:shadow-xl transition-all text-sm lg:text-base px-3 lg:px-4 py-2 touch-manipulation"
-                  style={{ 
-                    background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
-                    border: 'none'
-                  }}
-                >
+                <Button onClick={handleStartFree} className="font-semibold shadow-lg hover:shadow-xl transition-all text-sm lg:text-base px-3 lg:px-4 py-2 touch-manipulation" style={{
+                background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
+                border: 'none'
+              }}>
                   <span className="hidden sm:inline">Começar Agora</span>
                   <span className="sm:hidden">Começar</span>
                   <ArrowRight className="ml-1 lg:ml-2 w-3 h-3 lg:w-4 lg:h-4" />
@@ -284,12 +227,9 @@ const Index = () => {
                 finanças sem sair
               </span>
               <span className="block">
-                <span 
-                  className="bg-gradient-to-r bg-clip-text text-transparent font-extrabold"
-                  style={{ 
-                    backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
-                  }}
-                >
+                <span className="bg-gradient-to-r bg-clip-text text-transparent font-extrabold" style={{
+                backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
+              }}>
                   do WhatsApp
                 </span>
               </span>
@@ -304,9 +244,7 @@ const Index = () => {
             <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-8 mb-12">
               <div className="flex items-center space-x-2">
                 <div className="flex space-x-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                  ))}
+                  {[...Array(5)].map((_, i) => <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />)}
                 </div>
                 <span className="text-gray-600 dark:text-gray-300 font-medium">
                   4.9/5 • 3.847 avaliações
@@ -314,23 +252,10 @@ const Index = () => {
               </div>
               <div className="flex items-center space-x-2">
                 <div className="flex -space-x-2">
-                  {[
-                    'https://randomuser.me/api/portraits/women/1.jpg',
-                    'https://randomuser.me/api/portraits/men/2.jpg', 
-                    'https://randomuser.me/api/portraits/women/3.jpg',
-                    'https://randomuser.me/api/portraits/men/4.jpg'
-                  ].map((src, i) => (
-                    <img 
-                      key={i}
-                      src={src}
-                      alt={`Usuário ${i + 1}`}
-                      className="w-8 h-8 rounded-full border-2 border-white object-cover"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=user${i + 1}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd93d,ffdfbf`;
-                      }}
-                    />
-                  ))}
+                  {['https://randomuser.me/api/portraits/women/1.jpg', 'https://randomuser.me/api/portraits/men/2.jpg', 'https://randomuser.me/api/portraits/women/3.jpg', 'https://randomuser.me/api/portraits/men/4.jpg'].map((src, i) => <img key={i} src={src} alt={`Usuário ${i + 1}`} className="w-8 h-8 rounded-full border-2 border-white object-cover" onError={e => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=user${i + 1}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd93d,ffdfbf`;
+                }} />)}
                 </div>
                 <span className="text-gray-600 dark:text-gray-300 font-medium">
                   +2.000 novos usuários este mês
@@ -340,25 +265,13 @@ const Index = () => {
 
             {/* CTA Buttons - Mobile Optimized */}
             <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 justify-center mb-6 lg:mb-8 px-4">
-              <Button 
-                onClick={handleStartFree}
-                size="lg" 
-                className="text-base lg:text-lg px-8 lg:px-10 py-4 lg:py-6 font-bold shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105 touch-manipulation min-h-[48px]"
-                style={{ 
-                  background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
-                  border: 'none'
-                }}
-              >
+              <Button onClick={handleStartFree} size="lg" className="text-base lg:text-lg px-8 lg:px-10 py-4 lg:py-6 font-bold shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105 touch-manipulation min-h-[48px]" style={{
+              background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
+              border: 'none'
+            }}>
                 🚀 Começar Agora
               </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="text-base lg:text-lg px-8 lg:px-10 py-4 lg:py-6 font-semibold border-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300 touch-manipulation min-h-[48px]"
-              >
-                <Play className="mr-2 w-4 h-4 lg:w-5 lg:h-5" />
-                Ver Como Funciona
-              </Button>
+              
             </div>
             
             <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center">
@@ -369,18 +282,15 @@ const Index = () => {
         </div>
 
         {/* Scroll Indicator */}
-        <button
-          onClick={() => {
-            const nextSection = document.querySelector('.py-20.bg-gradient-to-br');
-            if (nextSection) {
-              nextSection.scrollIntoView({ 
-                behavior: 'smooth',
-                block: 'start'
-              });
-            }
-          }}
-          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce hover:text-gray-600 transition-colors cursor-pointer"
-        >
+        <button onClick={() => {
+        const nextSection = document.querySelector('.py-20.bg-gradient-to-br');
+        if (nextSection) {
+          nextSection.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      }} className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce hover:text-gray-600 transition-colors cursor-pointer">
           <ChevronDown className="w-6 h-6 text-gray-400" />
         </button>
       </section>
@@ -406,18 +316,12 @@ const Index = () => {
               
               {/* Benefits List */}
               <div className="space-y-4 mb-8">
-                {[
-                  'Reconhecimento automático de valores e categorias',
-                  'Relatórios instantâneos e insights personalizados',
-                  'Lembretes inteligentes para suas metas financeiras'
-                ].map((benefit, index) => (
-                  <div key={index} className="flex items-start space-x-3">
+                {['Reconhecimento automático de valores e categorias', 'Relatórios instantâneos e insights personalizados', 'Lembretes inteligentes para suas metas financeiras'].map((benefit, index) => <div key={index} className="flex items-start space-x-3">
                     <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mr-3 mt-0.5">
                       <CheckCircle className="w-4 h-4 text-white" />
                     </div>
                     <span className="text-gray-700 dark:text-gray-300 font-medium">{benefit}</span>
-                  </div>
-                ))}
+                  </div>)}
               </div>
             </div>
             
@@ -581,7 +485,9 @@ const Index = () => {
             </div>
             <h2 className="text-5xl font-bold text-gray-900 dark:text-white mb-6">
               Tudo que você precisa para 
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r" style={{ backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }}>
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r" style={{
+              backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
+            }}>
                 dominar suas finanças
               </span>
             </h2>
@@ -591,20 +497,15 @@ const Index = () => {
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {organizationFeatures.map((feature, index) => (
-              <Card key={index} className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-0 shadow-lg">
+            {organizationFeatures.map((feature, index) => <Card key={index} className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-0 shadow-lg">
                 <CardHeader className="text-center">
                   <div className="relative">
-                    <div 
-                      className="w-20 h-20 rounded-2xl mx-auto mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300"
-                      style={{ 
-                        background: `linear-gradient(135deg, ${primaryColor}20, ${secondaryColor}20)` 
-                      }}
-                    >
-                      <feature.icon 
-                        className="w-10 h-10 group-hover:scale-110 transition-transform duration-300"
-                        style={{ color: primaryColor }}
-                      />
+                    <div className="w-20 h-20 rounded-2xl mx-auto mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300" style={{
+                  background: `linear-gradient(135deg, ${primaryColor}20, ${secondaryColor}20)`
+                }}>
+                      <feature.icon className="w-10 h-10 group-hover:scale-110 transition-transform duration-300" style={{
+                    color: primaryColor
+                  }} />
                     </div>
                     <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <CheckCircle className="w-4 h-4 text-white" />
@@ -617,8 +518,7 @@ const Index = () => {
                     {feature.description}
                   </p>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </div>
       </section>
@@ -641,15 +541,11 @@ const Index = () => {
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {whyChooseFeatures.map((feature, index) => (
-              <div key={index} className="text-center group">
+            {whyChooseFeatures.map((feature, index) => <div key={index} className="text-center group">
                 <div className="relative mb-6">
-                  <div 
-                    className="w-24 h-24 rounded-full mx-auto flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-lg"
-                    style={{ 
-                      background: `linear-gradient(135deg, ${secondaryColor}, ${primaryColor})` 
-                    }}
-                  >
+                  <div className="w-24 h-24 rounded-full mx-auto flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-lg" style={{
+                background: `linear-gradient(135deg, ${secondaryColor}, ${primaryColor})`
+              }}>
                     <feature.icon className="w-12 h-12 text-white" />
                   </div>
                   <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -662,8 +558,7 @@ const Index = () => {
                 <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
                   {feature.description}
                 </p>
-              </div>
-            ))}
+              </div>)}
           </div>
         </div>
       </section>
@@ -681,14 +576,13 @@ const Index = () => {
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <Card key={index} className="relative overflow-hidden border-0 shadow-xl">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r" style={{ backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }} />
+            {testimonials.map((testimonial, index) => <Card key={index} className="relative overflow-hidden border-0 shadow-xl">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r" style={{
+              backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
+            }} />
                 <CardContent className="p-8">
                   <div className="flex mb-4">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                    ))}
+                    {[...Array(testimonial.rating)].map((_, i) => <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />)}
                   </div>
                   <p className="text-gray-700 dark:text-gray-300 mb-6 italic text-lg leading-relaxed">
                     "{testimonial.text}"
@@ -703,8 +597,7 @@ const Index = () => {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </div>
       </section>
@@ -722,17 +615,14 @@ const Index = () => {
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-shadow">
+            {features.map((feature, index) => <Card key={index} className="text-center hover:shadow-lg transition-shadow">
                 <CardHeader>
-                  <div 
-                    className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
-                    style={{ backgroundColor: `${primaryColor}20` }}
-                  >
-                    <feature.icon 
-                      className="w-8 h-8"
-                      style={{ color: primaryColor }}
-                    />
+                  <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{
+                backgroundColor: `${primaryColor}20`
+              }}>
+                    <feature.icon className="w-8 h-8" style={{
+                  color: primaryColor
+                }} />
                   </div>
                   <CardTitle className="text-xl">{feature.title}</CardTitle>
                 </CardHeader>
@@ -741,15 +631,13 @@ const Index = () => {
                     {feature.description}
                   </p>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </div>
       </section>
 
       {/* Pricing Section - Enhanced with integrated plan selection */}
-      {subscriptionPlans && subscriptionPlans.length > 0 && (
-        <section id="pricing-section" className="py-20 bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900/20">
+      {subscriptionPlans && subscriptionPlans.length > 0 && <section id="pricing-section" className="py-20 bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900/20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <div className="inline-block px-4 py-2 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-full mb-6">
@@ -765,47 +653,26 @@ const Index = () => {
               </p>
             </div>
             
-            <div
-              className={`grid gap-8 max-w-5xl mx-auto ${
-                subscriptionPlans.length === 1
-                  ? 'grid-cols-1 justify-items-center'
-                  : 'md:grid-cols-2 lg:grid-cols-3'
-              }`}>
+            <div className={`grid gap-8 max-w-5xl mx-auto ${subscriptionPlans.length === 1 ? 'grid-cols-1 justify-items-center' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
               {subscriptionPlans.map((plan, index) => {
-                const features = Array.isArray(plan.features) 
-                  ? plan.features 
-                  : (typeof plan.features === 'string' ? JSON.parse(plan.features) : []);
-                
-                const isPopular = index === 1;
-                
-                return (
-                  <Card 
-                    key={plan.id} 
-                    className={`relative text-center transform transition-all duration-300 hover:scale-105 border-0 shadow-xl ${
-                      isPopular ? 'scale-105 shadow-2xl' : ''
-                    }`}
-                    style={isPopular ? { 
-                      background: `linear-gradient(135deg, ${primaryColor}05, ${secondaryColor}05)`,
-                      borderImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor}) 1`
-                    } : {}}
-                  >
-                    {isPopular && (
-                      <>
+            const features = Array.isArray(plan.features) ? plan.features : typeof plan.features === 'string' ? JSON.parse(plan.features) : [];
+            const isPopular = index === 1;
+            return <Card key={plan.id} className={`relative text-center transform transition-all duration-300 hover:scale-105 border-0 shadow-xl ${isPopular ? 'scale-105 shadow-2xl' : ''}`} style={isPopular ? {
+              background: `linear-gradient(135deg, ${primaryColor}05, ${secondaryColor}05)`,
+              borderImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor}) 1`
+            } : {}}>
+                    {isPopular && <>
                         <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                          <Badge 
-                            className="px-4 py-2 text-white font-bold shadow-lg"
-                            style={{ 
-                              background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` 
-                            }}
-                          >
+                          <Badge className="px-4 py-2 text-white font-bold shadow-lg" style={{
+                    background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
+                  }}>
                             ⭐ MAIS POPULAR
                           </Badge>
                         </div>
-                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r" 
-                          style={{ backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }} 
-                        />
-                      </>
-                    )}
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r" style={{
+                  backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
+                }} />
+                      </>}
                     <CardHeader className="text-center pb-8">
                       <CardTitle className="text-2xl">{plan.name}</CardTitle>
                       <p className="text-gray-600 dark:text-gray-300 mb-4">
@@ -813,57 +680,42 @@ const Index = () => {
                       </p>
                       <div className="flex flex-col items-center justify-center">
                         <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-                          {plan.price_monthly ? (
-                            <>
+                          {plan.price_monthly ? <>
 
                               R$ {plan.price_monthly.toFixed(2).replace('.', ',')}
                               <span className="text-lg text-gray-500">/mês</span>
-                            </>
-                          ) : (
-                            <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                            </> : <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
                               Gratuito
-                            </span>
-                          )}
+                            </span>}
                         </div>
-                        {plan.price_yearly && (
-                          <p className="text-sm text-green-600 font-semibold bg-green-50 px-3 py-1 rounded-full">
+                        {plan.price_yearly && <p className="text-sm text-green-600 font-semibold bg-green-50 px-3 py-1 rounded-full">
                             💰 Economize 44% no plano anual
-                          </p>
-                        )}
+                          </p>}
                       </div>
                     </CardHeader>
                     <CardContent>
                       <ul className="space-y-3 mb-6 text-left">
-                        {features.map((feature: string, featureIndex: number) => (
-                          <li key={featureIndex} className="flex items-start">
+                        {features.map((feature: string, featureIndex: number) => <li key={featureIndex} className="flex items-start">
                             <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mr-3 mt-0.5">
                               <CheckCircle className="w-4 h-4 text-white" />
                             </div>
                             <span className="text-gray-600 dark:text-gray-300">
                               {feature}
                             </span>
-                          </li>
-                        ))}
+                          </li>)}
                       </ul>
-                      <Button 
-                        onClick={() => handlePlanSelect(plan)}
-                        className="w-full py-4 text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300"
-                        style={isPopular ? { 
-                          background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
-                          border: 'none'
-                        } : {}}
-                        variant={isPopular ? "default" : "outline"}
-                      >
+                      <Button onClick={() => handlePlanSelect(plan)} className="w-full py-4 text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300" style={isPopular ? {
+                  background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
+                  border: 'none'
+                } : {}} variant={isPopular ? "default" : "outline"}>
                         {plan.price_monthly ? '🚀 Assinar Agora' : '✨ Começar Agora'}
                       </Button>
                     </CardContent>
-                  </Card>
-                );
-              })}
+                  </Card>;
+          })}
             </div>
           </div>
-        </section>
-      )}
+        </section>}
 
       {/* Stats Section - Enhanced */}
       <section className="py-20 bg-white dark:bg-gray-900">
@@ -875,30 +727,27 @@ const Index = () => {
           </div>
           <div className="grid md:grid-cols-3 gap-8 text-center">
             <div className="group">
-              <div 
-                className="text-6xl font-bold mb-4 bg-gradient-to-r bg-clip-text text-transparent"
-                style={{ backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }}
-              >
+              <div className="text-6xl font-bold mb-4 bg-gradient-to-r bg-clip-text text-transparent" style={{
+              backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
+            }}>
                 15K+
               </div>
               <p className="text-xl text-gray-600 dark:text-gray-300 font-semibold">Usuários Ativos</p>
               <p className="text-gray-500 dark:text-gray-400">Crescendo 25% ao mês</p>
             </div>
             <div className="group">
-              <div 
-                className="text-6xl font-bold mb-4 bg-gradient-to-r bg-clip-text text-transparent"
-                style={{ backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }}
-              >
+              <div className="text-6xl font-bold mb-4 bg-gradient-to-r bg-clip-text text-transparent" style={{
+              backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
+            }}>
                 R$ 80M+
               </div>
               <p className="text-xl text-gray-600 dark:text-gray-300 font-semibold">Transações Gerenciadas</p>
               <p className="text-gray-500 dark:text-gray-400">Valor total organizado</p>
             </div>
             <div className="group">
-              <div 
-                className="text-6xl font-bold mb-4 bg-gradient-to-r bg-clip-text text-transparent"
-                style={{ backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` }}
-              >
+              <div className="text-6xl font-bold mb-4 bg-gradient-to-r bg-clip-text text-transparent" style={{
+              backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
+            }}>
                 99%
               </div>
               <p className="text-xl text-gray-600 dark:text-gray-300 font-semibold">Satisfação dos Usuários</p>
@@ -909,12 +758,9 @@ const Index = () => {
       </section>
 
       {/* CTA Section - Ultra Enhanced */}
-      <section 
-        className="py-20 relative overflow-hidden"
-        style={{ 
-          background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)` 
-        }}
-      >
+      <section className="py-20 relative overflow-hidden" style={{
+      background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`
+    }}>
         {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-10 left-10 w-20 h-20 bg-white/10 rounded-full animate-pulse" />
@@ -935,11 +781,7 @@ const Index = () => {
             
             {/* Enhanced CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-6 justify-center mb-8">
-              <Button 
-                onClick={handleStartFree}
-                size="lg" 
-                className="bg-white hover:bg-gray-100 text-gray-900 text-xl px-12 py-6 font-bold shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105"
-              >
+              <Button onClick={handleStartFree} size="lg" className="bg-white hover:bg-gray-100 text-gray-900 text-xl px-12 py-6 font-bold shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105">
                 🚀 Começar Agora
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
@@ -969,22 +811,11 @@ const Index = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="flex items-center justify-center space-x-4 mb-8">
-              {appLogo && appLogo.trim() !== '' ? (
-                <img 
-                  src={appLogo} 
-                  alt={appName}
-                  className="h-12 w-auto object-contain"
-                />
-              ) : (
-                <div 
-                  className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg"
-                  style={{ 
-                    background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})` 
-                  }}
-                >
+              {appLogo && appLogo.trim() !== '' ? <img src={appLogo} alt={appName} className="h-12 w-auto object-contain" /> : <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg" style={{
+              background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
+            }}>
                   <DollarSign className="w-7 h-7 text-white" />
-                </div>
-              )}
+                </div>}
               <span className="text-2xl font-bold">{appName}</span>
             </div>
             <p className="text-gray-400 mb-8 text-lg max-w-2xl mx-auto">
@@ -995,9 +826,7 @@ const Index = () => {
             {/* Social Proof */}
             <div className="flex justify-center items-center space-x-4 mb-8">
               <div className="flex">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                ))}
+                {[...Array(5)].map((_, i) => <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />)}
               </div>
               <span className="text-gray-300">4.9/5 • 3.847 avaliações</span>
             </div>
@@ -1015,17 +844,10 @@ const Index = () => {
       </footer>
 
       {/* Subscription Flow Modal */}
-      {showSubscriptionFlow && (
-        <SubscriptionFlow 
-          onClose={() => {
-            setShowSubscriptionFlow(false);
-            setSelectedPlan(null);
-          }}
-          selectedPlan={selectedPlan}
-        />
-      )}
-    </div>
-  );
+      {showSubscriptionFlow && <SubscriptionFlow onClose={() => {
+      setShowSubscriptionFlow(false);
+      setSelectedPlan(null);
+    }} selectedPlan={selectedPlan} />}
+    </div>;
 };
-
 export default Index;
