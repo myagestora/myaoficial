@@ -6,7 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MobileSelect, MobileSelectContent, MobileSelectItem, MobileSelectTrigger, MobileSelectValue } from '@/components/mobile/MobileSelect';
+import { MobileExpandableSelect, MobileExpandableSelectContent, MobileExpandableSelectItem, MobileExpandableSelectTrigger, MobileExpandableSelectValue } from '@/components/mobile/MobileExpandableSelect';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
@@ -354,21 +354,22 @@ export const MobileTransactionForm = () => {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="type">Tipo</Label>
-            <MobileSelect
+            <MobileExpandableSelect
               value={transactionType}
               onValueChange={(value) => {
                 setValue('type', value as 'income' | 'expense');
                 setValue('category_id', '');
               }}
+              placeholder="Selecione o tipo"
             >
-              <MobileSelectTrigger>
-                <MobileSelectValue placeholder="Selecione o tipo" />
-              </MobileSelectTrigger>
-              <MobileSelectContent>
-                <MobileSelectItem value="income">Receita</MobileSelectItem>
-                <MobileSelectItem value="expense">Despesa</MobileSelectItem>
-              </MobileSelectContent>
-            </MobileSelect>
+              <MobileExpandableSelectTrigger>
+                <MobileExpandableSelectValue />
+              </MobileExpandableSelectTrigger>
+              <MobileExpandableSelectContent>
+                <MobileExpandableSelectItem value="income">Receita</MobileExpandableSelectItem>
+                <MobileExpandableSelectItem value="expense">Despesa</MobileExpandableSelectItem>
+              </MobileExpandableSelectContent>
+            </MobileExpandableSelect>
             {errors.type && (
               <p className="text-sm text-destructive">{errors.type.message}</p>
             )}
@@ -406,16 +407,17 @@ export const MobileTransactionForm = () => {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="category_id">Categoria</Label>
-            <MobileSelect 
+            <MobileExpandableSelect 
               value={selectedCategoryId || ''} 
               onValueChange={(value) => setValue('category_id', value)}
+              placeholder="Selecione a categoria"
             >
-              <MobileSelectTrigger>
-                <MobileSelectValue placeholder="Selecione a categoria" />
-              </MobileSelectTrigger>
-              <MobileSelectContent>
+              <MobileExpandableSelectTrigger>
+                <MobileExpandableSelectValue />
+              </MobileExpandableSelectTrigger>
+              <MobileExpandableSelectContent>
                 {categories?.map((category) => (
-                  <MobileSelectItem key={category.id} value={category.id}>
+                  <MobileExpandableSelectItem key={category.id} value={category.id}>
                     <div className="flex items-center gap-2">
                       <div 
                         className="w-3 h-3 rounded-full" 
@@ -426,10 +428,10 @@ export const MobileTransactionForm = () => {
                         <span className="text-xs text-muted-foreground">(padrão)</span>
                       )}
                     </div>
-                  </MobileSelectItem>
+                  </MobileExpandableSelectItem>
                 ))}
-              </MobileSelectContent>
-            </MobileSelect>
+              </MobileExpandableSelectContent>
+            </MobileExpandableSelect>
             {errors.category_id && (
               <p className="text-sm text-destructive">{errors.category_id.message}</p>
             )}
@@ -478,21 +480,22 @@ export const MobileTransactionForm = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="recurrence_frequency">Frequência</Label>
-                  <MobileSelect 
+                  <MobileExpandableSelect 
                     value={watch('recurrence_frequency') || ''} 
                     onValueChange={(value) => setValue('recurrence_frequency', value as any)}
+                    placeholder="Selecione a frequência"
                   >
-                    <MobileSelectTrigger>
-                      <MobileSelectValue placeholder="Selecione a frequência" />
-                    </MobileSelectTrigger>
-                    <MobileSelectContent>
-                      <MobileSelectItem value="daily">Diário</MobileSelectItem>
-                      <MobileSelectItem value="weekly">Semanal</MobileSelectItem>
-                      <MobileSelectItem value="monthly">Mensal</MobileSelectItem>
-                      <MobileSelectItem value="quarterly">Trimestral</MobileSelectItem>
-                      <MobileSelectItem value="yearly">Anual</MobileSelectItem>
-                    </MobileSelectContent>
-                  </MobileSelect>
+                    <MobileExpandableSelectTrigger>
+                      <MobileExpandableSelectValue />
+                    </MobileExpandableSelectTrigger>
+                    <MobileExpandableSelectContent>
+                      <MobileExpandableSelectItem value="daily">Diário</MobileExpandableSelectItem>
+                      <MobileExpandableSelectItem value="weekly">Semanal</MobileExpandableSelectItem>
+                      <MobileExpandableSelectItem value="monthly">Mensal</MobileExpandableSelectItem>
+                      <MobileExpandableSelectItem value="quarterly">Trimestral</MobileExpandableSelectItem>
+                      <MobileExpandableSelectItem value="yearly">Anual</MobileExpandableSelectItem>
+                    </MobileExpandableSelectContent>
+                  </MobileExpandableSelect>
                   {errors.recurrence_frequency && (
                     <p className="text-sm text-destructive">{errors.recurrence_frequency.message}</p>
                   )}
