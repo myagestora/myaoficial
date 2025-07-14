@@ -25,17 +25,25 @@ export const FilterDialog = ({ filters, onFiltersChange, categories }: FilterDia
   const [isOpen, setIsOpen] = useState(false);
   const [localFilters, setLocalFilters] = useState<FilterOptions>(filters);
 
+  // Sincronizar filtros locais quando os filtros externos mudarem
+  React.useEffect(() => {
+    setLocalFilters(filters);
+  }, [filters]);
+
   const frequencyOptions = [
     { value: 'daily', label: 'Diário' },
     { value: 'weekly', label: 'Semanal' },
+    { value: 'biweekly', label: 'Quinzenal' },
     { value: 'monthly', label: 'Mensal' },
     { value: 'quarterly', label: 'Trimestral' },
-    { value: 'yearly', label: 'Anual' }
+    { value: 'semiannual', label: 'Semestral' },
+    { value: 'yearly', label: 'Anual' },
+    { value: 'custom', label: 'Personalizado' }
   ];
 
   const statusOptions = [
     { value: 'active', label: 'Ativo' },
-    { value: 'paused', label: 'Pausado' }
+    { value: 'inactive', label: 'Inativo' }
   ];
 
   const nextExecutionOptions = [

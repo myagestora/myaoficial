@@ -38,7 +38,7 @@ export const useScheduledFilters = (transactions: any[]) => {
     // Filtro por status
     if (filters.status) {
       const isActive = transaction.is_recurring;
-      if ((filters.status === 'active' && !isActive) || (filters.status === 'paused' && isActive)) {
+      if ((filters.status === 'active' && !isActive) || (filters.status === 'inactive' && isActive)) {
         return false;
       }
     }
