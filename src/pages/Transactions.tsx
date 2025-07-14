@@ -10,6 +10,7 @@ import { TransactionForm } from '@/components/transactions/TransactionForm';
 import { TransactionFilters } from '@/components/transactions/TransactionFilters';
 import { TransactionStats } from '@/components/transactions/TransactionStats';
 import { MobileRouteHandler } from '@/components/mobile/MobileRouteHandler';
+import { DeleteRecurringTransactionDialog } from '@/components/scheduled/DeleteRecurringTransactionDialog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -29,6 +30,8 @@ const Transactions = () => {
   const { user } = useAuth();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
+  const [deletingTransaction, setDeletingTransaction] = useState<any>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: transactions = [], isLoading } = useQuery({
@@ -130,6 +133,42 @@ const Transactions = () => {
     }
   });
 
+  const deleteRecurringSeriesMutation = useMutation({
+    mutationFn: async (parentId: string) => {
+      // Excluir todas as transações filhas primeiro
+      const { error: childrenError } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('parent_transaction_id', parentId);
+
+      if (childrenError) throw childrenError;
+
+      // Excluir a transação pai
+      const { error: parentError } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', parentId);
+
+      if (parentError) throw parentError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['recent-transactions'] });
+      toast({
+        title: 'Sucesso!',
+        description: 'Série de transações excluída com sucesso.',
+      });
+    },
+    onError: (error) => {
+      console.error('Error deleting recurring series:', error);
+      toast({
+        title: 'Erro!',
+        description: 'Erro ao excluir série de transações.',
+        variant: 'destructive',
+      });
+    }
+  });
+
   const formatRecurrenceInfo = (transaction: any) => {
     if (!transaction.is_recurring) return null;
     
@@ -158,9 +197,38 @@ const Transactions = () => {
   };
 
   const handleDeleteTransaction = (transactionId: string) => {
-    if (window.confirm('Tem certeza que deseja excluir esta transação?')) {
+    const transaction = transactions.find(t => t.id === transactionId);
+    if (!transaction) return;
+
+    // Verificar se é uma transação recorrente (pai ou filho)
+    const isRecurring = transaction.is_recurring || transaction.parent_transaction_id;
+    
+    if (isRecurring) {
+      setDeletingTransaction(transaction);
+      setShowDeleteDialog(true);
+    } else {
+      // Transação simples - usar mutation diretamente
       deleteTransactionMutation.mutate(transactionId);
     }
+  };
+
+  const handleDeleteSingle = () => {
+    if (deletingTransaction) {
+      deleteTransactionMutation.mutate(deletingTransaction.id);
+    }
+  };
+
+  const handleDeleteSeries = () => {
+    if (deletingTransaction) {
+      // Se for filho, pegar o parent_transaction_id; se for pai, usar o próprio id
+      const parentId = deletingTransaction.parent_transaction_id || deletingTransaction.id;
+      deleteRecurringSeriesMutation.mutate(parentId);
+    }
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setShowDeleteDialog(false);
+    setDeletingTransaction(null);
   };
 
   const handleCloseForm = () => {
@@ -357,6 +425,14 @@ const Transactions = () => {
         isOpen={isFormOpen} 
         onClose={handleCloseForm}
         transaction={editingTransaction}
+      />
+
+      <DeleteRecurringTransactionDialog
+        isOpen={showDeleteDialog}
+        onClose={handleCloseDeleteDialog}
+        onDeleteSingle={handleDeleteSingle}
+        onDeleteSeries={handleDeleteSeries}
+        transaction={deletingTransaction}
       />
     </div>
   );

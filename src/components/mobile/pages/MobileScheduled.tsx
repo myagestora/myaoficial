@@ -22,6 +22,7 @@ import { format, addDays, isBefore, isAfter, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { DeleteRecurringTransactionDialog } from '@/components/scheduled/DeleteRecurringTransactionDialog';
 
 export const MobileScheduled = () => {
   const { user } = useAuth();
@@ -35,6 +36,8 @@ export const MobileScheduled = () => {
     frequency: '',
     status: ''
   });
+  const [deletingTransaction, setDeletingTransaction] = useState<any>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Fetch categories for filters
   const { data: categories = [] } = useQuery({
@@ -177,13 +180,39 @@ export const MobileScheduled = () => {
   };
 
   const handleDelete = async (transaction: any) => {
-    if (window.confirm('Tem certeza que deseja excluir este agendamento?')) {
+    // Verificar se é uma transação recorrente (pai ou filho)
+    const isRecurring = transaction.is_recurring || transaction.parent_transaction_id;
+    
+    if (isRecurring) {
+      setDeletingTransaction(transaction);
+      setShowDeleteDialog(true);
+    } else {
+      // Transação simples - usar mutation diretamente
       try {
         await deleteScheduledTransaction.mutateAsync(transaction.id);
       } catch (error) {
         console.error('Error deleting transaction:', error);
       }
     }
+  };
+
+  const handleDeleteSingle = () => {
+    if (deletingTransaction) {
+      deleteScheduledTransaction.mutate(deletingTransaction.id);
+    }
+  };
+
+  const handleDeleteSeries = () => {
+    if (deletingTransaction) {
+      // Se for filho, pegar o parent_transaction_id; se for pai, usar o próprio id
+      const parentId = deletingTransaction.parent_transaction_id || deletingTransaction.id;
+      deleteRecurringSeries.mutate(parentId);
+    }
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setShowDeleteDialog(false);
+    setDeletingTransaction(null);
   };
 
   const handleEdit = (transaction: any) => {
@@ -362,6 +391,14 @@ export const MobileScheduled = () => {
           </CardContent>
         </Card>
       )}
+
+      <DeleteRecurringTransactionDialog
+        isOpen={showDeleteDialog}
+        onClose={handleCloseDeleteDialog}
+        onDeleteSingle={handleDeleteSingle}
+        onDeleteSeries={handleDeleteSeries}
+        transaction={deletingTransaction}
+      />
     </MobilePageWrapper>
   );
 };

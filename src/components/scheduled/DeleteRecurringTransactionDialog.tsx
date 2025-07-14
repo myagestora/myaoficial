@@ -26,7 +26,10 @@ export const DeleteRecurringTransactionDialog = ({
   onDeleteSeries,
   transaction
 }: DeleteRecurringTransactionDialogProps) => {
-  const isPartOfSeries = transaction?.parent_transaction_id;
+  // Verificar se é uma transação recorrente (pai ou filho)
+  const isRecurringParent = transaction?.is_recurring;
+  const isRecurringChild = transaction?.parent_transaction_id;
+  const isPartOfSeries = isRecurringParent || isRecurringChild;
 
   if (!isPartOfSeries) {
     // Se não é parte de uma série, usar dialog simples
@@ -56,7 +59,10 @@ export const DeleteRecurringTransactionDialog = ({
         <AlertDialogHeader>
           <AlertDialogTitle>Excluir Transação Recorrente</AlertDialogTitle>
           <AlertDialogDescription>
-            Esta transação faz parte de uma série recorrente. O que você deseja fazer?
+            {isRecurringParent 
+              ? 'Esta é uma transação recorrente pai. O que você deseja fazer?'
+              : 'Esta transação faz parte de uma série recorrente. O que você deseja fazer?'
+            }
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="flex flex-col gap-3 mt-4">
@@ -68,9 +74,14 @@ export const DeleteRecurringTransactionDialog = ({
             }}
             className="justify-start"
           >
-            <span className="font-medium">Excluir apenas esta transação</span>
+            <span className="font-medium">
+              {isRecurringParent ? 'Excluir apenas o modelo' : 'Excluir apenas esta transação'}
+            </span>
             <span className="text-sm text-muted-foreground ml-2">
-              (As outras transações da série permanecerão)
+              {isRecurringParent 
+                ? '(Para transações futuras geradas automaticamente)'
+                : '(As outras transações da série permanecerão)'
+              }
             </span>
           </Button>
           <Button
@@ -83,7 +94,7 @@ export const DeleteRecurringTransactionDialog = ({
           >
             <span className="font-medium">Excluir toda a série</span>
             <span className="text-sm text-muted-foreground ml-2">
-              (Remove todas as transações desta recorrência)
+              (Remove todas as transações desta recorrência, incluindo futuras)
             </span>
           </Button>
         </div>

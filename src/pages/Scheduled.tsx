@@ -8,12 +8,15 @@ import { ScheduledHeader } from '@/components/scheduled/ScheduledHeader';
 import { ScheduledStats } from '@/components/scheduled/ScheduledStats';
 import { ScheduledFilters } from '@/components/scheduled/ScheduledFilters';
 import { ScheduledTransactionsList } from '@/components/scheduled/ScheduledTransactionsList';
+import { DeleteRecurringTransactionDialog } from '@/components/scheduled/DeleteRecurringTransactionDialog';
 import { useScheduledTransactions } from '@/hooks/useScheduledTransactions';
 import { useScheduledFilters } from '@/hooks/useScheduledFilters';
 
 const Scheduled = () => {
   const { user } = useAuth();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [deletingTransaction, setDeletingTransaction] = useState<any>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
   const { 
     scheduledTransactions, 
@@ -69,7 +72,38 @@ const Scheduled = () => {
   };
 
   const handleDelete = (id: string) => {
-    deleteScheduledTransaction.mutate(id);
+    const transaction = filteredTransactions.find(t => t.id === id);
+    if (!transaction) return;
+
+    // Verificar se é uma transação recorrente (pai ou filho)
+    const isRecurring = transaction.is_recurring || transaction.parent_transaction_id;
+    
+    if (isRecurring) {
+      setDeletingTransaction(transaction);
+      setShowDeleteDialog(true);
+    } else {
+      // Transação simples - confirmação inline
+      deleteScheduledTransaction.mutate(id);
+    }
+  };
+
+  const handleDeleteSingle = () => {
+    if (deletingTransaction) {
+      deleteScheduledTransaction.mutate(deletingTransaction.id);
+    }
+  };
+
+  const handleDeleteSeries = () => {
+    if (deletingTransaction) {
+      // Se for filho, pegar o parent_transaction_id; se for pai, usar o próprio id
+      const parentId = deletingTransaction.parent_transaction_id || deletingTransaction.id;
+      deleteRecurringSeries.mutate(parentId);
+    }
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setShowDeleteDialog(false);
+    setDeletingTransaction(null);
   };
 
   if (isLoading) {
@@ -118,6 +152,14 @@ const Scheduled = () => {
       <TransactionForm 
         isOpen={isFormOpen} 
         onClose={() => setIsFormOpen(false)} 
+      />
+
+      <DeleteRecurringTransactionDialog
+        isOpen={showDeleteDialog}
+        onClose={handleCloseDeleteDialog}
+        onDeleteSingle={handleDeleteSingle}
+        onDeleteSeries={handleDeleteSeries}
+        transaction={deletingTransaction}
       />
     </div>
   );
