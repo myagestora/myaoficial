@@ -17,24 +17,32 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useGoals } from '@/hooks/useGoals';
+import { PeriodFilter } from '@/components/dashboard/PeriodFilter';
+import { DateRange } from 'react-day-picker';
+import { endOfMonth, startOfMonth } from 'date-fns';
 
 export const MobileDashboard = () => {
   const [showValues, setShowValues] = useState(true);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date())
+  });
   const navigate = useNavigate();
   const { user } = useAuth();
   const { goals } = useGoals();
 
-  // Buscar estatísticas reais do usuário
+  // Buscar estatísticas do usuário baseado no período selecionado
   const { data: stats, isLoading } = useQuery({
-    queryKey: ['dashboard-stats', user?.id],
+    queryKey: ['dashboard-stats', user?.id, dateRange],
     queryFn: async () => {
-      if (!user?.id) return null;
+      if (!user?.id || !dateRange?.from || !dateRange?.to) return null;
       
       const { data: transactions, error } = await supabase
         .from('transactions')
         .select('*')
         .eq('user_id', user.id)
-        .gte('date', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
+        .gte('date', dateRange.from.toISOString().split('T')[0])
+        .lte('date', dateRange.to.toISOString().split('T')[0]);
       
       if (error) throw error;
       
@@ -42,9 +50,9 @@ export const MobileDashboard = () => {
       const expenses = transactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0) || 0;
       const balance = income - expenses;
       
-      return { income, expenses, balance, recentTransactions: transactions?.slice(-3) || [] };
+      return { income, expenses, balance, recentTransactions: transactions?.slice(-5) || [] };
     },
-    enabled: !!user?.id
+    enabled: !!user?.id && !!dateRange?.from && !!dateRange?.to
   });
 
   const formatCurrency = (value: number) => {
@@ -57,6 +65,14 @@ export const MobileDashboard = () => {
 
   return (
     <MobilePageWrapper>
+      {/* Filtro de Período */}
+      <div className="mb-4">
+        <PeriodFilter 
+          dateRange={dateRange} 
+          onDateRangeChange={setDateRange}
+        />
+      </div>
+
       {/* Header com saldo */}
       <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
         <CardHeader className="pb-2">
@@ -77,7 +93,7 @@ export const MobileDashboard = () => {
             {isLoading ? '...' : formatCurrency(stats?.balance || 0)}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Saldo atual do mês
+            Saldo do período selecionado
           </p>
         </CardContent>
       </Card>
@@ -114,7 +130,7 @@ export const MobileDashboard = () => {
             <div className="text-lg font-semibold text-green-600">
               {isLoading ? '...' : formatCurrency(stats?.income || 0)}
             </div>
-            <p className="text-xs text-muted-foreground">Este mês</p>
+            <p className="text-xs text-muted-foreground">Período selecionado</p>
           </CardContent>
         </Card>
 
@@ -129,7 +145,7 @@ export const MobileDashboard = () => {
             <div className="text-lg font-semibold text-red-600">
               {isLoading ? '...' : formatCurrency(stats?.expenses || 0)}
             </div>
-            <p className="text-xs text-muted-foreground">Este mês</p>
+            <p className="text-xs text-muted-foreground">Período selecionado</p>
           </CardContent>
         </Card>
       </div>
