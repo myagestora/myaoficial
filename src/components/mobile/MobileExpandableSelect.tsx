@@ -32,9 +32,16 @@ const MobileExpandableSelect = ({ value, onValueChange, children, placeholder }:
     setItemsRegistry(prev => {
       const newMap = new Map(prev)
       newMap.set(itemValue, itemLabel)
+      
+      // Se este item corresponde ao valor atual, atualizar o selectedLabel imediatamente
+      if (value === itemValue) {
+        console.log('🎯 Item registrado corresponde ao valor atual, atualizando label:', itemLabel)
+        setSelectedLabel(itemLabel)
+      }
+      
       return newMap
     })
-  }, [])
+  }, [value])
 
   // Log para debug
   React.useEffect(() => {
