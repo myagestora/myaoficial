@@ -31,26 +31,22 @@ export const ScheduledTransactionItem = ({
   };
 
   const getNextExecutionDate = (transaction: any) => {
-    if (!transaction.next_recurrence_date) return 'Não definido';
-    
-    const nextDate = new Date(transaction.next_recurrence_date);
+    const transactionDate = new Date(transaction.date);
     const today = new Date();
-    const diffTime = nextDate.getTime() - today.getTime();
+    const diffTime = transactionDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     if (diffDays === 0) return 'Hoje';
     if (diffDays === 1) return 'Amanhã';
-    if (diffDays < 0) return 'Atrasado';
+    if (diffDays < 0) return 'Vencida';
     
     return `Em ${diffDays} dias`;
   };
 
   const getStatusColor = (transaction: any) => {
-    if (!transaction.next_recurrence_date) return 'bg-gray-500';
-    
-    const nextDate = new Date(transaction.next_recurrence_date);
+    const transactionDate = new Date(transaction.date);
     const today = new Date();
-    const diffTime = nextDate.getTime() - today.getTime();
+    const diffTime = transactionDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     if (diffDays < 0) return 'bg-red-500';
@@ -102,11 +98,9 @@ export const ScheduledTransactionItem = ({
           {transaction.description && (
             <p className="text-sm text-gray-500 mt-1">{transaction.description}</p>
           )}
-          {transaction.next_recurrence_date && (
-            <p className="text-xs text-blue-600 mt-1">
-              Próxima execução: {new Date(transaction.next_recurrence_date).toLocaleDateString('pt-BR')}
-            </p>
-          )}
+          <p className="text-xs text-blue-600 mt-1">
+            Data: {new Date(transaction.date).toLocaleDateString('pt-BR')}
+          </p>
           {transaction.recurrence_end_date && (
             <p className="text-xs text-gray-500 mt-1">
               Termina em: {new Date(transaction.recurrence_end_date).toLocaleDateString('pt-BR')}

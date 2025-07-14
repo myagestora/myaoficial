@@ -24,6 +24,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { format, addDays, addWeeks, addMonths, addYears } from 'date-fns';
+import { generateRecurrenceDates } from '@/utils/recurrenceUtils';
 
 const scheduledTransactionSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
@@ -38,12 +39,20 @@ const scheduledTransactionSchema = z.object({
   end_date: z.string().optional(),
 }).refine((data) => {
   if (data.is_recurring) {
-    return data.recurrence_frequency !== undefined;
+    return data.recurrence_frequency !== undefined && data.end_date !== undefined && data.end_date !== '';
   }
   return true;
 }, {
-  message: 'Frequência é obrigatória para transações recorrentes',
+  message: 'Frequência e data final são obrigatórias para transações recorrentes',
   path: ['recurrence_frequency']
+}).refine((data) => {
+  if (data.is_recurring && data.end_date) {
+    return new Date(data.end_date) > new Date(data.start_date);
+  }
+  return true;
+}, {
+  message: 'Data final deve ser posterior à data inicial',
+  path: ['end_date']
 });
 
 type ScheduledTransactionFormData = z.infer<typeof scheduledTransactionSchema>;
@@ -140,60 +149,105 @@ export const MobileScheduledTransactionForm = () => {
     mutationFn: async (data: ScheduledTransactionFormData) => {
       if (!user?.id) throw new Error('User not authenticated');
 
-      let transactionData: any = {
-        user_id: user.id,
-        title: data.title,
-        description: data.description || '',
-        amount: data.amount,
-        type: data.type,
-        category_id: data.category_id,
-        date: data.start_date,
-        is_recurring: data.is_recurring || false,
-      };
+      if (isEditing && id) {
+        // Para edição, apenas atualizar a transação existente
+        const transactionData: any = {
+          title: data.title,
+          description: data.description || '',
+          amount: data.amount,
+          type: data.type,
+          category_id: data.category_id,
+          date: data.start_date,
+          is_recurring: data.is_recurring || false,
+          updated_at: new Date().toISOString(),
+        };
 
-      // Adicionar dados de recorrência apenas se for recorrente
-      if (data.is_recurring && data.recurrence_frequency) {
-        const startDate = new Date(data.start_date);
-        let nextRecurrenceDate = startDate;
-
-        switch (data.recurrence_frequency) {
-          case 'daily':
-            nextRecurrenceDate = addDays(startDate, data.recurrence_interval || 1);
-            break;
-          case 'weekly':
-            nextRecurrenceDate = addWeeks(startDate, data.recurrence_interval || 1);
-            break;
-          case 'monthly':
-            nextRecurrenceDate = addMonths(startDate, data.recurrence_interval || 1);
-            break;
-          case 'quarterly':
-            nextRecurrenceDate = addMonths(startDate, (data.recurrence_interval || 1) * 3);
-            break;
-          case 'yearly':
-            nextRecurrenceDate = addYears(startDate, data.recurrence_interval || 1);
-            break;
+        if (data.is_recurring && data.recurrence_frequency) {
+          transactionData.recurrence_frequency = data.recurrence_frequency;
+          transactionData.recurrence_interval = data.recurrence_interval || 1;
+          transactionData.recurrence_end_date = data.end_date || null;
         }
 
-        transactionData = {
-          ...transactionData,
-          recurrence_frequency: data.recurrence_frequency,
-          recurrence_interval: data.recurrence_interval || 1,
-          recurrence_end_date: data.end_date || null,
-          next_recurrence_date: format(nextRecurrenceDate, 'yyyy-MM-dd')
-        };
-      }
-
-      if (isEditing && id) {
         const { error } = await supabase
           .from('transactions')
           .update(transactionData)
           .eq('id', id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from('transactions')
-          .insert(transactionData);
-        if (error) throw error;
+        // Para criação nova
+        if (!data.is_recurring) {
+          // Transação única - criar apenas uma transação
+          const transactionData = {
+            user_id: user.id,
+            title: data.title,
+            description: data.description || '',
+            amount: data.amount,
+            type: data.type,
+            category_id: data.category_id,
+            date: data.start_date,
+            is_recurring: false,
+          };
+
+          const { error } = await supabase
+            .from('transactions')
+            .insert(transactionData);
+          if (error) throw error;
+        } else if (data.recurrence_frequency && data.end_date) {
+          // Transação recorrente - gerar todas as datas e criar transações
+          const recurrenceDates = generateRecurrenceDates({
+            frequency: data.recurrence_frequency,
+            interval: data.recurrence_interval || 1,
+            startDate: data.start_date,
+            endDate: data.end_date
+          });
+
+          if (recurrenceDates.length === 0) {
+            throw new Error('Nenhuma data de transação gerada. Verifique as configurações de recorrência.');
+          }
+
+          // Criar transação pai (template)
+          const parentTransactionData = {
+            user_id: user.id,
+            title: data.title,
+            description: data.description || '',
+            amount: data.amount,
+            type: data.type,
+            category_id: data.category_id,
+            date: data.start_date,
+            is_recurring: true,
+            is_parent_template: true,
+            recurrence_frequency: data.recurrence_frequency,
+            recurrence_interval: data.recurrence_interval || 1,
+            recurrence_end_date: data.end_date,
+          };
+
+          const { data: parentTransaction, error: parentError } = await supabase
+            .from('transactions')
+            .insert(parentTransactionData)
+            .select()
+            .single();
+
+          if (parentError) throw parentError;
+
+          // Criar transações filhas para cada data
+          const childTransactions = recurrenceDates.map(date => ({
+            user_id: user.id,
+            title: data.title,
+            description: (data.description || '') + ' (Recorrente)',
+            amount: data.amount,
+            type: data.type,
+            category_id: data.category_id,
+            date: date,
+            is_recurring: false,
+            parent_transaction_id: parentTransaction.id,
+          }));
+
+          const { error: childError } = await supabase
+            .from('transactions')
+            .insert(childTransactions);
+
+          if (childError) throw childError;
+        }
       }
     },
     onSuccess: () => {
@@ -433,12 +487,15 @@ export const MobileScheduledTransactionForm = () => {
 
                   {/* Data de Fim específica para recorrência */}
                   <div className="space-y-2">
-                    <Label htmlFor="end_date">Data de Fim (opcional)</Label>
+                    <Label htmlFor="end_date">Data de Fim *</Label>
                     <Input
                       id="end_date"
                       type="date"
                       {...register('end_date')}
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Obrigatório para definir até quando criar as transações
+                    </p>
                     {errors.end_date && (
                       <p className="text-sm text-destructive">{errors.end_date.message}</p>
                     )}

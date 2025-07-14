@@ -18,8 +18,9 @@ const Scheduled = () => {
   const { 
     scheduledTransactions, 
     isLoading, 
-    toggleRecurringStatus, 
-    deleteScheduledTransaction 
+    editTransaction,
+    deleteScheduledTransaction,
+    deleteRecurringSeries
   } = useScheduledTransactions();
 
   const {
@@ -53,31 +54,18 @@ const Scheduled = () => {
 
   // Calcular estatísticas
   const upcomingExecutions = filteredTransactions.filter(t => {
-    // Para transações recorrentes, usar next_recurrence_date
-    // Para transações únicas, usar date
-    const targetDate = t.is_recurring && t.next_recurrence_date 
-      ? new Date(t.next_recurrence_date)
-      : new Date(t.date);
-    
+    const targetDate = new Date(t.date);
     const today = new Date();
     const diffTime = targetDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays >= 0 && diffDays <= 7;
   }).length;
 
-  const overdueScheduled = filteredTransactions.filter(t => {
-    // Para transações recorrentes, usar next_recurrence_date
-    // Para transações únicas, usar date
-    const targetDate = t.is_recurring && t.next_recurrence_date 
-      ? new Date(t.next_recurrence_date)
-      : new Date(t.date);
-    
-    const today = new Date();
-    return targetDate < today;
-  }).length;
+  const overdueScheduled = 0; // Não há mais transações atrasadas, pois só mostramos futuras
 
   const handleToggleStatus = (id: string, isActive: boolean) => {
-    toggleRecurringStatus.mutate({ id, isActive });
+    // Esta funcionalidade foi removida no novo sistema
+    console.log('Funcionalidade de toggle foi descontinuada');
   };
 
   const handleDelete = (id: string) => {

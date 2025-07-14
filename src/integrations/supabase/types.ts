@@ -363,6 +363,7 @@ export type Database = {
           date: string
           description: string | null
           id: string
+          is_parent_template: boolean | null
           is_recurring: boolean | null
           next_recurrence_date: string | null
           parent_transaction_id: string | null
@@ -383,6 +384,7 @@ export type Database = {
           date: string
           description?: string | null
           id?: string
+          is_parent_template?: boolean | null
           is_recurring?: boolean | null
           next_recurrence_date?: string | null
           parent_transaction_id?: string | null
@@ -403,6 +405,7 @@ export type Database = {
           date?: string
           description?: string | null
           id?: string
+          is_parent_template?: boolean | null
           is_recurring?: boolean | null
           next_recurrence_date?: string | null
           parent_transaction_id?: string | null

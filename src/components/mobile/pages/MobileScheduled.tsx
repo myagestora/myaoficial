@@ -22,13 +22,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { format, addDays, isBefore, isAfter, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
 export const MobileScheduled = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { scheduledTransactions, isLoading, toggleRecurringStatus, deleteScheduledTransaction } = useScheduledTransactions();
+  const { scheduledTransactions, isLoading, editTransaction, deleteScheduledTransaction, deleteRecurringSeries } = useScheduledTransactions();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
@@ -117,15 +117,11 @@ export const MobileScheduled = () => {
     const nextWeek = addDays(today, 7);
     
     const upcoming = scheduledTransactions?.filter(t => {
-      if (!t.next_recurrence_date || !t.is_recurring) return false;
-      const nextDate = startOfDay(new Date(t.next_recurrence_date));
-      return !isBefore(nextDate, today) && !isAfter(nextDate, nextWeek);
+      const transactionDate = startOfDay(new Date(t.date));
+      return !isBefore(transactionDate, today) && !isAfter(transactionDate, nextWeek);
     }).length || 0;
     
-    const overdue = scheduledTransactions?.filter(t => {
-      if (!t.next_recurrence_date || !t.is_recurring) return false;
-      return isBefore(startOfDay(new Date(t.next_recurrence_date)), today);
-    }).length || 0;
+    const overdue = 0; // Não há mais transações atrasadas, pois só mostramos futuras
 
     // Calculate monthly impact
     const monthlyIncome = scheduledTransactions?.filter(t => t.type === 'income' && t.is_recurring)
@@ -166,14 +162,11 @@ export const MobileScheduled = () => {
   }, [scheduledTransactions]);
 
   const handleToggleStatus = async (transaction: any) => {
-    try {
-      await toggleRecurringStatus.mutateAsync({
-        id: transaction.id,
-        isActive: !transaction.is_recurring
-      });
-    } catch (error) {
-      console.error('Error toggling status:', error);
-    }
+    // Esta funcionalidade foi removida no novo sistema
+    toast({
+      title: 'Funcionalidade descontinuada',
+      description: 'Use editar para alterar a transação.',
+    });
   };
 
   const handleDelete = async (transaction: any) => {
@@ -298,18 +291,10 @@ export const MobileScheduled = () => {
                       <Clock size={10} />
                       <span>{formatFrequency(transaction.recurrence_frequency || '')}</span>
                     </Badge>
-                    {transaction.next_recurrence_date && (
-                      <span className="text-muted-foreground flex items-center">
-                        <Calendar size={10} className="mr-1" />
-                        Próxima: {format(new Date(transaction.next_recurrence_date), 'dd/MM', { locale: ptBR })}
-                      </span>
-                    )}
-                    {transaction.next_recurrence_date && isBefore(startOfDay(new Date(transaction.next_recurrence_date)), startOfDay(new Date())) && (
-                      <Badge variant="destructive" className="flex items-center space-x-1">
-                        <AlertCircle size={10} />
-                        <span>Atrasada</span>
-                      </Badge>
-                    )}
+                    <span className="text-muted-foreground flex items-center">
+                      <Calendar size={10} className="mr-1" />
+                      Data: {format(new Date(transaction.date), 'dd/MM', { locale: ptBR })}
+                    </span>
                   </div>
                   <Badge 
                     variant={transaction.is_recurring ? 'default' : 'secondary'}
@@ -334,7 +319,7 @@ export const MobileScheduled = () => {
                     variant="outline" 
                     size="sm"
                     onClick={() => handleToggleStatus(transaction)}
-                    disabled={toggleRecurringStatus.isPending}
+                    disabled={false}
                   >
                     {transaction.is_recurring ? <Pause size={14} /> : <Play size={14} />}
                   </Button>

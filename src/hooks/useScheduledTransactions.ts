@@ -13,6 +13,8 @@ export const useScheduledTransactions = () => {
     queryFn: async () => {
       if (!user?.id) return [];
 
+      const today = new Date().toISOString().split('T')[0];
+      
       const { data, error } = await supabase
         .from('transactions')
         .select(`
@@ -23,17 +25,18 @@ export const useScheduledTransactions = () => {
           type,
           date,
           is_recurring,
+          is_parent_template,
+          parent_transaction_id,
           recurrence_frequency,
           recurrence_interval,
           recurrence_end_date,
-          next_recurrence_date,
           categories (
             name,
             color
           )
         `)
         .eq('user_id', user.id)
-        .or(`is_recurring.eq.true,date.gte.${new Date().toISOString().split('T')[0]}`)
+        .gte('date', today)
         .order('date', { ascending: true });
 
       if (error) {
@@ -46,30 +49,29 @@ export const useScheduledTransactions = () => {
     enabled: !!user?.id
   });
 
-  const toggleRecurringStatus = useMutation({
-    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+  // Função para editar uma transação específica
+  const editTransaction = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
       const { error } = await supabase
         .from('transactions')
-        .update({ 
-          is_recurring: isActive,
-          next_recurrence_date: isActive ? new Date().toISOString().split('T')[0] : null
-        })
+        .update(data)
         .eq('id', id);
 
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['scheduled-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
       toast({
         title: 'Sucesso!',
-        description: 'Status do agendamento atualizado.',
+        description: 'Transação atualizada com sucesso.',
       });
     },
     onError: (error) => {
-      console.error('Error updating recurring status:', error);
+      console.error('Error updating transaction:', error);
       toast({
         title: 'Erro!',
-        description: 'Erro ao atualizar agendamento.',
+        description: 'Erro ao atualizar transação.',
         variant: 'destructive',
       });
     }
@@ -86,16 +88,53 @@ export const useScheduledTransactions = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['scheduled-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
       toast({
         title: 'Sucesso!',
-        description: 'Agendamento excluído com sucesso.',
+        description: 'Transação excluída com sucesso.',
       });
     },
     onError: (error) => {
       console.error('Error deleting scheduled transaction:', error);
       toast({
         title: 'Erro!',
-        description: 'Erro ao excluir agendamento.',
+        description: 'Erro ao excluir transação.',
+        variant: 'destructive',
+      });
+    }
+  });
+
+  const deleteRecurringSeries = useMutation({
+    mutationFn: async (parentId: string) => {
+      // Excluir todas as transações filhas e o pai
+      const { error: childrenError } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('parent_transaction_id', parentId);
+
+      if (childrenError) throw childrenError;
+
+      // Excluir a transação pai
+      const { error: parentError } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', parentId);
+
+      if (parentError) throw parentError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['scheduled-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      toast({
+        title: 'Sucesso!',
+        description: 'Série de transações excluída com sucesso.',
+      });
+    },
+    onError: (error) => {
+      console.error('Error deleting recurring series:', error);
+      toast({
+        title: 'Erro!',
+        description: 'Erro ao excluir série de transações.',
         variant: 'destructive',
       });
     }
@@ -104,7 +143,8 @@ export const useScheduledTransactions = () => {
   return {
     scheduledTransactions: scheduledTransactions || [],
     isLoading,
-    toggleRecurringStatus,
-    deleteScheduledTransaction
+    editTransaction,
+    deleteScheduledTransaction,
+    deleteRecurringSeries
   };
 };
