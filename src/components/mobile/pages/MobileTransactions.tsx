@@ -7,18 +7,53 @@ import { MobilePageWrapper } from '../MobilePageWrapper';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useTransactionFilters } from '@/hooks/useTransactionFilters';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { TransactionsSummary } from '../transactions/TransactionsSummary';
 import { TransactionsFilters } from '../transactions/TransactionsFilters';
 import { TransactionCard } from '../transactions/TransactionCard';
 import { EmptyTransactionsState } from '../transactions/EmptyTransactionsState';
 
 export const MobileTransactions = () => {
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('todas');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { transactions, isLoading, deleteTransaction } = useTransactions();
+  
+  // Fetch categories
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('name');
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id
+  });
+
+  // Use transaction filters hook
+  const {
+    searchTerm,
+    setSearchTerm,
+    dateRange,
+    setDateRange,
+    selectedType,
+    setSelectedType,
+    selectedCategory,
+    setSelectedCategory,
+    filteredTransactions: hookFilteredTransactions,
+    hasActiveFilters,
+    clearFilters
+  } = useTransactionFilters(transactions || []);
 
   // Função para confirmar exclusão
   const confirmDelete = (transactionId: string) => {
@@ -51,21 +86,17 @@ export const MobileTransactions = () => {
     }
   };
 
-  const filteredTransactions = transactions.filter(transaction => {
-    const categoryName = transaction.categories?.name || '';
-    const matchesSearch = transaction.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         categoryName.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    if (selectedFilter === 'todas') return matchesSearch;
-    if (selectedFilter === 'receitas') return matchesSearch && transaction.type === 'income';
-    if (selectedFilter === 'despesas') return matchesSearch && transaction.type === 'expense';
-    
-    return matchesSearch;
+  // Apply additional filter based on selectedFilter
+  const filteredTransactions = hookFilteredTransactions.filter(transaction => {
+    if (selectedFilter === 'todas') return true;
+    if (selectedFilter === 'receitas') return transaction.type === 'income';
+    if (selectedFilter === 'despesas') return transaction.type === 'expense';
+    return true;
   });
 
   // Calcular estatísticas
-  const income = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-  const expenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+  const income = (transactions || []).filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+  const expenses = (transactions || []).filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
 
   return (
     <MobilePageWrapper>
@@ -93,6 +124,15 @@ export const MobileTransactions = () => {
         setSearchTerm={setSearchTerm}
         selectedFilter={selectedFilter}
         setSelectedFilter={setSelectedFilter}
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
+        selectedType={selectedType}
+        onTypeChange={setSelectedType}
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+        categories={categories}
+        onClearFilters={clearFilters}
+        hasActiveFilters={hasActiveFilters}
       />
 
       {/* Lista de transações */}
