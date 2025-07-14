@@ -2,7 +2,7 @@
   "name": "Mya Gestora - Controle Financeiro",
   "short_name": "Mya Gestora",
   "description": "Sistema inteligente de controle financeiro pessoal",
-  "start_url": "/",
+  "start_url": "https://app.myagestora.com.br/",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
@@ -12,13 +12,13 @@
   "lang": "pt-BR",
   "icons": [
     {
-      "src": "https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png",
+      "src": "https://api.myagestora.com.br/storage/v1/object/public/logos/logo-1751933896307.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png",
+      "src": "https://api.myagestora.com.br/storage/v1/object/public/logos/logo-1751933896307.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -32,7 +32,7 @@
       "url": "/transactions",
       "icons": [
         {
-          "src": "https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png",
+          "src": "https://api.myagestora.com.br/storage/v1/object/public/logos/logo-1751933896307.png",
           "sizes": "96x96"
         }
       ]
@@ -44,7 +44,7 @@
       "url": "/dashboard",
       "icons": [
         {
-          "src": "https://fimgalqlsezgxqbmktpz.supabase.co/storage/v1/object/public/logos/logo-1751933896307.png",
+          "src": "https://api.myagestora.com.br/storage/v1/object/public/logos/logo-1751933896307.png",
           "sizes": "96x96"
         }
       ]
