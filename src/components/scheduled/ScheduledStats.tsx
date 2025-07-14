@@ -99,48 +99,51 @@ export const ScheduledStats = ({
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900 p-6 rounded-xl border border-emerald-200 dark:border-emerald-800">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800">
               <div className="flex items-center justify-center mb-3">
-                <div className="bg-emerald-500 p-3 rounded-full">
-                  <TrendingUp className="h-6 w-6 text-white" />
+                <div className="bg-emerald-500 p-2 rounded-full">
+                  <TrendingUp className="h-5 w-5 text-white" />
                 </div>
               </div>
               <div className="text-center">
-                <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200 mb-2">Receitas Recorrentes</p>
-                <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">{formatCurrency(monthlyImpact.monthlyIncome)}</p>
+                <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200 mb-2">Receitas</p>
+                <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{formatCurrency(monthlyImpact.monthlyIncome)}</p>
               </div>
             </div>
             
-            <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 p-6 rounded-xl border border-red-200 dark:border-red-800">
+            <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 p-4 rounded-xl border border-red-200 dark:border-red-800">
               <div className="flex items-center justify-center mb-3">
-                <div className="bg-red-500 p-3 rounded-full">
-                  <TrendingDown className="h-6 w-6 text-white" />
+                <div className="bg-red-500 p-2 rounded-full">
+                  <TrendingDown className="h-5 w-5 text-white" />
                 </div>
               </div>
               <div className="text-center">
-                <p className="text-sm font-medium text-red-800 dark:text-red-200 mb-2">Despesas Recorrentes</p>
-                <p className="text-3xl font-bold text-red-700 dark:text-red-300">{formatCurrency(monthlyImpact.monthlyExpenses)}</p>
+                <p className="text-sm font-medium text-red-800 dark:text-red-200 mb-2">Despesas</p>
+                <p className="text-2xl font-bold text-red-700 dark:text-red-300">{formatCurrency(monthlyImpact.monthlyExpenses)}</p>
               </div>
             </div>
-          </div>
-          
-          <div className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 p-6 rounded-xl border border-slate-300 dark:border-slate-600">
-            <div className="text-center">
-              <p className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">Saldo Estimado Mensal</p>
-              <p className={`text-4xl font-bold ${
-                (monthlyImpact.monthlyIncome - monthlyImpact.monthlyExpenses) >= 0 
-                  ? 'text-emerald-600 dark:text-emerald-400' 
-                  : 'text-red-600 dark:text-red-400'
-              }`}>
-                {formatCurrency(monthlyImpact.monthlyIncome - monthlyImpact.monthlyExpenses)}
-              </p>
-              <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
-                {(monthlyImpact.monthlyIncome - monthlyImpact.monthlyExpenses) >= 0 
-                  ? 'Resultado positivo do mês' 
-                  : 'Atenção: saldo negativo'
-                }
-              </p>
+            
+            <div className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 p-4 rounded-xl border border-slate-300 dark:border-slate-600">
+              <div className="text-center">
+                <div className="flex items-center justify-center mb-3">
+                  <div className={`p-2 rounded-full ${
+                    (monthlyImpact.monthlyIncome - monthlyImpact.monthlyExpenses) >= 0 
+                      ? 'bg-emerald-500' 
+                      : 'bg-red-500'
+                  }`}>
+                    <TrendingUp className="h-5 w-5 text-white" />
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Saldo Estimado</p>
+                <p className={`text-2xl font-bold ${
+                  (monthlyImpact.monthlyIncome - monthlyImpact.monthlyExpenses) >= 0 
+                    ? 'text-emerald-600 dark:text-emerald-400' 
+                    : 'text-red-600 dark:text-red-400'
+                }`}>
+                  {formatCurrency(monthlyImpact.monthlyIncome - monthlyImpact.monthlyExpenses)}
+                </p>
+              </div>
             </div>
           </div>
         </CardContent>

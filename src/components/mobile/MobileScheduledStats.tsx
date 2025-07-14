@@ -63,46 +63,52 @@ export const MobileScheduledStats = ({
             Transações recorrentes
           </p>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900 p-3 rounded-lg border border-emerald-200 dark:border-emerald-800">
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-3 gap-2">
+            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900 p-2 rounded-lg border border-emerald-200 dark:border-emerald-800">
               <div className="text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <div className="bg-emerald-500 p-2 rounded-full">
-                    <TrendingUp className="h-4 w-4 text-white" />
+                <div className="flex items-center justify-center mb-1">
+                  <div className="bg-emerald-500 p-1 rounded-full">
+                    <TrendingUp className="h-3 w-3 text-white" />
                   </div>
                 </div>
-                <p className="text-xs font-medium text-emerald-800 dark:text-emerald-200 mb-1">Receitas</p>
-                <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300">{formatCurrency(totalMonthlyIncome)}</p>
+                <p className="text-xs font-medium text-emerald-800 dark:text-emerald-200">Receitas</p>
+                <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">{formatCurrency(totalMonthlyIncome)}</p>
               </div>
             </div>
             
-            <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 p-3 rounded-lg border border-red-200 dark:border-red-800">
+            <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 p-2 rounded-lg border border-red-200 dark:border-red-800">
               <div className="text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <div className="bg-red-500 p-2 rounded-full">
-                    <TrendingDown className="h-4 w-4 text-white" />
+                <div className="flex items-center justify-center mb-1">
+                  <div className="bg-red-500 p-1 rounded-full">
+                    <TrendingDown className="h-3 w-3 text-white" />
                   </div>
                 </div>
-                <p className="text-xs font-medium text-red-800 dark:text-red-200 mb-1">Despesas</p>
-                <p className="text-sm font-bold text-red-700 dark:text-red-300">{formatCurrency(totalMonthlyExpenses)}</p>
+                <p className="text-xs font-medium text-red-800 dark:text-red-200">Despesas</p>
+                <p className="text-xs font-bold text-red-700 dark:text-red-300">{formatCurrency(totalMonthlyExpenses)}</p>
               </div>
             </div>
-          </div>
-          
-          <div className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 p-4 rounded-lg border border-slate-300 dark:border-slate-600">
-            <div className="text-center">
-              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Saldo Estimado</p>
-              <p className={`text-xl font-bold ${
-                (totalMonthlyIncome - totalMonthlyExpenses) >= 0 
-                  ? 'text-emerald-600 dark:text-emerald-400' 
-                  : 'text-red-600 dark:text-red-400'
-              }`}>
-                {formatCurrency(totalMonthlyIncome - totalMonthlyExpenses)}
-              </p>
-              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                {(totalMonthlyIncome - totalMonthlyExpenses) >= 0 ? 'Positivo' : 'Negativo'}
-              </p>
+            
+            <div className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 p-2 rounded-lg border border-slate-300 dark:border-slate-600">
+              <div className="text-center">
+                <div className="flex items-center justify-center mb-1">
+                  <div className={`p-1 rounded-full ${
+                    (totalMonthlyIncome - totalMonthlyExpenses) >= 0 
+                      ? 'bg-emerald-500' 
+                      : 'bg-red-500'
+                  }`}>
+                    <TrendingUp className="h-3 w-3 text-white" />
+                  </div>
+                </div>
+                <p className="text-xs font-medium text-slate-700 dark:text-slate-300">Saldo</p>
+                <p className={`text-xs font-bold ${
+                  (totalMonthlyIncome - totalMonthlyExpenses) >= 0 
+                    ? 'text-emerald-600 dark:text-emerald-400' 
+                    : 'text-red-600 dark:text-red-400'
+                }`}>
+                  {formatCurrency(totalMonthlyIncome - totalMonthlyExpenses)}
+                </p>
+              </div>
             </div>
           </div>
         </CardContent>

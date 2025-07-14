@@ -240,7 +240,11 @@ export const MobileScheduled = () => {
   };
 
   const handleEdit = (transaction: any) => {
-    navigate(`/scheduled/editar/${transaction.id}`);
+    // Por enquanto, vamos mostrar um toast informando que precisa ser implementado
+    toast({
+      title: 'Editar Transação',
+      description: 'Funcionalidade de edição será implementada em breve.',
+    });
   };
 
   const handleCreateNew = () => {

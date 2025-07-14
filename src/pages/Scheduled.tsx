@@ -125,10 +125,12 @@ const Scheduled = () => {
   };
 
   const handleEdit = (id: string) => {
-    // Para desktop, vamos mostrar o formulário de edição
-    console.log('Editar transação:', id);
-    // Aqui você pode implementar a lógica de edição
-    // Por exemplo, abrir um modal ou navegar para uma página de edição
+    const transaction = filteredTransactions.find(t => t.id === id);
+    if (!transaction) return;
+    
+    // Implementar edição usando o TransactionForm
+    setIsFormOpen(true);
+    // TODO: Passar dados da transação para edição
   };
 
   if (isLoading) {
