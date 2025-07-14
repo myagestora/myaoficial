@@ -47,9 +47,13 @@ export const TransactionsFilters = ({
     { value: 'expense', label: 'Despesas' }
   ];
 
+  const filteredCategories = selectedType === 'all' 
+    ? categories 
+    : categories.filter(cat => cat.type === selectedType);
+
   const categoryOptions = [
     { value: 'all', label: 'Todas as categorias' },
-    ...categories.map(cat => ({ value: cat.id, label: cat.name }))
+    ...filteredCategories.map(cat => ({ value: cat.id, label: cat.name }))
   ];
 
   return (
