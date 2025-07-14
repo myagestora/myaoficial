@@ -11,17 +11,47 @@ export class PWAInstaller {
   private deferredPrompt: BeforeInstallPromptEvent | null = null;
   private isInstalled = false;
   private callbacks: ((canInstall: boolean) => void)[] = [];
-  private isWaitingForPrompt = false;
+  private swReady = false;
 
   constructor() {
     this.setupEventListeners();
     this.checkIfInstalled();
+    this.waitForServiceWorker();
+  }
+
+  private async waitForServiceWorker() {
+    if ('serviceWorker' in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        console.log('✅ PWA: Service Worker is ready', registration);
+        this.swReady = true;
+        
+        // Force check for install prompt after SW is ready
+        setTimeout(() => {
+          if (!this.deferredPrompt && !this.isInstalled) {
+            console.log('🔍 PWA: No install prompt detected after SW ready - checking criteria');
+            this.debugPWACriteria();
+          }
+        }, 1000);
+      } catch (error) {
+        console.error('❌ PWA: Service Worker not ready:', error);
+      }
+    }
+  }
+
+  private debugPWACriteria() {
+    console.log('🔍 PWA Debug - Checking all criteria:');
+    console.log('- HTTPS:', location.protocol === 'https:' || location.hostname === 'localhost');
+    console.log('- Service Worker:', 'serviceWorker' in navigator && this.swReady);
+    console.log('- Manifest:', document.querySelector('link[rel="manifest"]') !== null);
+    console.log('- Display mode:', window.matchMedia('(display-mode: standalone)').matches);
+    console.log('- User agent:', navigator.userAgent);
+    console.log('- Current URL:', window.location.href);
   }
 
   private setupEventListeners() {
     console.log('🔧 Configurando listeners PWA...');
     
-    // Capturar o evento beforeinstallprompt
     window.addEventListener('beforeinstallprompt', (e) => {
       console.log('🎯 beforeinstallprompt disparado!', e);
       e.preventDefault();
@@ -29,20 +59,12 @@ export class PWAInstaller {
       this.notifyCallbacks(true);
     });
 
-    // Detectar quando o app foi instalado
     window.addEventListener('appinstalled', () => {
       console.log('✅ App instalado via evento appinstalled');
       this.isInstalled = true;
       this.deferredPrompt = null;
       this.notifyCallbacks(false);
     });
-
-    // Debug: verificar se Service Worker está ativo
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then(() => {
-        console.log('🔧 Service Worker ativo e pronto');
-      });
-    }
   }
 
   private checkIfInstalled() {
@@ -56,13 +78,11 @@ export class PWAInstaller {
       userAgent: navigator.userAgent
     });
 
-    // Verificar se está rodando em modo standalone (instalado)
     if (isStandalone) {
       console.log('✅ PWA detectado como instalado (standalone)');
       this.isInstalled = true;
     }
 
-    // Verificar para iOS
     if (isIOSStandalone) {
       console.log('✅ PWA detectado como instalado (iOS standalone)');
       this.isInstalled = true;
@@ -70,31 +90,37 @@ export class PWAInstaller {
   }
 
   public canInstall(): boolean {
-    return !this.isInstalled && this.deferredPrompt !== null;
+    const hasPrompt = this.deferredPrompt !== null;
+    const notInstalled = !this.isInstalled;
+    const swReady = this.swReady;
+    
+    const canInstall = hasPrompt && notInstalled && swReady;
+    
+    console.log(`🔍 PWA: Can install = ${canInstall} (prompt: ${hasPrompt}, installed: ${!notInstalled}, swReady: ${swReady})`);
+    
+    if (!canInstall && !this.isInstalled) {
+      this.debugPWACriteria();
+    }
+    
+    return canInstall;
   }
 
   public isAppInstalled(): boolean {
     return this.isInstalled;
   }
 
-
   public async install(): Promise<boolean> {
     console.log('🚀 Tentativa de instalação PWA iniciada');
-    console.log('📊 Estado atual:', {
-      deferredPrompt: !!this.deferredPrompt,
-      isInstalled: this.isInstalled,
-      canInstall: this.canInstall()
-    });
-
-    if (!this.deferredPrompt) {
-      console.log('❌ Nenhum prompt de instalação disponível');
+    
+    if (!this.canInstall()) {
+      console.error('❌ PWA: Cannot install - requirements not met');
       return false;
     }
 
     try {
       console.log('🎯 Disparando prompt de instalação...');
-      this.deferredPrompt.prompt();
-      const choiceResult = await this.deferredPrompt.userChoice;
+      await this.deferredPrompt!.prompt();
+      const choiceResult = await this.deferredPrompt!.userChoice;
       
       console.log('📋 Resultado da escolha do usuário:', choiceResult);
       
@@ -104,9 +130,8 @@ export class PWAInstaller {
         return true;
       } else {
         console.log('❌ Usuário rejeitou a instalação');
+        return false;
       }
-      
-      return false;
     } catch (error) {
       console.error('💥 Erro ao instalar PWA:', error);
       return false;
@@ -115,7 +140,6 @@ export class PWAInstaller {
 
   public onInstallStatusChange(callback: (canInstall: boolean) => void) {
     this.callbacks.push(callback);
-    // Chamar imediatamente com o status atual
     callback(this.canInstall());
   }
 

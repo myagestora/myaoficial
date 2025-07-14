@@ -53,10 +53,10 @@ export const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
   };
 
   const handleInstall = async () => {
-    console.log('🔧 Install button clicked');
+    console.log('🚀 Starting PWA installation...');
     
+    // For iOS - always show manual instructions
     if (isIOS) {
-      console.log('📱 iOS detected - showing manual instructions');
       alert(`Para instalar no iOS:
 
 1. Toque no ícone de compartilhar (□↗) na parte inferior da tela
@@ -67,31 +67,26 @@ O app será instalado na sua tela inicial!`);
       return;
     }
 
-    if (isAndroid) {
-      console.log('🤖 Android detected - attempting native installation');
+    // For Android - try native installation first
+    if (pwaInstaller.canInstall()) {
+      console.log('✅ PWA can be installed, attempting native installation...');
+      setIsInstalling(true);
       
-      if (pwaInstaller.canInstall()) {
-        console.log('✅ PWA prompt available - installing');
-        setIsInstalling(true);
-        const success = await pwaInstaller.install();
-        setIsInstalling(false);
-        
-        if (success) {
-          console.log('🎉 Installation successful!');
-          return;
-        }
+      const success = await pwaInstaller.install();
+      setIsInstalling(false);
+      
+      if (success) {
+        console.log('✅ PWA installed successfully');
+        onClose();
+        return;
+      } else {
+        console.log('❌ PWA installation failed or was cancelled');
+        return;
       }
-
-      // Fallback: Show manual instructions for Android
-      console.log('❌ Native installation not available - showing manual instructions');
-      alert(`Para instalar no Android:
-
-1. Toque nos 3 pontos (⋮) no canto superior direito do Chrome
-2. Toque em "Instalar aplicativo" ou "Adicionar à tela inicial"
-3. Confirme a instalação
-
-O app será instalado na sua tela inicial!`);
     }
+    
+    // If no native installation available, don't show confusing alerts
+    console.log('❌ PWA installation not available');
   };
 
   useEffect(() => {
@@ -196,30 +191,27 @@ O app será instalado na sua tela inicial!`);
             </button>
           ))}
 
-          {/* PWA Install Button - SEMPRE VISÍVEL no Android */}
-          <div className="my-4 border-t border-muted" />
-          <button
-            onClick={isIOS ? () => {
-              // Para iOS, mostrar instruções
-              alert('Para instalar no iOS:\n1. Toque no ícone de compartilhar\n2. Selecione "Adicionar à Tela de Início"');
-              onClose();
-            } : () => {
-              // Para Android e outros, sempre tentar instalação nativa primeiro
-              handleInstall();
-            }}
-            disabled={isInstalling}
-            className="flex items-center space-x-3 w-full p-3 rounded-lg transition-colors text-left bg-primary/5 hover:bg-primary/10 text-primary"
-          >
-            <Download size={20} />
-            <div className="flex flex-col">
-              <span className="font-medium">
-                {isInstalling ? 'Instalando...' : 'Instalar App'}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {isIOS ? 'Toque para ver instruções' : 'Instalar aplicativo PWA'}
-              </span>
-            </div>
-          </button>
+          {/* PWA Install Button - Only show if installation is actually possible */}
+          {(!pwaInstaller.isAppInstalled() && (canInstall || isIOS)) && (
+            <>
+              <div className="my-4 border-t border-muted" />
+              <button
+                onClick={handleInstall}
+                disabled={isInstalling}
+                className="flex items-center space-x-3 w-full p-3 rounded-lg transition-colors text-left bg-primary/5 hover:bg-primary/10 text-primary"
+              >
+                <Download size={20} />
+                <div className="flex flex-col">
+                  <span className="font-medium">
+                    {isInstalling ? 'Instalando...' : 'Instalar App'}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {isIOS ? 'Toque para ver instruções' : 'Instalar aplicativo PWA'}
+                  </span>
+                </div>
+              </button>
+            </>
+          )}
         </nav>
       </div>
     </div>

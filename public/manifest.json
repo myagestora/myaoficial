@@ -2,7 +2,7 @@
   "name": "Mya Gestora - Controle Financeiro",
   "short_name": "Mya Gestora",
   "description": "Sistema inteligente de controle financeiro pessoal",
-  "start_url": "/dashboard",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
