@@ -134,15 +134,18 @@ const Index = () => {
   const testimonials = [{
     name: 'Maria Silva',
     text: 'Organizei minhas finanças em 1 semana! Incrível como é simples.',
-    rating: 5
+    rating: 5,
+    image: 'https://images.unsplash.com/photo-1494790108755-2616b612b047?w=150&h=150&fit=crop&crop=face'
   }, {
     name: 'João Santos',
     text: 'Economizei R$ 800 no primeiro mês usando o planejamento inteligente.',
-    rating: 5
+    rating: 5,
+    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'
   }, {
     name: 'Ana Costa',
     text: 'Finalmente consigo controlar meus gastos sem estresse. Recomendo!',
-    rating: 5
+    rating: 5,
+    image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face'
   }];
   return <div className="min-h-screen min-h-[100dvh] bg-white dark:bg-gray-900">
       <SEOHead />
@@ -587,11 +590,17 @@ const Index = () => {
                   <p className="text-gray-700 dark:text-gray-300 mb-6 italic text-lg leading-relaxed">
                     "{testimonial.text}"
                   </p>
-                  <div className="flex items-center">
-                    <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full flex items-center justify-center text-white font-bold mr-4">
-                      {testimonial.name.charAt(0)}
-                    </div>
-                    <div>
+                   <div className="flex items-center">
+                     <img 
+                       src={testimonial.image} 
+                       alt={testimonial.name}
+                       className="w-12 h-12 rounded-full object-cover mr-4 border-2 border-gray-200" 
+                       onError={(e) => {
+                         const target = e.target as HTMLImageElement;
+                         target.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${testimonial.name}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd93d,ffdfbf`;
+                       }}
+                     />
+                     <div>
                       <p className="font-semibold text-gray-900 dark:text-white">{testimonial.name}</p>
                       <p className="text-gray-600 dark:text-gray-400 text-sm">Cliente verificado</p>
                     </div>
