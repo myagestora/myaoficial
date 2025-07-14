@@ -179,6 +179,11 @@ export const MobileCategories = () => {
     deleteCategoryMutation.mutate(categoryId);
   };
 
+  // Função para obter o label do tipo
+  const getTypeLabel = (type: 'income' | 'expense') => {
+    return type === 'income' ? 'Receita' : 'Despesa';
+  };
+
   // Funções de edição
   const startEdit = (category: any) => {
     setEditingCategory(category);
@@ -253,7 +258,9 @@ export const MobileCategories = () => {
                   }
                 >
                   <MobileSelectTrigger>
-                    <MobileSelectValue placeholder="Selecione o tipo" />
+                    <MobileSelectValue>
+                      {getTypeLabel(newCategory.type)}
+                    </MobileSelectValue>
                   </MobileSelectTrigger>
                   <MobileSelectContent>
                     <MobileSelectItem value="income">Receita</MobileSelectItem>
