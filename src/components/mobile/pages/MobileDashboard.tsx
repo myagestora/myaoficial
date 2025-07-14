@@ -176,12 +176,19 @@ export const MobileDashboard = () => {
                   <p className="text-xs text-green-600 dark:text-green-300">Para falar com nossa IA Mya</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <Phone className="h-4 w-4 text-green-600" />
-                <Badge variant="outline" className="border-green-500/30 text-green-700 dark:text-green-300">
-                  {supportWhatsapp}
-                </Badge>
-              </div>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+                onClick={() => window.open(`https://wa.me/55${supportWhatsapp}`, '_blank')}
+              >
+                <div className="flex items-center space-x-2">
+                  <Phone className="h-4 w-4" />
+                  <Badge variant="outline" className="border-green-500/30 text-green-700 dark:text-green-300">
+                    {supportWhatsapp}
+                  </Badge>
+                </div>
+              </Button>
             </div>
           </CardContent>
         </Card>
