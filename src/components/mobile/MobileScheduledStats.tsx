@@ -38,40 +38,21 @@ export const MobileScheduledStats = ({
 
   return (
     <div className="space-y-4">
-      {/* Main Stats */}
-      <div className="grid grid-cols-2 gap-4">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <Calendar className="h-8 w-8 text-primary mx-auto mb-2" />
-            <div className="text-2xl font-bold text-primary">{totalScheduled}</div>
-            <p className="text-xs text-muted-foreground">Total Agendadas</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 text-center">
-            <Clock className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-blue-600">{upcomingExecutions}</div>
-            <p className="text-xs text-muted-foreground">Próximos 7 dias</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Status Grid */}
+      {/* Main Stats - 3 cards lado a lado */}
       <div className="grid grid-cols-3 gap-3">
         <Card>
           <CardContent className="p-3 text-center">
-            <CheckCircle className="h-6 w-6 text-green-600 mx-auto mb-1" />
-            <div className="text-lg font-bold text-green-600">{activeScheduled}</div>
-            <p className="text-xs text-muted-foreground">Ativas</p>
+            <Calendar className="h-6 w-6 text-primary mx-auto mb-1" />
+            <div className="text-lg font-bold text-primary">{totalScheduled}</div>
+            <p className="text-xs text-muted-foreground">Total</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-3 text-center">
-            <PauseCircle className="h-6 w-6 text-gray-500 mx-auto mb-1" />
-            <div className="text-lg font-bold text-gray-500">{pausedScheduled}</div>
-            <p className="text-xs text-muted-foreground">Pausadas</p>
+            <Clock className="h-6 w-6 text-blue-600 mx-auto mb-1" />
+            <div className="text-lg font-bold text-blue-600">{upcomingExecutions}</div>
+            <p className="text-xs text-muted-foreground">Próximos 7 dias</p>
           </CardContent>
         </Card>
 

@@ -154,7 +154,9 @@ export const MobileScheduled = () => {
     const nextWeek = addDays(today, 7);
     
     const upcoming = scheduledTransactions?.filter(t => {
-      const transactionDate = startOfDay(new Date(t.date));
+      const targetDate = t.date; // Usar apenas date em vez de next_recurrence_date
+      const transactionDate = startOfDay(new Date(targetDate));
+      // Incluir transações desde hoje (>=) até próximos 7 dias
       return !isBefore(transactionDate, today) && !isAfter(transactionDate, nextWeek);
     }).length || 0;
     
