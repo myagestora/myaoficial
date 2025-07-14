@@ -1,7 +1,9 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowUpCircle, ArrowDownCircle, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowUpCircle, ArrowDownCircle, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface TransactionStatsProps {
   transactions: any[];
@@ -32,8 +34,26 @@ export const TransactionStats = ({ transactions }: TransactionStatsProps) => {
     return `R$ ${Math.abs(amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
   };
 
+  const getCurrentMonthYear = () => {
+    return format(new Date(), 'MMMM yyyy', { locale: ptBR });
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div className="space-y-4 mb-6">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Período de Referência</CardTitle>
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-xl font-bold capitalize">{getCurrentMonthYear()}</div>
+          <p className="text-xs text-muted-foreground">
+            Dados do mês atual
+          </p>
+        </CardContent>
+      </Card>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total de Transações</CardTitle>
@@ -97,6 +117,7 @@ export const TransactionStats = ({ transactions }: TransactionStatsProps) => {
           </p>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };
