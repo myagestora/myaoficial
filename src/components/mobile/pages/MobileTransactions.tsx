@@ -94,9 +94,9 @@ export const MobileTransactions = () => {
     return true;
   });
 
-  // Calcular estatísticas
-  const income = (transactions || []).filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-  const expenses = (transactions || []).filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+  // Calcular estatísticas baseadas nas transações filtradas
+  const income = hookFilteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+  const expenses = hookFilteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
 
   return (
     <MobilePageWrapper className="bg-gradient-to-br from-background to-primary/5">
@@ -117,6 +117,7 @@ export const MobileTransactions = () => {
         income={income}
         expenses={expenses}
         formatCurrency={formatCurrency}
+        dateRange={dateRange}
       />
 
       <TransactionsFilters 

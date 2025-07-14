@@ -7,9 +7,10 @@ import { ptBR } from 'date-fns/locale';
 
 interface TransactionStatsProps {
   transactions: any[];
+  dateRange?: { from?: Date; to?: Date } | undefined;
 }
 
-export const TransactionStats = ({ transactions }: TransactionStatsProps) => {
+export const TransactionStats = ({ transactions, dateRange }: TransactionStatsProps) => {
   const stats = React.useMemo(() => {
     const totalIncome = transactions
       .filter(t => t.type === 'income')
@@ -34,9 +35,41 @@ export const TransactionStats = ({ transactions }: TransactionStatsProps) => {
     return `R$ ${Math.abs(amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
   };
 
-  const getCurrentMonthYear = () => {
-    return format(new Date(), 'MMMM yyyy', { locale: ptBR });
+  const getPeriodInfo = () => {
+    const currentMonth = new Date();
+    const currentMonthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    const currentMonthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+    
+    // Se não há filtro de data ou é exatamente o mês atual
+    if (!dateRange?.from || !dateRange?.to || 
+        (dateRange.from.getTime() === currentMonthStart.getTime() && 
+         dateRange.to.getTime() === currentMonthEnd.getTime())) {
+      return {
+        title: format(new Date(), 'MMMM yyyy', { locale: ptBR }),
+        subtitle: 'Dados do mês atual'
+      };
+    }
+    
+    // Se é um período personalizado
+    const isSameMonth = dateRange.from.getMonth() === dateRange.to.getMonth() && 
+                       dateRange.from.getFullYear() === dateRange.to.getFullYear();
+    
+    if (isSameMonth && dateRange.from.getDate() === 1) {
+      // É um mês completo
+      return {
+        title: format(dateRange.from, 'MMMM yyyy', { locale: ptBR }),
+        subtitle: 'Dados do mês selecionado'
+      };
+    } else {
+      // É um período personalizado
+      return {
+        title: 'Período Personalizado',
+        subtitle: `${format(dateRange.from, 'dd/MM/yyyy')} - ${format(dateRange.to, 'dd/MM/yyyy')}`
+      };
+    }
   };
+
+  const periodInfo = getPeriodInfo();
 
   return (
     <div className="space-y-4 mb-6">
@@ -46,9 +79,9 @@ export const TransactionStats = ({ transactions }: TransactionStatsProps) => {
           <Calendar className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-xl font-bold capitalize">{getCurrentMonthYear()}</div>
+          <div className="text-xl font-bold capitalize">{periodInfo.title}</div>
           <p className="text-xs text-muted-foreground">
-            Dados do mês atual
+            {periodInfo.subtitle}
           </p>
         </CardContent>
       </Card>

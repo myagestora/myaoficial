@@ -295,7 +295,7 @@ const Transactions = () => {
       </div>
 
       {/* Statistics */}
-      <TransactionStats transactions={filteredTransactions} />
+      <TransactionStats transactions={filteredTransactions} dateRange={dateRange} />
 
       {/* Filters */}
       <TransactionFilters
