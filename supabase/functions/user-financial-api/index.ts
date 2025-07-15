@@ -15,11 +15,6 @@ const isYearMonth = (period: string) => {
   return /^\d{4}-\d{2}$/.test(period);
 };
 
-const isValidPeriod = (period: string) => {
-  const validPeriods = ['month', 'week', 'year', 'quarter', 'all'];
-  return validPeriods.includes(period) || isSpecificDate(period) || isYearMonth(period);
-};
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -207,68 +202,58 @@ serve(async (req) => {
 
     // Helper function to get date range for period
     const getPeriodDateRange = (period: string) => {
-      try {
-        console.log('Processing period:', period);
-        
-        if (!period || !isValidPeriod(period)) {
-          console.log('Invalid period, defaulting to month');
-          period = 'month';
+      console.log('Processing period:', period);
+      
+      const currentDate = new Date()
+      const currentMonth = currentDate.getMonth() + 1
+      const currentYear = currentDate.getFullYear()
+      
+      // Handle specific date (yyyy-MM-dd)
+      if (isSpecificDate(period)) {
+        console.log('Specific date detected:', period);
+        return { start: period, end: period }
+      }
+      
+      // Handle year-month format (yyyy-MM)
+      if (isYearMonth(period)) {
+        console.log('Year-month format detected:', period);
+        const [year, month] = period.split('-').map(Number);
+        const monthStart = new Date(year, month - 1, 1).toISOString().split('T')[0];
+        const monthEnd = new Date(year, month, 0).toISOString().split('T')[0];
+        return { start: monthStart, end: monthEnd };
+      }
+      
+      // Handle standard periods
+      switch (period) {
+        case 'month': {
+          const monthStart = new Date(currentYear, currentMonth - 1, 1).toISOString().split('T')[0]
+          const monthEnd = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0]
+          console.log('Month period:', { start: monthStart, end: monthEnd });
+          return { start: monthStart, end: monthEnd }
         }
-        
-        const currentDate = new Date()
-        const currentMonth = currentDate.getMonth() + 1
-        const currentYear = currentDate.getFullYear()
-        
-        // Handle specific date (yyyy-MM-dd)
-        if (isSpecificDate(period)) {
-          console.log('Specific date detected:', period);
-          return { start: period, end: period }
+        case 'week': {
+          const weekStart = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          const weekEnd = currentDate.toISOString().split('T')[0]
+          console.log('Week period:', { start: weekStart, end: weekEnd });
+          return { start: weekStart, end: weekEnd }
         }
-        
-        // Handle year-month format (yyyy-MM)
-        if (isYearMonth(period)) {
-          console.log('Year-month format detected:', period);
-          const [year, month] = period.split('-').map(Number);
-          const monthStart = new Date(year, month - 1, 1).toISOString().split('T')[0];
-          const monthEnd = new Date(year, month, 0).toISOString().split('T')[0];
-          return { start: monthStart, end: monthEnd };
+        case 'year': {
+          const yearStart = `${currentYear}-01-01`;
+          const yearEnd = `${currentYear}-12-31`;
+          console.log('Year period:', { start: yearStart, end: yearEnd });
+          return { start: yearStart, end: yearEnd }
         }
-        
-        // Handle standard periods
-        switch (period) {
-          case 'month': {
-            const monthStart = new Date(currentYear, currentMonth - 1, 1).toISOString().split('T')[0]
-            const monthEnd = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0]
-            console.log('Month period:', { start: monthStart, end: monthEnd });
-            return { start: monthStart, end: monthEnd }
-          }
-          case 'week': {
-            const weekStart = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-            const weekEnd = currentDate.toISOString().split('T')[0]
-            console.log('Week period:', { start: weekStart, end: weekEnd });
-            return { start: weekStart, end: weekEnd }
-          }
-          case 'year': {
-            const yearStart = `${currentYear}-01-01`;
-            const yearEnd = `${currentYear}-12-31`;
-            console.log('Year period:', { start: yearStart, end: yearEnd });
-            return { start: yearStart, end: yearEnd }
-          }
-          case 'quarter': {
-            const quarterNumber = Math.floor((currentMonth - 1) / 3) + 1;
-            const quarterStart = new Date(currentYear, (quarterNumber - 1) * 3, 1).toISOString().split('T')[0];
-            const quarterEnd = new Date(currentYear, quarterNumber * 3, 0).toISOString().split('T')[0];
-            console.log('Quarter period:', { start: quarterStart, end: quarterEnd });
-            return { start: quarterStart, end: quarterEnd };
-          }
-          case 'all':
-          default:
-            console.log('All period or default');
-            return null; // For 'all' period
+        case 'quarter': {
+          const quarterNumber = Math.floor((currentMonth - 1) / 3) + 1;
+          const quarterStart = new Date(currentYear, (quarterNumber - 1) * 3, 1).toISOString().split('T')[0];
+          const quarterEnd = new Date(currentYear, quarterNumber * 3, 0).toISOString().split('T')[0];
+          console.log('Quarter period:', { start: quarterStart, end: quarterEnd });
+          return { start: quarterStart, end: quarterEnd };
         }
-      } catch (error) {
-        console.error('Error in getPeriodDateRange:', error);
-        return null;
+        case 'all':
+        default:
+          console.log('All period or default');
+          return null; // For 'all' period
       }
     }
 
@@ -289,12 +274,6 @@ serve(async (req) => {
             console.log('Balance endpoint request data:', requestData);
           } catch (e) {
             console.log('No request body, using defaults:', requestData);
-          }
-
-          // Validate period
-          if (!isValidPeriod(requestData.period)) {
-            console.log('Invalid period provided, using month:', requestData.period);
-            requestData.period = 'month';
           }
 
           let query = supabase
@@ -531,15 +510,6 @@ serve(async (req) => {
           const period = url.searchParams.get('period') || 'month';
           console.log('Expenses endpoint period:', period);
           
-          // Validate period
-          if (!isValidPeriod(period)) {
-            console.log('Invalid period for expenses endpoint:', period);
-            return new Response(JSON.stringify({ error: 'Invalid period format' }), {
-              status: 400,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-          }
-          
           // Get expenses without JOIN
           let query = supabase
             .from('transactions')
@@ -620,15 +590,6 @@ serve(async (req) => {
           
           const period = url.searchParams.get('period') || 'month';
           console.log('Income endpoint period:', period);
-          
-          // Validate period
-          if (!isValidPeriod(period)) {
-            console.log('Invalid period for income endpoint:', period);
-            return new Response(JSON.stringify({ error: 'Invalid period format' }), {
-              status: 400,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-          }
           
           let query = supabase
             .from('transactions')
@@ -925,15 +886,6 @@ serve(async (req) => {
           
           const period = url.searchParams.get('period') || 'month';
           console.log('Summary endpoint period:', period);
-          
-          // Validate period
-          if (!isValidPeriod(period)) {
-            console.log('Invalid period for summary endpoint:', period);
-            return new Response(JSON.stringify({ error: 'Invalid period format' }), {
-              status: 400,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-          }
           
           // Get all transactions
           const { data: allTransactions, error: allTransError } = await supabase
