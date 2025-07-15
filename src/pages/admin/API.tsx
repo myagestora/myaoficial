@@ -666,10 +666,10 @@ const AdminAPI = () => {
           paramDetails: {
             period: {
               type: "string",
-              description: "Período para análise por categoria",
+              description: "Período para análise por categoria ou data específica (yyyy-MM-dd)",
               example: "month",
               required: false,
-              options: ["week", "month", "quarter", "year"]
+              options: ["week", "month", "quarter", "year", "all", "yyyy-MM-dd"]
             }
           },
           response: { income: "object", expenses: "object" },
