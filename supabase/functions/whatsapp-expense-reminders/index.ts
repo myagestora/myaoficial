@@ -83,19 +83,10 @@ serve(async (req) => {
         created_at,
         user_id,
         category_id,
-        categories(name, color, icon),
-        profiles!inner(
-          id,
-          full_name,
-          email,
-          whatsapp,
-          expense_reminders_enabled
-        )
+        categories(name, color, icon)
       `)
       .eq('type', 'expense')
       .eq('date', targetDate)
-      .not('profiles.whatsapp', 'is', null)
-      .eq('profiles.expense_reminders_enabled', true)
 
     if (expensesError) {
       console.error('Error fetching expenses:', expensesError)
@@ -105,12 +96,55 @@ serve(async (req) => {
       )
     }
 
+    // Filter users who have WhatsApp and expense reminders enabled
+    const userIds = [...new Set(expenses?.map(e => e.user_id) || [])]
+    
+    if (userIds.length === 0) {
+      return new Response(
+        JSON.stringify({
+          date: targetDate,
+          users_with_expenses: [],
+          total_users: 0,
+          total_amount: 0,
+          generated_at: new Date().toISOString()
+        }),
+        { 
+          status: 200, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      )
+    }
+
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, whatsapp, expense_reminders_enabled')
+      .in('id', userIds)
+      .not('whatsapp', 'is', null)
+      .eq('expense_reminders_enabled', true)
+
+    if (profilesError) {
+      console.error('Error fetching profiles:', profilesError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch user profiles' }), 
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const validUserIds = new Set(profiles?.map(p => p.id) || [])
+    const validExpenses = expenses?.filter(e => validUserIds.has(e.user_id)) || []
+
     // Group expenses by user
     const userExpensesMap = new Map()
+    const profilesMap = new Map(profiles?.map(p => [p.id, p]) || [])
 
-    expenses?.forEach((expense: any) => {
+    validExpenses.forEach((expense: any) => {
       const userId = expense.user_id
-      const profile = expense.profiles
+      const profile = profilesMap.get(userId)
+
+      if (!profile) return // Skip if no profile found
 
       if (!userExpensesMap.has(userId)) {
         userExpensesMap.set(userId, {
