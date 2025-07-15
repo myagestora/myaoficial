@@ -505,6 +505,7 @@ serve(async (req) => {
             });
           }
           
+          const url = new URL(req.url);
           const period = url.searchParams.get('period');
           console.log('Expenses endpoint period:', period);
           
