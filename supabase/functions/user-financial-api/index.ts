@@ -537,6 +537,13 @@ serve(async (req) => {
           });
         }
 
+        // Define date variables for this endpoint
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1; // getMonth() returns 0-11
+        const monthStart = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
+        const monthEnd = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0];
+
         let period = null;
         let goal_type = null;
 
