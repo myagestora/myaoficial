@@ -486,6 +486,89 @@ const AdminAPI = () => {
       ]
     },
     {
+      category: "Lembretes e Notificações",
+      icon: Activity,
+      color: "bg-orange-500",
+      endpoints: [
+        {
+          method: "POST",
+          path: "/check-expense-reminders",
+          description: "Verifica lembretes de despesas pendentes para um usuário específico",
+          headers: { Authorization: "Bearer your-secure-bot-token" },
+          params: { 
+            user_id: "string"
+          },
+          paramDetails: {
+            user_id: {
+              type: "string",
+              description: "ID único do usuário no formato UUID",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+              required: true
+            }
+          },
+          response: { 
+            user_found: "boolean", 
+            has_reminders: "boolean", 
+            reminders_count: "number", 
+            transactions: "array" 
+          },
+          exampleRequest: {
+            user_id: "123e4567-e89b-12d3-a456-426614174000"
+          },
+          exampleResponse: {
+            user_found: true,
+            has_reminders: true,
+            reminders_count: 3,
+            transactions: [
+              {
+                id: "trans_001",
+                title: "Conta de luz",
+                amount: 150.75,
+                created_at: "2024-01-10T08:00:00Z",
+                categories: {
+                  name: "Contas",
+                  color: "#ef4444"
+                }
+              },
+              {
+                id: "trans_002", 
+                title: "Pagamento cartão",
+                amount: 850.50,
+                created_at: "2024-01-05T14:30:00Z",
+                categories: {
+                  name: "Cartão de Crédito",
+                  color: "#3b82f6"
+                }
+              }
+            ]
+          }
+        },
+        {
+          method: "POST",
+          path: "/expense-reminders",
+          description: "Envia lembretes de despesas para todos os usuários com transações vencendo hoje (apenas transações agendadas previamente)",
+          headers: { Authorization: "Bearer your-secure-bot-token" },
+          params: {},
+          paramDetails: {},
+          response: { 
+            success: "boolean", 
+            processed_count: "number", 
+            sent_count: "number",
+            skipped_count: "number", 
+            message: "string"
+          },
+          exampleRequest: {},
+          exampleResponse: {
+            success: true,
+            processed_count: 25,
+            sent_count: 18,
+            skipped_count: 7,
+            message: "Lembretes processados com sucesso. 18 usuários notificados de 25 transações encontradas."
+          }
+        }
+      ]
+    },
+    {
       category: "Analytics",
       icon: TrendingUp,
       color: "bg-purple-500",
