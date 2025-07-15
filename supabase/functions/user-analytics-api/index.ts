@@ -161,20 +161,42 @@ serve(async (req) => {
       }
 
       const body = await req.json();
-      const { period = 'month' } = body; // 'month', 'quarter', 'year'
+      const { period = 'month' } = body; // 'month', 'quarter', 'year', 'all', or 'yyyy-MM-dd'
 
-      let startDate = new Date();
-      const endDate = new Date();
+      let startDate: Date;
+      let endDate: Date = new Date();
 
-      switch (period) {
-        case 'quarter':
-          startDate.setMonth(endDate.getMonth() - 3);
-          break;
-        case 'year':
-          startDate.setFullYear(endDate.getFullYear() - 1);
-          break;
-        default: // month
-          startDate.setMonth(endDate.getMonth() - 1);
+      // Check if period is a specific date (yyyy-MM-dd format)
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (dateRegex.test(period)) {
+        const specificDate = new Date(period);
+        if (isNaN(specificDate.getTime())) {
+          return new Response(
+            JSON.stringify({ error: 'Invalid date format. Use yyyy-MM-dd format.' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+        startDate = new Date(period);
+        endDate = new Date(period);
+      } else {
+        // Handle period-based queries
+        startDate = new Date();
+        switch (period) {
+          case 'all':
+            startDate = new Date('1900-01-01');
+            break;
+          case 'quarter':
+            startDate.setMonth(endDate.getMonth() - 3);
+            break;
+          case 'year':
+            startDate.setFullYear(endDate.getFullYear() - 1);
+            break;
+          case 'week':
+            startDate.setDate(endDate.getDate() - 7);
+            break;
+          default: // month
+            startDate.setMonth(endDate.getMonth() - 1);
+        }
       }
 
       const { data: transactions, error } = await supabase
