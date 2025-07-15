@@ -49,5 +49,14 @@ verify_jwt = true
 [functions.list-categories]
 verify_jwt = false
 
+[functions.expense-reminders]
+verify_jwt = false
+
+[functions.check-expense-reminders]
+verify_jwt = false
+
+[functions.whatsapp-expense-reminders]
+verify_jwt = false
+
 [auth]
 enabled = true
