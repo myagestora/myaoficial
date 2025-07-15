@@ -413,10 +413,10 @@ const AdminAPI = () => {
           paramDetails: {
             period: {
               type: "string",
-              description: "Período para filtrar metas ou data específica (yyyy-MM-dd)",
+              description: "Período para filtrar metas, data específica (yyyy-MM-dd) ou mês específico (yyyy-MM)",
               example: "month",
               required: false,
-              options: ["month", "year", "all", "yyyy-MM-dd"]
+              options: ["month", "year", "all", "yyyy-MM-dd", "yyyy-MM"]
             },
             goal_type: {
               type: "string", 
