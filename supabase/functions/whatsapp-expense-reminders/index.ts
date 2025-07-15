@@ -96,7 +96,6 @@ serve(async (req) => {
       .eq('date', targetDate)
       .not('profiles.whatsapp', 'is', null)
       .eq('profiles.expense_reminders_enabled', true)
-      .lt('created_at', targetDate + 'T23:59:59.999Z') // Only transactions created before today
 
     if (expensesError) {
       console.error('Error fetching expenses:', expensesError)
