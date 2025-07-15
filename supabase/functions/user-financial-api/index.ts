@@ -6,6 +6,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Helper function to check if period is a specific date
+const isSpecificDate = (period: string) => {
+  return /^\d{4}-\d{2}-\d{2}$/.test(period);
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -210,10 +215,6 @@ serve(async (req) => {
         let requestData = { period: 'month' };
         requestData = { ...requestData, ...await req.json() };
 
-        // Helper function to check if period is a specific date
-        const isSpecificDate = (period: string) => {
-          return /^\d{4}-\d{2}-\d{2}$/.test(period);
-        };
 
         // Definir filtros de data baseado no período
         let query = supabase
@@ -526,6 +527,8 @@ serve(async (req) => {
       }
 
       case 'goals': {
+        console.log('Goals endpoint called with method:', req.method);
+        
         // Aceita GET e POST
         if (req.method !== 'GET' && req.method !== 'POST') {
           return new Response(JSON.stringify({ error: 'Method not allowed. Use GET or POST.' }), {
@@ -541,9 +544,11 @@ serve(async (req) => {
           const requestData = await req.json();
           period = requestData.period;
           goal_type = requestData.goal_type;
+          console.log('POST data received:', { period, goal_type });
         } else {
           period = url.searchParams.get('period');
           goal_type = url.searchParams.get('goal_type');
+          console.log('GET params received:', { period, goal_type });
         }
 
         let query = supabase
