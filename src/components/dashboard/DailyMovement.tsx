@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { DateRange } from 'react-day-picker';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { formatDateBrazilian } from '@/utils/timezoneUtils';
 
 interface DailyMovementProps {
   dateRange: DateRange | undefined;
@@ -52,7 +53,7 @@ export const DailyMovement = ({ dateRange }: DailyMovementProps) => {
 
       // Converter para formato do gráfico
       return Object.entries(dailyStats).map(([date, stats]) => ({
-        date: format(new Date(date), 'dd/MM', { locale: ptBR }),
+        date: formatDateBrazilian(date, 'dd/MM'),
         receitas: stats.income,
         despesas: stats.expense
       }));

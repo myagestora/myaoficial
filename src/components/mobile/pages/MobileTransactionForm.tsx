@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { ArrowLeft } from 'lucide-react';
 import { MobilePageWrapper } from '../MobilePageWrapper';
+import { getCurrentDateForInput, getBrazilianTimestamp } from '@/utils/timezoneUtils';
 
 const transactionSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
@@ -51,7 +52,7 @@ export const MobileTransactionForm = () => {
     resolver: zodResolver(transactionSchema),
     defaultValues: {
       type: 'expense',
-      date: new Date().toISOString().split('T')[0],
+      date: getCurrentDateForInput(),
       is_recurring: false,
       recurrence_interval: 1,
     },
@@ -184,7 +185,7 @@ export const MobileTransactionForm = () => {
         date: data.date,
         description: data.description || null,
         is_recurring: data.is_recurring,
-        updated_at: new Date().toISOString(),
+        updated_at: getBrazilianTimestamp(),
       };
 
       console.log('📝 Dados que serão atualizados:', transactionData);

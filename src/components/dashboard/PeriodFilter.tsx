@@ -5,6 +5,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { getBrazilianDate, formatDateBrazilian } from '@/utils/timezoneUtils';
 import { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
 
@@ -21,7 +22,7 @@ export const PeriodFilter = ({ dateRange, onDateRangeChange }: PeriodFilterProps
   React.useEffect(() => {
     if (!dateRange?.from || !dateRange?.to) return;
 
-    const currentDate = new Date();
+    const currentDate = getBrazilianDate();
     const from = dateRange.from;
     const to = dateRange.to;
 
@@ -66,38 +67,38 @@ export const PeriodFilter = ({ dateRange, onDateRangeChange }: PeriodFilterProps
       key: 'weekly',
       label: 'Semana',
       getRange: () => ({
-        from: startOfWeek(new Date(), { locale: ptBR }),
-        to: endOfWeek(new Date(), { locale: ptBR })
+        from: startOfWeek(getBrazilianDate(), { locale: ptBR }),
+        to: endOfWeek(getBrazilianDate(), { locale: ptBR })
       })
     },
     {
       key: 'monthly',
       label: 'Mensal',
       getRange: () => ({
-        from: startOfMonth(new Date()),
-        to: endOfMonth(new Date())
+        from: startOfMonth(getBrazilianDate()),
+        to: endOfMonth(getBrazilianDate())
       })
     },
     {
       key: 'quarterly',
       label: 'Trimestre',
       getRange: () => ({
-        from: startOfQuarter(new Date()),
-        to: endOfQuarter(new Date())
+        from: startOfQuarter(getBrazilianDate()),
+        to: endOfQuarter(getBrazilianDate())
       })
     },
     {
       key: 'yearly',
       label: 'Anual',
       getRange: () => ({
-        from: startOfYear(new Date()),
-        to: endOfYear(new Date())
+        from: startOfYear(getBrazilianDate()),
+        to: endOfYear(getBrazilianDate())
       })
     },
     {
       key: 'custom',
       label: 'Personalizado',
-      getRange: () => dateRange || { from: new Date(), to: new Date() }
+      getRange: () => dateRange || { from: getBrazilianDate(), to: getBrazilianDate() }
     }
   ];
 

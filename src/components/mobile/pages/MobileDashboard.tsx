@@ -30,13 +30,14 @@ import { useGoals } from '@/hooks/useGoals';
 import { PeriodFilter } from '@/components/dashboard/PeriodFilter';
 import { DateRange } from 'react-day-picker';
 import { endOfMonth, startOfMonth, format } from 'date-fns';
+import { getCurrentDateForInput, getBrazilianDate, formatDateBrazilian } from '@/utils/timezoneUtils';
 import { ptBR } from 'date-fns/locale';
 
 export const MobileDashboard = () => {
   const [showValues, setShowValues] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: startOfMonth(new Date()),
-    to: endOfMonth(new Date())
+    from: startOfMonth(getBrazilianDate()),
+    to: endOfMonth(getBrazilianDate())
   });
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -101,7 +102,7 @@ export const MobileDashboard = () => {
       if (error) throw error;
 
       // Separar por tipo e status (pagas vs pendentes)
-      const today = new Date().toISOString().split('T')[0];
+      const today = getCurrentDateForInput();
       
       const income = transactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0) || 0;
       const paidExpenses = transactions?.filter(t => t.type === 'expense' && t.date <= today).reduce((sum, t) => sum + t.amount, 0) || 0;
@@ -431,7 +432,7 @@ export const MobileDashboard = () => {
                     <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{transaction.title}</p>
                     <div className="flex items-center space-x-2">
                       <p className="text-xs text-muted-foreground">
-                        {format(new Date(transaction.date), 'dd MMM', { locale: ptBR })}
+                        {formatDateBrazilian(transaction.date, 'dd MMM')}
                       </p>
                       {transaction.categories && (
                         <div className="flex items-center">

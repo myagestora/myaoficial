@@ -21,6 +21,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { generateRecurrenceDates, formatRecurrenceInfo, calculateTotalDuration } from '@/utils/recurrenceUtils';
+import { getCurrentDateForInput, getBrazilianTimestamp } from '@/utils/timezoneUtils';
 
 const transactionSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
@@ -73,7 +74,7 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
     resolver: zodResolver(transactionSchema),
     defaultValues: {
       type: 'expense',
-      date: new Date().toISOString().split('T')[0],
+      date: getCurrentDateForInput(),
       is_recurring: false,
       recurrence_count: 12,
       custom_days: 30,
@@ -223,7 +224,7 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
         category_id: data.category_id,
         date: data.date,
         description: data.description || null,
-        updated_at: new Date().toISOString(),
+        updated_at: getBrazilianTimestamp(),
       };
 
       const { error } = await supabase

@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { DateRange } from 'react-day-picker';
+import { getCurrentDateForInput } from '@/utils/timezoneUtils';
 
 interface ExpenseChartProps {
   dateRange: DateRange | undefined;
@@ -46,7 +47,7 @@ export const ExpenseChart = ({ dateRange }: ExpenseChartProps) => {
       }
 
       // Separar despesas pagas (passadas) e a pagar (futuras)
-      const today = new Date().toISOString().split('T')[0];
+      const today = getCurrentDateForInput();
       const categoryTotals: { [key: string]: { paid: number; pending: number; color: string } } = {};
       
       transactions?.forEach(transaction => {

@@ -11,6 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { DateRange } from 'react-day-picker';
+import { getCurrentDateForInput } from '@/utils/timezoneUtils';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -40,7 +41,7 @@ const Dashboard = () => {
       const { data: transactions } = await transactionsQuery;
 
       // Separar despesas pagas e a pagar
-      const today = new Date().toISOString().split('T')[0];
+      const today = getCurrentDateForInput();
       
       // Calcular totais
       const totalIncome = transactions

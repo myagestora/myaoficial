@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { MobileOptimizedCard } from '@/components/ui/mobile-optimized-card';
 import { MobileListItem } from '@/components/ui/mobile-list-item';
 import { DateRange } from 'react-day-picker';
+import { formatDateBrazilian } from '@/utils/timezoneUtils';
 
 interface RecentTransactionsProps {
   dateRange?: DateRange;
@@ -62,8 +63,7 @@ export const RecentTransactions = ({ dateRange }: RecentTransactionsProps) => {
   });
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString + 'T00:00:00'); // Força interpretação como data local
-    return date.toLocaleDateString('pt-BR');
+    return formatDateBrazilian(dateString, 'dd/MM/yyyy');
   };
 
   if (isLoading) {
