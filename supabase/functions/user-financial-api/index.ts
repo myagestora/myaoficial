@@ -6,13 +6,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Helper functions for date format detection
+// Helper function to check if period is a specific date
 const isSpecificDate = (period: string) => {
   return /^\d{4}-\d{2}-\d{2}$/.test(period);
-};
-
-const isYearMonth = (period: string) => {
-  return /^\d{4}-\d{2}$/.test(period);
 };
 
 serve(async (req) => {
@@ -212,15 +208,6 @@ serve(async (req) => {
       if (isSpecificDate(period)) {
         console.log('Specific date detected:', period);
         return { start: period, end: period }
-      }
-      
-      // Handle year-month format (yyyy-MM)
-      if (isYearMonth(period)) {
-        console.log('Year-month format detected:', period);
-        const [year, month] = period.split('-').map(Number);
-        const monthStart = new Date(year, month - 1, 1).toISOString().split('T')[0];
-        const monthEnd = new Date(year, month, 0).toISOString().split('T')[0];
-        return { start: monthStart, end: monthEnd };
       }
       
       // Handle standard periods
