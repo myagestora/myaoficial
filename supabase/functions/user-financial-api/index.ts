@@ -196,20 +196,36 @@ serve(async (req) => {
       )
     }
 
-    // Helper function to get current date variables
-    const getCurrentDateVariables = () => {
+    // Helper function to get date range for period
+    const getPeriodDateRange = (period: string) => {
       const currentDate = new Date()
       const currentMonth = currentDate.getMonth() + 1
       const currentYear = currentDate.getFullYear()
-      const monthStart = new Date(currentYear, currentMonth - 1, 1).toISOString().split('T')[0]
-      const monthEnd = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0]
       
-      return { currentDate, currentMonth, currentYear, monthStart, monthEnd }
+      if (isSpecificDate(period)) {
+        return { start: period, end: period }
+      }
+      
+      switch (period) {
+        case 'month': {
+          const monthStart = new Date(currentYear, currentMonth - 1, 1).toISOString().split('T')[0]
+          const monthEnd = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0]
+          return { start: monthStart, end: monthEnd }
+        }
+        case 'week': {
+          const weekStart = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          return { start: weekStart, end: currentDate.toISOString().split('T')[0] }
+        }
+        case 'year': {
+          return { start: `${currentYear}-01-01`, end: `${currentYear}-12-31` }
+        }
+        default:
+          return null // For 'all' period
+      }
     }
 
     switch (endpoint) {
       case 'balance': {
-        // Apenas POST permitido
         if (req.method !== 'POST') {
           return new Response(JSON.stringify({ error: 'Method not allowed. Use POST.' }), {
             status: 405,
@@ -217,29 +233,18 @@ serve(async (req) => {
           });
         }
         
-        const { currentDate, currentMonth, currentYear, monthStart, monthEnd } = getCurrentDateVariables();
-        
         let requestData = { period: 'month' };
         requestData = { ...requestData, ...await req.json() };
 
-        // Definir filtros de data baseado no período
         let query = supabase
           .from('transactions')
           .select('amount, type, date')
           .eq('user_id', userId);
 
-        if (isSpecificDate(requestData.period)) {
-          // Filter by specific date
-          query = query.eq('date', requestData.period);
-        } else if (requestData.period === 'month') {
-          query = query.gte('date', monthStart).lte('date', monthEnd);
-        } else if (requestData.period === 'week') {
-          const weekStart = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-          query = query.gte('date', weekStart);
-        } else if (requestData.period === 'year') {
-          query = query.gte('date', `${currentYear}-01-01`).lte('date', `${currentYear}-12-31`);
+        const dateRange = getPeriodDateRange(requestData.period);
+        if (dateRange) {
+          query = query.gte('date', dateRange.start).lte('date', dateRange.end);
         }
-        // Para 'all', não adiciona filtros de data
 
         const { data: transactions } = await query;
 
@@ -260,15 +265,12 @@ serve(async (req) => {
       }
 
       case 'transactions': {
-        // Apenas POST permitido
         if (req.method !== 'POST') {
           return new Response(JSON.stringify({ error: 'Method not allowed. Use POST.' }), {
             status: 405,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
-        
-        const { currentDate, currentMonth, currentYear, monthStart, monthEnd } = getCurrentDateVariables();
         
         let requestData = { limit: 10, period: 'month' };
         requestData = { ...requestData, ...await req.json() };
@@ -283,18 +285,10 @@ serve(async (req) => {
           .order('date', { ascending: false })
           .limit(requestData.limit)
 
-        if (isSpecificDate(requestData.period)) {
-          // Filter by specific date
-          query = query.eq('date', requestData.period);
-        } else if (requestData.period === 'month') {
-          query = query.gte('date', monthStart).lte('date', monthEnd);
-        } else if (requestData.period === 'week') {
-          const weekStart = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-          query = query.gte('date', weekStart);
-        } else if (requestData.period === 'year') {
-          query = query.gte('date', `${currentYear}-01-01`).lte('date', `${currentYear}-12-31`);
+        const dateRange = getPeriodDateRange(requestData.period);
+        if (dateRange) {
+          query = query.gte('date', dateRange.start).lte('date', dateRange.end);
         }
-        // Para 'all', não adiciona filtros de data
 
         const { data: transactions } = await query
 
@@ -309,15 +303,12 @@ serve(async (req) => {
       }
 
       case 'expenses-by-category': {
-        // Apenas POST permitido
         if (req.method !== 'POST') {
           return new Response(JSON.stringify({ error: 'Method not allowed. Use POST.' }), {
             status: 405,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
-        
-        const { currentDate, currentMonth, currentYear, monthStart, monthEnd } = getCurrentDateVariables();
         
         let requestData = { period: 'month' };
         requestData = { ...requestData, ...await req.json() };
@@ -331,20 +322,13 @@ serve(async (req) => {
           .eq('user_id', userId)
           .eq('type', 'expense');
 
-        if (isSpecificDate(requestData.period)) {
-          query = query.eq('date', requestData.period);
-        } else if (requestData.period === 'month') {
-          query = query.gte('date', monthStart).lte('date', monthEnd);
-        } else if (requestData.period === 'week') {
-          const weekStart = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-          query = query.gte('date', weekStart);
-        } else if (requestData.period === 'year') {
-          query = query.gte('date', `${currentYear}-01-01`).lte('date', `${currentYear}-12-31`);
+        const dateRange = getPeriodDateRange(requestData.period);
+        if (dateRange) {
+          query = query.gte('date', dateRange.start).lte('date', dateRange.end);
         }
 
         const { data: expenses } = await query;
 
-        // Agrupar por categoria
         const categoryExpenses = expenses?.reduce((acc, expense) => {
           const categoryName = expense.categories?.name || 'Sem categoria'
           if (!acc[categoryName]) {
@@ -374,7 +358,6 @@ serve(async (req) => {
       }
 
       case 'expenses': {
-        // Apenas GET permitido
         if (req.method !== 'GET') {
           return new Response(JSON.stringify({ error: 'Method not allowed. Use GET.' }), {
             status: 405,
@@ -382,7 +365,6 @@ serve(async (req) => {
           });
         }
         
-        const { currentDate, currentMonth, currentYear, monthStart, monthEnd } = getCurrentDateVariables();
         const period = url.searchParams.get('period') || 'month';
         
         let query = supabase
@@ -396,20 +378,13 @@ serve(async (req) => {
           .eq('user_id', userId)
           .eq('type', 'expense');
 
-        if (isSpecificDate(period)) {
-          query = query.eq('date', period);
-        } else if (period === 'month') {
-          query = query.gte('date', monthStart).lte('date', monthEnd);
-        } else if (period === 'week') {
-          const weekStart = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-          query = query.gte('date', weekStart);
-        } else if (period === 'year') {
-          query = query.gte('date', `${currentYear}-01-01`).lte('date', `${currentYear}-12-31`);
+        const dateRange = getPeriodDateRange(period);
+        if (dateRange) {
+          query = query.gte('date', dateRange.start).lte('date', dateRange.end);
         }
 
         const { data: expenses } = await query;
 
-        // Transformar o resultado para incluir category como string
         const transformedExpenses = expenses?.map(expense => ({
           amount: expense.amount,
           date: expense.date,
@@ -431,7 +406,6 @@ serve(async (req) => {
       }
 
       case 'income': {
-        // Apenas GET permitido
         if (req.method !== 'GET') {
           return new Response(JSON.stringify({ error: 'Method not allowed. Use GET.' }), {
             status: 405,
@@ -439,7 +413,6 @@ serve(async (req) => {
           });
         }
         
-        const { currentDate, currentMonth, currentYear, monthStart, monthEnd } = getCurrentDateVariables();
         const period = url.searchParams.get('period') || 'month';
         
         let query = supabase
@@ -448,17 +421,10 @@ serve(async (req) => {
           .eq('user_id', userId)
           .eq('type', 'income');
 
-        if (isSpecificDate(period)) {
-          query = query.eq('date', period);
-        } else if (period === 'month') {
-          query = query.gte('date', monthStart).lte('date', monthEnd);
-        } else if (period === 'week') {
-          const weekStart = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-          query = query.gte('date', weekStart);
-        } else if (period === 'year') {
-          query = query.gte('date', `${currentYear}-01-01`).lte('date', `${currentYear}-12-31`);
+        const dateRange = getPeriodDateRange(period);
+        if (dateRange) {
+          query = query.gte('date', dateRange.start).lte('date', dateRange.end);
         }
-        // Para 'all', não adiciona filtros de data
 
         const { data: income } = await query
 
@@ -476,15 +442,12 @@ serve(async (req) => {
       }
 
       case 'income-by-category': {
-        // Apenas POST permitido
         if (req.method !== 'POST') {
           return new Response(JSON.stringify({ error: 'Method not allowed. Use POST.' }), {
             status: 405,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
-        
-        const { currentDate, currentMonth, currentYear, monthStart, monthEnd } = getCurrentDateVariables();
         
         let requestData = { period: 'month' };
         requestData = { ...requestData, ...await req.json() };
@@ -498,20 +461,13 @@ serve(async (req) => {
           .eq('user_id', userId)
           .eq('type', 'income');
 
-        if (isSpecificDate(requestData.period)) {
-          query = query.eq('date', requestData.period);
-        } else if (requestData.period === 'month') {
-          query = query.gte('date', monthStart).lte('date', monthEnd);
-        } else if (requestData.period === 'week') {
-          const weekStart = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-          query = query.gte('date', weekStart);
-        } else if (requestData.period === 'year') {
-          query = query.gte('date', `${currentYear}-01-01`).lte('date', `${currentYear}-12-31`);
+        const dateRange = getPeriodDateRange(requestData.period);
+        if (dateRange) {
+          query = query.gte('date', dateRange.start).lte('date', dateRange.end);
         }
 
         const { data: income } = await query;
 
-        // Agrupar por categoria
         const categoryIncome = income?.reduce((acc, incomeItem) => {
           const categoryName = incomeItem.categories?.name || 'Sem categoria'
           if (!acc[categoryName]) {
@@ -542,18 +498,12 @@ serve(async (req) => {
 
       case 'goals': {
         try {
-          console.log('Goals endpoint called with method:', req.method);
-          
-          // Aceita GET e POST
           if (req.method !== 'GET' && req.method !== 'POST') {
             return new Response(JSON.stringify({ error: 'Method not allowed. Use GET or POST.' }), {
               status: 405,
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
           }
-
-          // Get current date variables for this endpoint
-          const { currentDate, currentMonth, currentYear, monthStart, monthEnd } = getCurrentDateVariables();
 
           let period = null;
           let goal_type = null;
@@ -563,85 +513,63 @@ serve(async (req) => {
               const requestData = await req.json();
               period = requestData.period;
               goal_type = requestData.goal_type;
-              console.log('POST data received:', { period, goal_type });
             } catch (e) {
               console.error('Error parsing POST data:', e);
-              period = null;
-              goal_type = null;
             }
           } else {
             period = url.searchParams.get('period');
             goal_type = url.searchParams.get('goal_type');
-            console.log('GET params received:', { period, goal_type });
           }
 
-          console.log('Processing goals with:', { period, goal_type, userId });
-
-          // Build the basic query without joins first
           let query = supabase
             .from('goals')
             .select('*')
             .eq('user_id', userId)
             .eq('status', 'active');
 
-          // Filtrar por tipo de meta se especificado
           if (goal_type) {
-            console.log('Filtering by goal_type:', goal_type);
             query = query.eq('goal_type', goal_type);
           }
 
-          // Filtrar por período se especificado
-          if (period) {
-            console.log('Filtering by period:', period);
+          if (period && period !== 'all') {
+            const currentDate = new Date();
+            const currentMonth = currentDate.getMonth() + 1;
+            const currentYear = currentDate.getFullYear();
             
             if (isSpecificDate(period)) {
-              console.log('Period is specific date');
-              // For specific date, filter savings goals by target_date
               if (goal_type === 'savings') {
                 query = query.eq('target_date', period);
               } else if (goal_type === 'monthly_budget') {
-                // For monthly budget, extract month-year from the specific date
                 const specificDate = new Date(period);
                 const monthYear = `${specificDate.getFullYear()}-${String(specificDate.getMonth() + 1).padStart(2, '0')}`;
-                console.log('Filtering monthly budget by month_year:', monthYear);
                 query = query.eq('month_year', monthYear);
               }
             } else if (period === 'month') {
               const currentMonthYear = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
-              console.log('Filtering by current month:', currentMonthYear);
-              query = query.eq('month_year', currentMonthYear);
-            } else if (period === 'year') {
-              console.log('Filtering by current year:', currentYear);
-              query = query.like('month_year', `${currentYear}-%`);
-            } else if (period.match(/^\d{4}-\d{2}$/)) {
-              // Handle yyyy-MM format (e.g., 2025-07)
-              console.log('Filtering by yyyy-MM format:', period);
-              query = query.eq('month_year', period);
-            }
-            
-            // Para savings goals, filtrar por target_date se necessário
-            if (goal_type === 'savings' && period !== 'all' && !isSpecificDate(period) && !period.match(/^\d{4}-\d{2}$/)) {
-              if (period === 'month') {
-                console.log('Filtering savings goals by month range:', monthStart, monthEnd);
+              if (goal_type === 'monthly_budget') {
+                query = query.eq('month_year', currentMonthYear);
+              } else if (goal_type === 'savings') {
+                const monthStart = new Date(currentYear, currentMonth - 1, 1).toISOString().split('T')[0];
+                const monthEnd = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0];
                 query = query.gte('target_date', monthStart).lte('target_date', monthEnd);
-              } else if (period === 'year') {
-                console.log('Filtering savings goals by year range');
+              }
+            } else if (period === 'year') {
+              if (goal_type === 'monthly_budget') {
+                query = query.like('month_year', `${currentYear}-%`);
+              } else if (goal_type === 'savings') {
                 query = query.gte('target_date', `${currentYear}-01-01`).lte('target_date', `${currentYear}-12-31`);
               }
+            } else if (period.match(/^\d{4}-\d{2}$/)) {
+              query = query.eq('month_year', period);
             }
           }
 
-          console.log('Executing goals query...');
           const { data: goals, error: goalsError } = await query;
           
           if (goalsError) {
-            console.error('Error fetching goals:', goalsError);
             throw goalsError;
           }
 
-          console.log('Found goals:', goals?.length || 0);
-
-          // Get categories separately for better error handling
           const categoryIds = [...new Set(goals?.map(g => g.category_id).filter(Boolean))];
           let categoriesMap = {};
           
@@ -657,10 +585,8 @@ serve(async (req) => {
             }, {}) || {};
           }
 
-          // Para metas mensais, calcular progresso atual
           if (goals) {
             for (const goal of goals) {
-              // Add category info
               if (goal.category_id && categoriesMap[goal.category_id]) {
                 goal.category = categoriesMap[goal.category_id];
               }
@@ -685,7 +611,6 @@ serve(async (req) => {
                   goal.progress_percentage = goal.target_amount > 0 ? (spentAmount / goal.target_amount) * 100 : 0;
                   goal.is_exceeded = spentAmount > goal.target_amount;
                 } catch (e) {
-                  console.error('Error calculating progress for goal:', goal.id, e);
                   goal.current_amount = 0;
                   goal.progress_percentage = 0;
                   goal.is_exceeded = false;
@@ -694,7 +619,6 @@ serve(async (req) => {
             }
           }
 
-          console.log('Returning goals response');
           return new Response(
             JSON.stringify({
               goals: goals || [],
@@ -718,7 +642,6 @@ serve(async (req) => {
       }
 
       case 'summary': {
-        // Apenas GET permitido
         if (req.method !== 'GET') {
           return new Response(JSON.stringify({ error: 'Method not allowed. Use GET.' }), {
             status: 405,
@@ -726,56 +649,21 @@ serve(async (req) => {
           });
         }
         
-        const { currentDate, currentMonth, currentYear, monthStart, monthEnd } = getCurrentDateVariables();
         const period = url.searchParams.get('period') || 'month';
         
-        // Definir filtros de data baseado no período
-        let periodStart, periodEnd;
-        if (isSpecificDate(period)) {
-          // For specific date, filter just that single day
-          periodStart = period;
-          periodEnd = period;
-        } else if (period === 'month') {
-          periodStart = monthStart;
-          periodEnd = monthEnd;
-        } else if (period === 'week') {
-          // Calcular início e fim da semana atual (domingo a sábado)
-          const today = new Date();
-          const dayOfWeek = today.getDay(); // 0 = domingo, 6 = sábado
-          const weekStart = new Date(today);
-          weekStart.setDate(today.getDate() - dayOfWeek);
-          const weekEnd = new Date(weekStart);
-          weekEnd.setDate(weekStart.getDate() + 6);
-          
-          periodStart = weekStart.toISOString().split('T')[0];
-          periodEnd = weekEnd.toISOString().split('T')[0];
-        } else if (period === 'year') {
-          periodStart = `${currentYear}-01-01`;
-          periodEnd = `${currentYear}-12-31`;
-        } else if (period === 'all') {
-          // Sem filtro de data para 'all'
-          periodStart = null;
-          periodEnd = null;
-        } else {
-          // Período inválido, usar mês como padrão
-          periodStart = monthStart;
-          periodEnd = monthEnd;
-        }
-        
-        // Resumo completo do usuário (sempre todos os dados)
         const { data: allTransactions } = await supabase
           .from('transactions')
           .select('amount, type, date')
           .eq('user_id', userId)
 
-        // Transações do período específico
         let periodQuery = supabase
           .from('transactions')
           .select('amount, type')
           .eq('user_id', userId);
           
-        if (periodStart && periodEnd) {
-          periodQuery = periodQuery.gte('date', periodStart).lte('date', periodEnd);
+        const dateRange = getPeriodDateRange(period);
+        if (dateRange) {
+          periodQuery = periodQuery.gte('date', dateRange.start).lte('date', dateRange.end);
         }
         
         const { data: periodTransactions } = await periodQuery;
