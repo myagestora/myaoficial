@@ -565,6 +565,113 @@ const AdminAPI = () => {
             skipped_count: 7,
             message: "Lembretes processados com sucesso. 18 usuários notificados de 25 transações encontradas."
           }
+        },
+        {
+          method: "GET",
+          path: "/whatsapp-expense-reminders",
+          description: "Busca despesas do dia agrupadas por usuário para automação WhatsApp via n8n",
+          headers: { Authorization: "Bearer your-secure-bot-token" },
+          params: { 
+            date: "string?"
+          },
+          paramDetails: {
+            date: {
+              type: "string",
+              description: "Data das despesas no formato YYYY-MM-DD",
+              example: "2025-01-15",
+              required: false,
+              default: "hoje"
+            }
+          },
+          response: { 
+            date: "string",
+            users_with_expenses: "array",
+            total_users: "number",
+            total_amount: "number",
+            generated_at: "string"
+          },
+          exampleResponse: {
+            date: "2025-01-15",
+            users_with_expenses: [
+              {
+                user_id: "123e4567-e89b-12d3-a456-426614174000",
+                user_name: "João Silva",
+                email: "joao@email.com",
+                whatsapp: "+5511999999999",
+                expenses_today: [
+                  {
+                    id: "trans_001",
+                    title: "Conta de luz",
+                    description: "Energia elétrica janeiro",
+                    amount: 150.00,
+                    category: "Utilidades",
+                    category_color: "#e74c3c",
+                    category_icon: "zap"
+                  }
+                ],
+                total_expenses: 150.00,
+                expenses_count: 1
+              }
+            ],
+            total_users: 1,
+            total_amount: 150.00,
+            generated_at: "2025-01-15T10:30:00Z"
+          }
+        },
+        {
+          method: "POST", 
+          path: "/whatsapp-expense-reminders",
+          description: "Busca despesas do dia via POST para automação WhatsApp",
+          headers: { Authorization: "Bearer your-secure-bot-token" },
+          params: { 
+            date: "string?"
+          },
+          paramDetails: {
+            date: {
+              type: "string",
+              description: "Data das despesas no formato YYYY-MM-DD",
+              example: "2025-01-15",
+              required: false,
+              default: "hoje"
+            }
+          },
+          response: { 
+            date: "string",
+            users_with_expenses: "array",
+            total_users: "number",
+            total_amount: "number",
+            generated_at: "string"
+          },
+          exampleRequest: {
+            date: "2025-01-15"
+          },
+          exampleResponse: {
+            date: "2025-01-15",
+            users_with_expenses: [
+              {
+                user_id: "123e4567-e89b-12d3-a456-426614174000",
+                user_name: "João Silva",
+                email: "joao@email.com",
+                whatsapp: "+5511999999999",
+                expenses_today: [
+                  {
+                    id: "trans_001",
+                    title: "Conta de luz",
+                    description: "Energia elétrica janeiro",
+                    amount: 150.00,
+                    category: "Utilidades",
+                    category_color: "#e74c3c",
+                    category_icon: "zap"
+                  }
+                ],
+                total_expenses: 150.00,
+                expenses_count: 1
+              }
+            ],
+            total_users: 1,
+            total_amount: 150.00,
+            generated_at: "2025-01-15T10:30:00Z"
+          }
         }
       ]
     },
