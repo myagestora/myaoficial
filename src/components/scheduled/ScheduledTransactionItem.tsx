@@ -85,7 +85,7 @@ export const ScheduledTransactionItem = ({
     
     if (diffDays === 0) return 'Hoje';
     if (diffDays === 1) return 'Amanhã';
-    if (diffDays < 0) return 'Vencida';
+    if (diffDays < 0) return `${Math.abs(diffDays)} dia${Math.abs(diffDays) > 1 ? 's' : ''} atrás`;
     
     return `Em ${diffDays} dias`;
   };
