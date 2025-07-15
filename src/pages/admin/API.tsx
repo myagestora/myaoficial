@@ -210,11 +210,11 @@ const AdminAPI = () => {
           paramDetails: {
             period: {
               type: "string",
-              description: "Período para cálculo do saldo",
+              description: "Período para cálculo do saldo ou data específica (yyyy-MM-dd)",
               example: "month",
               required: false,
               default: "month",
-              options: ["week", "month", "year", "all"]
+              options: ["week", "month", "year", "all", "yyyy-MM-dd"]
             }
           },
           response: { balance: "number", total_income: "number", total_expenses: "number", period: "string" },
@@ -248,10 +248,10 @@ const AdminAPI = () => {
             },
             period: {
               type: "string",
-              description: "Período das transações",
+              description: "Período das transações ou data específica (yyyy-MM-dd)",
               example: "month",
               required: false,
-              options: ["week", "month", "quarter", "year", "all"]
+              options: ["week", "month", "quarter", "year", "all", "yyyy-MM-dd"]
             }
           },
           response: { transactions: "array", total_count: "number" },
@@ -282,10 +282,10 @@ const AdminAPI = () => {
           paramDetails: {
             period: {
               type: "string",
-              description: "Período para análise das despesas",
+              description: "Período para análise das despesas ou data específica (yyyy-MM-dd)",
               example: "month",
               required: false,
-              options: ["week", "month", "quarter", "year"]
+              options: ["week", "month", "quarter", "year", "yyyy-MM-dd"]
             }
           },
           response: { total_expenses: "number", by_category: "array" },
@@ -309,10 +309,10 @@ const AdminAPI = () => {
           paramDetails: {
             period: {
               type: "string",
-              description: "Período para análise das receitas",
+              description: "Período para análise das receitas ou data específica (yyyy-MM-dd)",
               example: "month",
               required: false,
-              options: ["week", "month", "quarter", "year"]
+              options: ["week", "month", "quarter", "year", "yyyy-MM-dd"]
             }
           },
           response: { total_income: "number", by_category: "array", period: "string" },
@@ -345,10 +345,10 @@ const AdminAPI = () => {
           paramDetails: {
             period: {
               type: "string",
-              description: "Período para análise das despesas",
+              description: "Período para análise das despesas ou data específica (yyyy-MM-dd)",
               example: "month",
               required: false,
-              options: ["week", "month", "quarter", "year"]
+              options: ["week", "month", "quarter", "year", "yyyy-MM-dd"]
             }
           },
           response: { total_expenses: "number", transactions: "array", period: "string" },
@@ -381,10 +381,10 @@ const AdminAPI = () => {
           paramDetails: {
             period: {
               type: "string",
-              description: "Período para análise das receitas",
+              description: "Período para análise das receitas ou data específica (yyyy-MM-dd)",
               example: "month",
               required: false,
-              options: ["week", "month", "all"]
+              options: ["week", "month", "all", "yyyy-MM-dd"]
             }
           },
           response: { total_income: "number", transactions: "array", period: "string" },
@@ -413,10 +413,10 @@ const AdminAPI = () => {
           paramDetails: {
             period: {
               type: "string",
-              description: "Período para filtrar metas",
+              description: "Período para filtrar metas ou data específica (yyyy-MM-dd)",
               example: "month",
               required: false,
-              options: ["month", "year", "all"]
+              options: ["month", "year", "all", "yyyy-MM-dd"]
             },
             goal_type: {
               type: "string", 
@@ -452,8 +452,8 @@ const AdminAPI = () => {
           },
           paramDetails: {
             period: {
-              description: "Período para cálculo do resumo",
-              options: ["month", "week", "year", "all"],
+              description: "Período para cálculo do resumo ou data específica (yyyy-MM-dd)",
+              options: ["month", "week", "year", "all", "yyyy-MM-dd"],
               example: "month",
               required: false
             }

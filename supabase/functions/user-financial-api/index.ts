@@ -210,13 +210,21 @@ serve(async (req) => {
         let requestData = { period: 'month' };
         requestData = { ...requestData, ...await req.json() };
 
+        // Helper function to check if period is a specific date
+        const isSpecificDate = (period: string) => {
+          return /^\d{4}-\d{2}-\d{2}$/.test(period);
+        };
+
         // Definir filtros de data baseado no período
         let query = supabase
           .from('transactions')
           .select('amount, type, date')
           .eq('user_id', userId);
 
-        if (requestData.period === 'month') {
+        if (isSpecificDate(requestData.period)) {
+          // Filter by specific date
+          query = query.eq('date', requestData.period);
+        } else if (requestData.period === 'month') {
           query = query.gte('date', monthStart).lte('date', monthEnd);
         } else if (requestData.period === 'week') {
           const weekStart = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -256,14 +264,6 @@ serve(async (req) => {
         let requestData = { limit: 10, period: 'month' };
         requestData = { ...requestData, ...await req.json() };
 
-        let dateFilter = {}
-        if (requestData.period === 'month') {
-          dateFilter = { gte: monthStart, lte: monthEnd }
-        } else if (requestData.period === 'week') {
-          const weekStart = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-          dateFilter = { gte: weekStart }
-        }
-
         let query = supabase
           .from('transactions')
           .select(`
@@ -274,12 +274,18 @@ serve(async (req) => {
           .order('date', { ascending: false })
           .limit(requestData.limit)
 
-        if (requestData.period !== 'all') {
-          query = query.gte('date', Object.values(dateFilter)[0])
-          if (dateFilter.lte) {
-            query = query.lte('date', dateFilter.lte)
-          }
+        if (isSpecificDate(requestData.period)) {
+          // Filter by specific date
+          query = query.eq('date', requestData.period);
+        } else if (requestData.period === 'month') {
+          query = query.gte('date', monthStart).lte('date', monthEnd);
+        } else if (requestData.period === 'week') {
+          const weekStart = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          query = query.gte('date', weekStart);
+        } else if (requestData.period === 'year') {
+          query = query.gte('date', `${currentYear}-01-01`).lte('date', `${currentYear}-12-31`);
         }
+        // Para 'all', não adiciona filtros de data
 
         const { data: transactions } = await query
 
@@ -305,21 +311,27 @@ serve(async (req) => {
         let requestData = { period: 'month' };
         requestData = { ...requestData, ...await req.json() };
 
-        let dateFilter = {}
-        if (requestData.period === 'month') {
-          dateFilter = { gte: monthStart, lte: monthEnd }
-        }
-
-        const { data: expenses } = await supabase
+        let query = supabase
           .from('transactions')
           .select(`
             amount, date,
             categories (name, color)
           `)
           .eq('user_id', userId)
-          .eq('type', 'expense')
-          .gte('date', monthStart)
-          .lte('date', monthEnd)
+          .eq('type', 'expense');
+
+        if (isSpecificDate(requestData.period)) {
+          query = query.eq('date', requestData.period);
+        } else if (requestData.period === 'month') {
+          query = query.gte('date', monthStart).lte('date', monthEnd);
+        } else if (requestData.period === 'week') {
+          const weekStart = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          query = query.gte('date', weekStart);
+        } else if (requestData.period === 'year') {
+          query = query.gte('date', `${currentYear}-01-01`).lte('date', `${currentYear}-12-31`);
+        }
+
+        const { data: expenses } = await query;
 
         // Agrupar por categoria
         const categoryExpenses = expenses?.reduce((acc, expense) => {
@@ -361,12 +373,7 @@ serve(async (req) => {
         
         const period = url.searchParams.get('period') || 'month';
         
-        let dateFilter = {}
-        if (period === 'month') {
-          dateFilter = { gte: monthStart, lte: monthEnd }
-        }
-
-        const { data: expenses } = await supabase
+        let query = supabase
           .from('transactions')
           .select(`
             amount, 
@@ -375,9 +382,20 @@ serve(async (req) => {
             categories (name)
           `)
           .eq('user_id', userId)
-          .eq('type', 'expense')
-          .gte('date', monthStart)
-          .lte('date', monthEnd)
+          .eq('type', 'expense');
+
+        if (isSpecificDate(period)) {
+          query = query.eq('date', period);
+        } else if (period === 'month') {
+          query = query.gte('date', monthStart).lte('date', monthEnd);
+        } else if (period === 'week') {
+          const weekStart = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          query = query.gte('date', weekStart);
+        } else if (period === 'year') {
+          query = query.gte('date', `${currentYear}-01-01`).lte('date', `${currentYear}-12-31`);
+        }
+
+        const { data: expenses } = await query;
 
         // Transformar o resultado para incluir category como string
         const transformedExpenses = expenses?.map(expense => ({
@@ -411,26 +429,23 @@ serve(async (req) => {
         
         const period = url.searchParams.get('period') || 'month';
         
-        let dateFilter = {}
-        if (period === 'month') {
-          dateFilter = { gte: monthStart, lte: monthEnd }
-        } else if (period === 'week') {
-          const weekStart = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-          dateFilter = { gte: weekStart }
-        }
-
         let query = supabase
           .from('transactions')
           .select('amount, date, title')
           .eq('user_id', userId)
-          .eq('type', 'income')
+          .eq('type', 'income');
 
-        if (period !== 'all') {
-          query = query.gte('date', Object.values(dateFilter)[0] as string)
-          if (dateFilter.lte) {
-            query = query.lte('date', dateFilter.lte)
-          }
+        if (isSpecificDate(period)) {
+          query = query.eq('date', period);
+        } else if (period === 'month') {
+          query = query.gte('date', monthStart).lte('date', monthEnd);
+        } else if (period === 'week') {
+          const weekStart = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          query = query.gte('date', weekStart);
+        } else if (period === 'year') {
+          query = query.gte('date', `${currentYear}-01-01`).lte('date', `${currentYear}-12-31`);
         }
+        // Para 'all', não adiciona filtros de data
 
         const { data: income } = await query
 
@@ -459,16 +474,27 @@ serve(async (req) => {
         let requestData = { period: 'month' };
         requestData = { ...requestData, ...await req.json() };
 
-        const { data: income } = await supabase
+        let query = supabase
           .from('transactions')
           .select(`
             amount, date,
             categories (name, color)
           `)
           .eq('user_id', userId)
-          .eq('type', 'income')
-          .gte('date', monthStart)
-          .lte('date', monthEnd)
+          .eq('type', 'income');
+
+        if (isSpecificDate(requestData.period)) {
+          query = query.eq('date', requestData.period);
+        } else if (requestData.period === 'month') {
+          query = query.gte('date', monthStart).lte('date', monthEnd);
+        } else if (requestData.period === 'week') {
+          const weekStart = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          query = query.gte('date', weekStart);
+        } else if (requestData.period === 'year') {
+          query = query.gte('date', `${currentYear}-01-01`).lte('date', `${currentYear}-12-31`);
+        }
+
+        const { data: income } = await query;
 
         // Agrupar por categoria
         const categoryIncome = income?.reduce((acc, incomeItem) => {
@@ -537,14 +563,24 @@ serve(async (req) => {
 
         // Filtrar por período se especificado
         if (period) {
-          if (period === 'month') {
+          if (isSpecificDate(period)) {
+            // For specific date, filter savings goals by target_date
+            if (goal_type === 'savings') {
+              query = query.eq('target_date', period);
+            } else if (goal_type === 'monthly_budget') {
+              // For monthly budget, extract month-year from the specific date
+              const specificDate = new Date(period);
+              const monthYear = `${specificDate.getFullYear()}-${String(specificDate.getMonth() + 1).padStart(2, '0')}`;
+              query = query.eq('month_year', monthYear);
+            }
+          } else if (period === 'month') {
             const currentMonthYear = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
             query = query.eq('month_year', currentMonthYear);
           } else if (period === 'year') {
             query = query.like('month_year', `${currentYear}-%`);
           }
           // Para savings goals, filtrar por target_date se necessário
-          if (goal_type === 'savings' && period !== 'all') {
+          if (goal_type === 'savings' && period !== 'all' && !isSpecificDate(period)) {
             if (period === 'month') {
               query = query.gte('target_date', monthStart).lte('target_date', monthEnd);
             } else if (period === 'year') {
@@ -600,7 +636,11 @@ serve(async (req) => {
         
         // Definir filtros de data baseado no período
         let periodStart, periodEnd;
-        if (period === 'month') {
+        if (isSpecificDate(period)) {
+          // For specific date, filter just that single day
+          periodStart = period;
+          periodEnd = period;
+        } else if (period === 'month') {
           periodStart = monthStart;
           periodEnd = monthEnd;
         } else if (period === 'week') {
