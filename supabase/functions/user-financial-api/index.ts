@@ -527,115 +527,184 @@ serve(async (req) => {
       }
 
       case 'goals': {
-        console.log('Goals endpoint called with method:', req.method);
-        
-        // Aceita GET e POST
-        if (req.method !== 'GET' && req.method !== 'POST') {
-          return new Response(JSON.stringify({ error: 'Method not allowed. Use GET or POST.' }), {
-            status: 405,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-
-        // Define date variables for this endpoint
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth() + 1; // getMonth() returns 0-11
-        const monthStart = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
-        const monthEnd = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0];
-
-        let period = null;
-        let goal_type = null;
-
-        if (req.method === 'POST') {
-          const requestData = await req.json();
-          period = requestData.period;
-          goal_type = requestData.goal_type;
-          console.log('POST data received:', { period, goal_type });
-        } else {
-          period = url.searchParams.get('period');
-          goal_type = url.searchParams.get('goal_type');
-          console.log('GET params received:', { period, goal_type });
-        }
-
-        let query = supabase
-          .from('goals')
-          .select(`
-            id, title, target_amount, current_amount, target_date,
-            goal_type, status, month_year, category_id,
-            categories (name, color)
-          `)
-          .eq('user_id', userId)
-          .eq('status', 'active');
-
-        // Filtrar por tipo de meta se especificado
-        if (goal_type) {
-          query = query.eq('goal_type', goal_type);
-        }
-
-        // Filtrar por período se especificado
-        if (period) {
-          if (isSpecificDate(period)) {
-            // For specific date, filter savings goals by target_date
-            if (goal_type === 'savings') {
-              query = query.eq('target_date', period);
-            } else if (goal_type === 'monthly_budget') {
-              // For monthly budget, extract month-year from the specific date
-              const specificDate = new Date(period);
-              const monthYear = `${specificDate.getFullYear()}-${String(specificDate.getMonth() + 1).padStart(2, '0')}`;
-              query = query.eq('month_year', monthYear);
-            }
-          } else if (period === 'month') {
-            const currentMonthYear = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
-            query = query.eq('month_year', currentMonthYear);
-          } else if (period === 'year') {
-            query = query.like('month_year', `${currentYear}-%`);
-          } else if (period.match(/^\d{4}-\d{2}$/)) {
-            // Handle yyyy-MM format (e.g., 2025-07)
-            query = query.eq('month_year', period);
+        try {
+          console.log('Goals endpoint called with method:', req.method);
+          
+          // Aceita GET e POST
+          if (req.method !== 'GET' && req.method !== 'POST') {
+            return new Response(JSON.stringify({ error: 'Method not allowed. Use GET or POST.' }), {
+              status: 405,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
           }
-          // Para savings goals, filtrar por target_date se necessário
-          if (goal_type === 'savings' && period !== 'all' && !isSpecificDate(period) && !period.match(/^\d{4}-\d{2}$/)) {
-            if (period === 'month') {
-              query = query.gte('target_date', monthStart).lte('target_date', monthEnd);
+
+          // Define date variables for this endpoint
+          const now = new Date();
+          const currentYear = now.getFullYear();
+          const currentMonth = now.getMonth() + 1; // getMonth() returns 0-11
+          const monthStart = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
+          const monthEnd = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0];
+
+          let period = null;
+          let goal_type = null;
+
+          if (req.method === 'POST') {
+            try {
+              const requestData = await req.json();
+              period = requestData.period;
+              goal_type = requestData.goal_type;
+              console.log('POST data received:', { period, goal_type });
+            } catch (e) {
+              console.error('Error parsing POST data:', e);
+              period = null;
+              goal_type = null;
+            }
+          } else {
+            period = url.searchParams.get('period');
+            goal_type = url.searchParams.get('goal_type');
+            console.log('GET params received:', { period, goal_type });
+          }
+
+          console.log('Processing goals with:', { period, goal_type, userId });
+
+          // Build the basic query without joins first
+          let query = supabase
+            .from('goals')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('status', 'active');
+
+          // Filtrar por tipo de meta se especificado
+          if (goal_type) {
+            console.log('Filtering by goal_type:', goal_type);
+            query = query.eq('goal_type', goal_type);
+          }
+
+          // Filtrar por período se especificado
+          if (period) {
+            console.log('Filtering by period:', period);
+            
+            if (isSpecificDate(period)) {
+              console.log('Period is specific date');
+              // For specific date, filter savings goals by target_date
+              if (goal_type === 'savings') {
+                query = query.eq('target_date', period);
+              } else if (goal_type === 'monthly_budget') {
+                // For monthly budget, extract month-year from the specific date
+                const specificDate = new Date(period);
+                const monthYear = `${specificDate.getFullYear()}-${String(specificDate.getMonth() + 1).padStart(2, '0')}`;
+                console.log('Filtering monthly budget by month_year:', monthYear);
+                query = query.eq('month_year', monthYear);
+              }
+            } else if (period === 'month') {
+              const currentMonthYear = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+              console.log('Filtering by current month:', currentMonthYear);
+              query = query.eq('month_year', currentMonthYear);
             } else if (period === 'year') {
-              query = query.gte('target_date', `${currentYear}-01-01`).lte('target_date', `${currentYear}-12-31`);
+              console.log('Filtering by current year:', currentYear);
+              query = query.like('month_year', `${currentYear}-%`);
+            } else if (period.match(/^\d{4}-\d{2}$/)) {
+              // Handle yyyy-MM format (e.g., 2025-07)
+              console.log('Filtering by yyyy-MM format:', period);
+              query = query.eq('month_year', period);
+            }
+            
+            // Para savings goals, filtrar por target_date se necessário
+            if (goal_type === 'savings' && period !== 'all' && !isSpecificDate(period) && !period.match(/^\d{4}-\d{2}$/)) {
+              if (period === 'month') {
+                console.log('Filtering savings goals by month range:', monthStart, monthEnd);
+                query = query.gte('target_date', monthStart).lte('target_date', monthEnd);
+              } else if (period === 'year') {
+                console.log('Filtering savings goals by year range');
+                query = query.gte('target_date', `${currentYear}-01-01`).lte('target_date', `${currentYear}-12-31`);
+              }
             }
           }
-        }
 
-        const { data: goals } = await query;
-
-        // Para metas mensais, calcular progresso atual
-        for (const goal of goals || []) {
-          if (goal.goal_type === 'monthly_budget' && goal.month_year) {
-            const [year, month] = goal.month_year.split('-')
-            const monthStartDate = new Date(parseInt(year), parseInt(month) - 1, 1).toISOString().split('T')[0]
-            const monthEndDate = new Date(parseInt(year), parseInt(month), 0).toISOString().split('T')[0]
-
-            const { data: monthlyExpenses } = await supabase
-              .from('transactions')
-              .select('amount')
-              .eq('user_id', userId)
-              .eq('type', 'expense')
-              .eq('category_id', goal.category_id)
-              .gte('date', monthStartDate)
-              .lte('date', monthEndDate)
-
-            const spentAmount = monthlyExpenses?.reduce((sum, t) => sum + Number(t.amount), 0) || 0
-            goal.current_amount = spentAmount
-            goal.progress_percentage = goal.target_amount > 0 ? (spentAmount / goal.target_amount) * 100 : 0
-            goal.is_exceeded = spentAmount > goal.target_amount
+          console.log('Executing goals query...');
+          const { data: goals, error: goalsError } = await query;
+          
+          if (goalsError) {
+            console.error('Error fetching goals:', goalsError);
+            throw goalsError;
           }
-        }
 
-        return new Response(
-          JSON.stringify({
-            goals: goals || [],
-            total_goals: goals?.length || 0
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+          console.log('Found goals:', goals?.length || 0);
+
+          // Get categories separately for better error handling
+          const categoryIds = [...new Set(goals?.map(g => g.category_id).filter(Boolean))];
+          let categoriesMap = {};
+          
+          if (categoryIds.length > 0) {
+            const { data: categories } = await supabase
+              .from('categories')
+              .select('id, name, color')
+              .in('id', categoryIds);
+            
+            categoriesMap = categories?.reduce((acc, cat) => {
+              acc[cat.id] = cat;
+              return acc;
+            }, {}) || {};
+          }
+
+          // Para metas mensais, calcular progresso atual
+          if (goals) {
+            for (const goal of goals) {
+              // Add category info
+              if (goal.category_id && categoriesMap[goal.category_id]) {
+                goal.category = categoriesMap[goal.category_id];
+              }
+              
+              if (goal.goal_type === 'monthly_budget' && goal.month_year) {
+                try {
+                  const [year, month] = goal.month_year.split('-');
+                  const monthStartDate = new Date(parseInt(year), parseInt(month) - 1, 1).toISOString().split('T')[0];
+                  const monthEndDate = new Date(parseInt(year), parseInt(month), 0).toISOString().split('T')[0];
+
+                  const { data: monthlyExpenses } = await supabase
+                    .from('transactions')
+                    .select('amount')
+                    .eq('user_id', userId)
+                    .eq('type', 'expense')
+                    .eq('category_id', goal.category_id)
+                    .gte('date', monthStartDate)
+                    .lte('date', monthEndDate);
+
+                  const spentAmount = monthlyExpenses?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
+                  goal.current_amount = spentAmount;
+                  goal.progress_percentage = goal.target_amount > 0 ? (spentAmount / goal.target_amount) * 100 : 0;
+                  goal.is_exceeded = spentAmount > goal.target_amount;
+                } catch (e) {
+                  console.error('Error calculating progress for goal:', goal.id, e);
+                  goal.current_amount = 0;
+                  goal.progress_percentage = 0;
+                  goal.is_exceeded = false;
+                }
+              }
+            }
+          }
+
+          console.log('Returning goals response');
+          return new Response(
+            JSON.stringify({
+              goals: goals || [],
+              total_goals: goals?.length || 0
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        } catch (error) {
+          console.error('Goals endpoint error:', error);
+          return new Response(
+            JSON.stringify({ 
+              error: 'Internal server error', 
+              details: error.message 
+            }),
+            { 
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
       }
 
       case 'summary': {
