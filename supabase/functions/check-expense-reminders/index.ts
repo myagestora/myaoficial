@@ -36,7 +36,7 @@ serve(async (req) => {
       .from('profiles')
       .select('expense_reminders_enabled, full_name')
       .eq('id', user_id)
-      .single();
+      .maybeSingle();
 
     if (profileError || !profile || !profile.expense_reminders_enabled) {
       return new Response(

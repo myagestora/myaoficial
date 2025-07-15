@@ -59,8 +59,7 @@ serve(async (req) => {
     // Get current date in YYYY-MM-DD format
     const today = new Date().toISOString().split('T')[0];
 
-    // Fetch all expense transactions for today with user profiles
-    // Only include transactions that were created before today (scheduled transactions)
+    // Fetch all expense transactions for today
     const { data: transactions, error: transactionsError } = await supabase
       .from('transactions')
       .select(`
@@ -70,13 +69,11 @@ serve(async (req) => {
         date,
         user_id,
         created_at,
-        categories!inner(name, color),
-        profiles!inner(id, full_name, email, expense_reminders_enabled)
+        categories(name, color)
       `)
       .eq('type', 'expense')
       .eq('date', today)
       .lt('created_at', today + 'T00:00:00.000Z')
-      .eq('profiles.expense_reminders_enabled', true);
 
     if (transactionsError) {
       console.error('Error fetching transactions:', transactionsError);
@@ -89,12 +86,55 @@ serve(async (req) => {
       );
     }
 
+    // Get user IDs from transactions
+    const userIds = [...new Set(transactions?.map(t => t.user_id) || [])]
+    
+    if (userIds.length === 0) {
+      return new Response(
+        JSON.stringify({
+          date: today,
+          users_with_expenses: [],
+          total_users: 0,
+          total_amount: 0,
+          message: 'Nenhum usuário com despesas hoje'
+        }),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Fetch profiles for users with reminders enabled
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, expense_reminders_enabled')
+      .in('id', userIds)
+      .eq('expense_reminders_enabled', true)
+
+    if (profilesError) {
+      console.error('Error fetching profiles:', profilesError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch profiles' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    const validUserIds = new Set(profiles?.map(p => p.id) || [])
+    const validTransactions = transactions?.filter(t => validUserIds.has(t.user_id)) || []
+
     // Group transactions by user
     const userGroups = new Map();
+    const profilesMap = new Map(profiles?.map(p => [p.id, p]) || [])
 
-    transactions?.forEach((transaction: any) => {
+    validTransactions.forEach((transaction: any) => {
       const userId = transaction.user_id;
-      const profile = transaction.profiles;
+      const profile = profilesMap.get(userId);
+      
+      if (!profile) return; // Skip if no profile found
       
       if (!userGroups.has(userId)) {
         userGroups.set(userId, {
