@@ -734,7 +734,8 @@ const AdminAPI = () => {
             amount: "number", 
             type: "string",
             category_id: "string",
-            description: "string?"
+            description: "string?",
+            date: "string?"
           },
           paramDetails: {
             user_id: {
@@ -773,26 +774,34 @@ const AdminAPI = () => {
               description: "Descrição personalizada da transação (opcional)",
               example: "Compra no supermercado Pão de Açúcar",
               required: false
+            },
+            date: {
+              type: "string",
+              description: "Data da transação no formato yyyy-MM-dd (opcional, padrão: hoje)",
+              example: "2024-01-20",
+              required: false,
+              default: "Data atual (UTC-3)"
             }
           },
           response: { success: "boolean", transaction: "object", updated_balance: "object" },
           exampleRequest: {
             user_id: "123e4567-e89b-12d3-a456-426614174000",
-            title: "Compra no mercado",
-            amount: -150.50,
+            title: "Boleto Faculdade",
+            amount: -1200.00,
             type: "expense",
             category_id: "cat-001",
-            description: "Compra no supermercado Pão de Açúcar"
+            description: "Mensalidade da faculdade",
+            date: "2024-01-20"
           },
           exampleResponse: {
             success: true,
             transaction: {
               id: "trans_001",
-              title: "Compra no mercado",
-              amount: -150.50,
+              title: "Boleto Faculdade",
+              amount: -1200.00,
               type: "expense",
-              category: "Alimentação",
-              date: "2024-01-15"
+              category: "Educação",
+              date: "2024-01-20"
             },
             updated_balance: {
               balance: 1100.25,
@@ -1412,14 +1421,16 @@ async function getUserBalance(userId) {
 }
 
 // Registrar transação rápida
-async function createTransaction(userId, title, amount, type, categoryId) {
+async function createTransaction(userId, title, amount, type, categoryId, date = null) {
+  const body = { user_id: userId, title, amount, type, category_id: categoryId };
+  if (date) body.date = date; // Opcional: formato yyyy-MM-dd
   const response = await fetch(\`\${API_BASE_URL}/quick-transaction\`, {
     method: 'POST',
     headers: { 
       'Content-Type': 'application/json',
       'Authorization': \`Bearer \${BOT_TOKEN}\`
     },
-    body: JSON.stringify({ user_id: userId, title, amount, type, category_id: categoryId })
+    body: JSON.stringify(body)
   });
   return response.json();
 }`}
