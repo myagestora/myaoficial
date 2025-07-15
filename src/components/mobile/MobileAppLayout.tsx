@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { MobileRouteHandler } from './MobileRouteHandler';
 import { MobileMenu } from './MobileMenu';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { 
   Home, 
   CreditCard, 
@@ -77,14 +78,17 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
           </button>
         </div>
         
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="h-10 w-10"
-          onClick={() => setIsMenuOpen(true)}
-        >
-          <Menu size={20} />
-        </Button>
+        <div className="flex items-center space-x-2">
+          <NotificationBell />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-10 w-10"
+            onClick={() => setIsMenuOpen(true)}
+          >
+            <Menu size={20} />
+          </Button>
+        </div>
       </header>
 
       {/* Main Content - With top and bottom padding for fixed header/footer */}
