@@ -426,20 +426,43 @@ const AdminAPI = () => {
               options: ["savings", "monthly_budget"]
             }
           },
-          response: { goals: "array", total_goals: "number" },
+          response: { 
+            goals: "array", 
+            total_goals: "number",
+            period: "string",
+            currency: "string"
+          },
+          exampleRequest: {
+            period: "2025-07",
+            goal_type: "monthly_budget"
+          },
           exampleResponse: {
             goals: [
               {
                 id: "goal_001",
+                title: "Meta de Gastos - Alimentação",
+                target_amount: 800.00,
+                current_amount: 450.50,
+                percentage: 56.3,
+                status: "on_track",
+                goal_type: "monthly_budget",
+                category_name: "Alimentação",
+                month_year: "2025-07"
+              },
+              {
+                id: "goal_002",
                 title: "Economizar para viagem",
                 target_amount: 5000.00,
                 current_amount: 1250.75,
                 percentage: 25.0,
                 status: "in_progress",
-                goal_type: "savings"
+                goal_type: "savings",
+                target_date: "2025-12-31"
               }
             ],
-            total_goals: 3
+            total_goals: 2,
+            period: "2025-07",
+            currency: "BRL"
           }
         },
         {
