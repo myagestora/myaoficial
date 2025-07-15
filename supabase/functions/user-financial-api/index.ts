@@ -197,7 +197,12 @@ serve(async (req) => {
     }
 
     // Helper function to get date range for period
-    const getPeriodDateRange = (period: string) => {
+    const getPeriodDateRange = (period: string | null) => {
+      if (!period || period === 'all') {
+        console.log('No period or all - returning null');
+        return null;
+      }
+      
       console.log('Processing period:', period);
       
       const currentDate = new Date()
@@ -211,37 +216,37 @@ serve(async (req) => {
       }
       
       // Handle standard periods
-      switch (period) {
-        case 'month': {
-          const monthStart = new Date(currentYear, currentMonth - 1, 1).toISOString().split('T')[0]
-          const monthEnd = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0]
-          console.log('Month period:', { start: monthStart, end: monthEnd });
-          return { start: monthStart, end: monthEnd }
-        }
-        case 'week': {
-          const weekStart = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-          const weekEnd = currentDate.toISOString().split('T')[0]
-          console.log('Week period:', { start: weekStart, end: weekEnd });
-          return { start: weekStart, end: weekEnd }
-        }
-        case 'year': {
-          const yearStart = `${currentYear}-01-01`;
-          const yearEnd = `${currentYear}-12-31`;
-          console.log('Year period:', { start: yearStart, end: yearEnd });
-          return { start: yearStart, end: yearEnd }
-        }
-        case 'quarter': {
-          const quarterNumber = Math.floor((currentMonth - 1) / 3) + 1;
-          const quarterStart = new Date(currentYear, (quarterNumber - 1) * 3, 1).toISOString().split('T')[0];
-          const quarterEnd = new Date(currentYear, quarterNumber * 3, 0).toISOString().split('T')[0];
-          console.log('Quarter period:', { start: quarterStart, end: quarterEnd });
-          return { start: quarterStart, end: quarterEnd };
-        }
-        case 'all':
-        default:
-          console.log('All period or default');
-          return null; // For 'all' period
+      if (period === 'month') {
+        const monthStart = new Date(currentYear, currentMonth - 1, 1).toISOString().split('T')[0]
+        const monthEnd = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0]
+        console.log('Month period:', { start: monthStart, end: monthEnd });
+        return { start: monthStart, end: monthEnd }
       }
+      
+      if (period === 'week') {
+        const weekStart = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        const weekEnd = currentDate.toISOString().split('T')[0]
+        console.log('Week period:', { start: weekStart, end: weekEnd });
+        return { start: weekStart, end: weekEnd }
+      }
+      
+      if (period === 'year') {
+        const yearStart = `${currentYear}-01-01`;
+        const yearEnd = `${currentYear}-12-31`;
+        console.log('Year period:', { start: yearStart, end: yearEnd });
+        return { start: yearStart, end: yearEnd }
+      }
+      
+      if (period === 'quarter') {
+        const quarterNumber = Math.floor((currentMonth - 1) / 3) + 1;
+        const quarterStart = new Date(currentYear, (quarterNumber - 1) * 3, 1).toISOString().split('T')[0];
+        const quarterEnd = new Date(currentYear, quarterNumber * 3, 0).toISOString().split('T')[0];
+        console.log('Quarter period:', { start: quarterStart, end: quarterEnd });
+        return { start: quarterStart, end: quarterEnd };
+      }
+      
+      console.log('Unknown period, returning null:', period);
+      return null;
     }
 
     switch (endpoint) {
@@ -254,10 +259,12 @@ serve(async (req) => {
             });
           }
           
-          let requestData = { period: 'month' };
+          let requestData = { period: null };
           try {
             const body = await req.json();
-            requestData = { ...requestData, ...body };
+            if (body && body.period) {
+              requestData.period = body.period;
+            }
             console.log('Balance endpoint request data:', requestData);
           } catch (e) {
             console.log('No request body, using defaults:', requestData);
@@ -400,9 +407,13 @@ serve(async (req) => {
             });
           }
           
-          let requestData = { period: 'month' };
+          let requestData = { period: null };
           try {
-            requestData = { ...requestData, ...await req.json() };
+            const body = await req.json();
+            if (body && body.period) {
+              requestData.period = body.period;
+            }
+            console.log('Expenses by category request data:', requestData);
           } catch (e) {
             console.log('No request body, using defaults');
           }
@@ -494,7 +505,7 @@ serve(async (req) => {
             });
           }
           
-          const period = url.searchParams.get('period') || 'month';
+          const period = url.searchParams.get('period');
           console.log('Expenses endpoint period:', period);
           
           // Get expenses without JOIN
@@ -575,7 +586,7 @@ serve(async (req) => {
             });
           }
           
-          const period = url.searchParams.get('period') || 'month';
+          const period = url.searchParams.get('period');
           console.log('Income endpoint period:', period);
           
           let query = supabase
@@ -632,9 +643,13 @@ serve(async (req) => {
             });
           }
           
-          let requestData = { period: 'month' };
+          let requestData = { period: null };
           try {
-            requestData = { ...requestData, ...await req.json() };
+            const body = await req.json();
+            if (body && body.period) {
+              requestData.period = body.period;
+            }
+            console.log('Income by category request data:', requestData);
           } catch (e) {
             console.log('No request body, using defaults');
           }
@@ -871,7 +886,7 @@ serve(async (req) => {
             });
           }
           
-          const period = url.searchParams.get('period') || 'month';
+          const period = url.searchParams.get('period');
           console.log('Summary endpoint period:', period);
           
           // Get all transactions
