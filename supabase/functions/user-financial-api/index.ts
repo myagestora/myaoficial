@@ -578,9 +578,12 @@ serve(async (req) => {
             query = query.eq('month_year', currentMonthYear);
           } else if (period === 'year') {
             query = query.like('month_year', `${currentYear}-%`);
+          } else if (period.match(/^\d{4}-\d{2}$/)) {
+            // Handle yyyy-MM format (e.g., 2025-07)
+            query = query.eq('month_year', period);
           }
           // Para savings goals, filtrar por target_date se necessário
-          if (goal_type === 'savings' && period !== 'all' && !isSpecificDate(period)) {
+          if (goal_type === 'savings' && period !== 'all' && !isSpecificDate(period) && !period.match(/^\d{4}-\d{2}$/)) {
             if (period === 'month') {
               query = query.gte('target_date', monthStart).lte('target_date', monthEnd);
             } else if (period === 'year') {
