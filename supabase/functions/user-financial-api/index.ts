@@ -196,11 +196,16 @@ serve(async (req) => {
       )
     }
 
-    const currentDate = new Date()
-    const currentMonth = currentDate.getMonth() + 1
-    const currentYear = currentDate.getFullYear()
-    const monthStart = new Date(currentYear, currentMonth - 1, 1).toISOString().split('T')[0]
-    const monthEnd = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0]
+    // Helper function to get current date variables
+    const getCurrentDateVariables = () => {
+      const currentDate = new Date()
+      const currentMonth = currentDate.getMonth() + 1
+      const currentYear = currentDate.getFullYear()
+      const monthStart = new Date(currentYear, currentMonth - 1, 1).toISOString().split('T')[0]
+      const monthEnd = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0]
+      
+      return { currentDate, currentMonth, currentYear, monthStart, monthEnd }
+    }
 
     switch (endpoint) {
       case 'balance': {
@@ -212,9 +217,10 @@ serve(async (req) => {
           });
         }
         
+        const { currentDate, currentMonth, currentYear, monthStart, monthEnd } = getCurrentDateVariables();
+        
         let requestData = { period: 'month' };
         requestData = { ...requestData, ...await req.json() };
-
 
         // Definir filtros de data baseado no período
         let query = supabase
@@ -262,6 +268,8 @@ serve(async (req) => {
           });
         }
         
+        const { currentDate, currentMonth, currentYear, monthStart, monthEnd } = getCurrentDateVariables();
+        
         let requestData = { limit: 10, period: 'month' };
         requestData = { ...requestData, ...await req.json() };
 
@@ -308,6 +316,8 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
+        
+        const { currentDate, currentMonth, currentYear, monthStart, monthEnd } = getCurrentDateVariables();
         
         let requestData = { period: 'month' };
         requestData = { ...requestData, ...await req.json() };
@@ -372,6 +382,7 @@ serve(async (req) => {
           });
         }
         
+        const { currentDate, currentMonth, currentYear, monthStart, monthEnd } = getCurrentDateVariables();
         const period = url.searchParams.get('period') || 'month';
         
         let query = supabase
@@ -428,6 +439,7 @@ serve(async (req) => {
           });
         }
         
+        const { currentDate, currentMonth, currentYear, monthStart, monthEnd } = getCurrentDateVariables();
         const period = url.searchParams.get('period') || 'month';
         
         let query = supabase
@@ -471,6 +483,8 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
+        
+        const { currentDate, currentMonth, currentYear, monthStart, monthEnd } = getCurrentDateVariables();
         
         let requestData = { period: 'month' };
         requestData = { ...requestData, ...await req.json() };
@@ -538,12 +552,8 @@ serve(async (req) => {
             });
           }
 
-          // Define date variables for this endpoint
-          const now = new Date();
-          const currentYear = now.getFullYear();
-          const currentMonth = now.getMonth() + 1; // getMonth() returns 0-11
-          const monthStart = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
-          const monthEnd = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0];
+          // Get current date variables for this endpoint
+          const { currentDate, currentMonth, currentYear, monthStart, monthEnd } = getCurrentDateVariables();
 
           let period = null;
           let goal_type = null;
@@ -716,6 +726,7 @@ serve(async (req) => {
           });
         }
         
+        const { currentDate, currentMonth, currentYear, monthStart, monthEnd } = getCurrentDateVariables();
         const period = url.searchParams.get('period') || 'month';
         
         // Definir filtros de data baseado no período
