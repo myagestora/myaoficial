@@ -226,183 +226,319 @@ serve(async (req) => {
 
     switch (endpoint) {
       case 'balance': {
-        if (req.method !== 'POST') {
-          return new Response(JSON.stringify({ error: 'Method not allowed. Use POST.' }), {
-            status: 405,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+        try {
+          if (req.method !== 'POST') {
+            return new Response(JSON.stringify({ error: 'Method not allowed. Use POST.' }), {
+              status: 405,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          
+          let requestData = { period: 'month' };
+          try {
+            requestData = { ...requestData, ...await req.json() };
+          } catch (e) {
+            console.log('No request body, using defaults');
+          }
+
+          let query = supabase
+            .from('transactions')
+            .select('amount, type, date')
+            .eq('user_id', userId);
+
+          const dateRange = getPeriodDateRange(requestData.period);
+          if (dateRange) {
+            query = query.gte('date', dateRange.start).lte('date', dateRange.end);
+          }
+
+          const { data: transactions, error: transactionError } = await query;
+          
+          if (transactionError) {
+            console.error('Balance endpoint transaction error:', transactionError);
+            throw transactionError;
+          }
+
+          const income = transactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0
+          const expenses = transactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0
+          const balance = income - expenses
+
+          return new Response(
+            JSON.stringify({
+              balance,
+              total_income: income,
+              total_expenses: expenses,
+              period: requestData.period,
+              currency: 'BRL'
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        } catch (error) {
+          console.error('Balance endpoint error:', error);
+          return new Response(
+            JSON.stringify({ 
+              error: 'Internal server error in balance endpoint',
+              details: error.message 
+            }),
+            { 
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
         }
-        
-        let requestData = { period: 'month' };
-        requestData = { ...requestData, ...await req.json() };
-
-        let query = supabase
-          .from('transactions')
-          .select('amount, type, date')
-          .eq('user_id', userId);
-
-        const dateRange = getPeriodDateRange(requestData.period);
-        if (dateRange) {
-          query = query.gte('date', dateRange.start).lte('date', dateRange.end);
-        }
-
-        const { data: transactions } = await query;
-
-        const income = transactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0
-        const expenses = transactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0
-        const balance = income - expenses
-
-        return new Response(
-          JSON.stringify({
-            balance,
-            total_income: income,
-            total_expenses: expenses,
-            period: requestData.period,
-            currency: 'BRL'
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
       }
 
       case 'transactions': {
-        if (req.method !== 'POST') {
-          return new Response(JSON.stringify({ error: 'Method not allowed. Use POST.' }), {
-            status: 405,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+        try {
+          if (req.method !== 'POST') {
+            return new Response(JSON.stringify({ error: 'Method not allowed. Use POST.' }), {
+              status: 405,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          
+          let requestData = { limit: 10, period: 'month' };
+          try {
+            requestData = { ...requestData, ...await req.json() };
+          } catch (e) {
+            console.log('No request body, using defaults');
+          }
+
+          // First, get transactions without JOIN
+          let query = supabase
+            .from('transactions')
+            .select('id, title, description, amount, type, date, created_at, category_id')
+            .eq('user_id', userId)
+            .order('date', { ascending: false })
+            .limit(requestData.limit);
+
+          const dateRange = getPeriodDateRange(requestData.period);
+          if (dateRange) {
+            query = query.gte('date', dateRange.start).lte('date', dateRange.end);
+          }
+
+          const { data: transactions, error: transactionError } = await query;
+          
+          if (transactionError) {
+            console.error('Transactions endpoint error:', transactionError);
+            throw transactionError;
+          }
+
+          // Get categories separately
+          const categoryIds = [...new Set(transactions?.map(t => t.category_id).filter(Boolean))];
+          let categoriesMap = {};
+          
+          if (categoryIds.length > 0) {
+            const { data: categories } = await supabase
+              .from('categories')
+              .select('id, name, color, icon')
+              .in('id', categoryIds);
+            
+            categoriesMap = categories?.reduce((acc, cat) => {
+              acc[cat.id] = cat;
+              return acc;
+            }, {}) || {};
+          }
+
+          // Map categories to transactions
+          const enrichedTransactions = transactions?.map(transaction => ({
+            ...transaction,
+            categories: transaction.category_id ? categoriesMap[transaction.category_id] : null
+          })) || [];
+
+          return new Response(
+            JSON.stringify({
+              transactions: enrichedTransactions,
+              period: requestData.period,
+              total_count: enrichedTransactions.length
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        } catch (error) {
+          console.error('Transactions endpoint error:', error);
+          return new Response(
+            JSON.stringify({ 
+              error: 'Internal server error in transactions endpoint',
+              details: error.message 
+            }),
+            { 
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
         }
-        
-        let requestData = { limit: 10, period: 'month' };
-        requestData = { ...requestData, ...await req.json() };
-
-        let query = supabase
-          .from('transactions')
-          .select(`
-            id, title, description, amount, type, date, created_at,
-            categories (name, color, icon)
-          `)
-          .eq('user_id', userId)
-          .order('date', { ascending: false })
-          .limit(requestData.limit)
-
-        const dateRange = getPeriodDateRange(requestData.period);
-        if (dateRange) {
-          query = query.gte('date', dateRange.start).lte('date', dateRange.end);
-        }
-
-        const { data: transactions } = await query
-
-        return new Response(
-          JSON.stringify({
-            transactions: transactions || [],
-            period: requestData.period,
-            total_count: transactions?.length || 0
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
       }
 
       case 'expenses-by-category': {
-        if (req.method !== 'POST') {
-          return new Response(JSON.stringify({ error: 'Method not allowed. Use POST.' }), {
-            status: 405,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-        
-        let requestData = { period: 'month' };
-        requestData = { ...requestData, ...await req.json() };
-
-        let query = supabase
-          .from('transactions')
-          .select(`
-            amount, date,
-            categories (name, color)
-          `)
-          .eq('user_id', userId)
-          .eq('type', 'expense');
-
-        const dateRange = getPeriodDateRange(requestData.period);
-        if (dateRange) {
-          query = query.gte('date', dateRange.start).lte('date', dateRange.end);
-        }
-
-        const { data: expenses } = await query;
-
-        const categoryExpenses = expenses?.reduce((acc, expense) => {
-          const categoryName = expense.categories?.name || 'Sem categoria'
-          if (!acc[categoryName]) {
-            acc[categoryName] = {
-              category: categoryName,
-              color: expense.categories?.color || '#gray',
-              total: 0,
-              count: 0
-            }
+        try {
+          if (req.method !== 'POST') {
+            return new Response(JSON.stringify({ error: 'Method not allowed. Use POST.' }), {
+              status: 405,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
           }
-          acc[categoryName].total += Number(expense.amount)
-          acc[categoryName].count += 1
-          return acc
-        }, {} as Record<string, any>) || {}
+          
+          let requestData = { period: 'month' };
+          try {
+            requestData = { ...requestData, ...await req.json() };
+          } catch (e) {
+            console.log('No request body, using defaults');
+          }
 
-        const totalExpenses = Object.values(categoryExpenses).reduce((sum: number, cat: any) => sum + cat.total, 0)
+          // Get expenses without JOIN
+          let query = supabase
+            .from('transactions')
+            .select('amount, date, category_id')
+            .eq('user_id', userId)
+            .eq('type', 'expense');
 
-        return new Response(
-          JSON.stringify({
-            total_expenses: totalExpenses,
-            by_category: Object.values(categoryExpenses),
-            period: requestData.period,
-            currency: 'BRL'
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+          const dateRange = getPeriodDateRange(requestData.period);
+          if (dateRange) {
+            query = query.gte('date', dateRange.start).lte('date', dateRange.end);
+          }
+
+          const { data: expenses, error: expenseError } = await query;
+          
+          if (expenseError) {
+            console.error('Expenses by category error:', expenseError);
+            throw expenseError;
+          }
+
+          // Get categories separately
+          const categoryIds = [...new Set(expenses?.map(e => e.category_id).filter(Boolean))];
+          let categoriesMap = {};
+          
+          if (categoryIds.length > 0) {
+            const { data: categories } = await supabase
+              .from('categories')
+              .select('id, name, color')
+              .in('id', categoryIds);
+            
+            categoriesMap = categories?.reduce((acc, cat) => {
+              acc[cat.id] = cat;
+              return acc;
+            }, {}) || {};
+          }
+
+          const categoryExpenses = expenses?.reduce((acc, expense) => {
+            const category = expense.category_id ? categoriesMap[expense.category_id] : null;
+            const categoryName = category?.name || 'Sem categoria';
+            
+            if (!acc[categoryName]) {
+              acc[categoryName] = {
+                category: categoryName,
+                color: category?.color || '#6B7280',
+                total: 0,
+                count: 0
+              }
+            }
+            acc[categoryName].total += Number(expense.amount)
+            acc[categoryName].count += 1
+            return acc
+          }, {} as Record<string, any>) || {}
+
+          const totalExpenses = Object.values(categoryExpenses).reduce((sum: number, cat: any) => sum + cat.total, 0)
+
+          return new Response(
+            JSON.stringify({
+              total_expenses: totalExpenses,
+              by_category: Object.values(categoryExpenses),
+              period: requestData.period,
+              currency: 'BRL'
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        } catch (error) {
+          console.error('Expenses by category endpoint error:', error);
+          return new Response(
+            JSON.stringify({ 
+              error: 'Internal server error in expenses by category endpoint',
+              details: error.message 
+            }),
+            { 
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
       }
 
       case 'expenses': {
-        if (req.method !== 'GET') {
-          return new Response(JSON.stringify({ error: 'Method not allowed. Use GET.' }), {
-            status: 405,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+        try {
+          if (req.method !== 'GET') {
+            return new Response(JSON.stringify({ error: 'Method not allowed. Use GET.' }), {
+              status: 405,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+          
+          const period = url.searchParams.get('period') || 'month';
+          
+          // Get expenses without JOIN
+          let query = supabase
+            .from('transactions')
+            .select('amount, date, title, category_id')
+            .eq('user_id', userId)
+            .eq('type', 'expense');
+
+          const dateRange = getPeriodDateRange(period);
+          if (dateRange) {
+            query = query.gte('date', dateRange.start).lte('date', dateRange.end);
+          }
+
+          const { data: expenses, error: expenseError } = await query;
+          
+          if (expenseError) {
+            console.error('Expenses endpoint error:', expenseError);
+            throw expenseError;
+          }
+
+          // Get categories separately
+          const categoryIds = [...new Set(expenses?.map(e => e.category_id).filter(Boolean))];
+          let categoriesMap = {};
+          
+          if (categoryIds.length > 0) {
+            const { data: categories } = await supabase
+              .from('categories')
+              .select('id, name')
+              .in('id', categoryIds);
+            
+            categoriesMap = categories?.reduce((acc, cat) => {
+              acc[cat.id] = cat;
+              return acc;
+            }, {}) || {};
+          }
+
+          const transformedExpenses = expenses?.map(expense => ({
+            amount: expense.amount,
+            date: expense.date,
+            title: expense.title,
+            category: expense.category_id ? categoriesMap[expense.category_id]?.name || 'Sem categoria' : 'Sem categoria'
+          })) || []
+
+          const totalExpenses = transformedExpenses.reduce((sum, t) => sum + Number(t.amount), 0)
+
+          return new Response(
+            JSON.stringify({
+              total_expenses: totalExpenses,
+              transactions: transformedExpenses,
+              period: period,
+              currency: 'BRL'
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        } catch (error) {
+          console.error('Expenses endpoint error:', error);
+          return new Response(
+            JSON.stringify({ 
+              error: 'Internal server error in expenses endpoint',
+              details: error.message 
+            }),
+            { 
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
         }
-        
-        const period = url.searchParams.get('period') || 'month';
-        
-        let query = supabase
-          .from('transactions')
-          .select(`
-            amount, 
-            date, 
-            title,
-            categories (name)
-          `)
-          .eq('user_id', userId)
-          .eq('type', 'expense');
-
-        const dateRange = getPeriodDateRange(period);
-        if (dateRange) {
-          query = query.gte('date', dateRange.start).lte('date', dateRange.end);
-        }
-
-        const { data: expenses } = await query;
-
-        const transformedExpenses = expenses?.map(expense => ({
-          amount: expense.amount,
-          date: expense.date,
-          title: expense.title,
-          category: expense.categories?.name || 'Sem categoria'
-        })) || []
-
-        const totalExpenses = transformedExpenses.reduce((sum, t) => sum + Number(t.amount), 0)
-
-        return new Response(
-          JSON.stringify({
-            total_expenses: totalExpenses,
-            transactions: transformedExpenses,
-            period: period,
-            currency: 'BRL'
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
       }
 
       case 'income': {
@@ -442,58 +578,97 @@ serve(async (req) => {
       }
 
       case 'income-by-category': {
-        if (req.method !== 'POST') {
-          return new Response(JSON.stringify({ error: 'Method not allowed. Use POST.' }), {
-            status: 405,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-        
-        let requestData = { period: 'month' };
-        requestData = { ...requestData, ...await req.json() };
-
-        let query = supabase
-          .from('transactions')
-          .select(`
-            amount, date,
-            categories (name, color)
-          `)
-          .eq('user_id', userId)
-          .eq('type', 'income');
-
-        const dateRange = getPeriodDateRange(requestData.period);
-        if (dateRange) {
-          query = query.gte('date', dateRange.start).lte('date', dateRange.end);
-        }
-
-        const { data: income } = await query;
-
-        const categoryIncome = income?.reduce((acc, incomeItem) => {
-          const categoryName = incomeItem.categories?.name || 'Sem categoria'
-          if (!acc[categoryName]) {
-            acc[categoryName] = {
-              category: categoryName,
-              color: incomeItem.categories?.color || '#green',
-              total: 0,
-              count: 0
-            }
+        try {
+          if (req.method !== 'POST') {
+            return new Response(JSON.stringify({ error: 'Method not allowed. Use POST.' }), {
+              status: 405,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
           }
-          acc[categoryName].total += Number(incomeItem.amount)
-          acc[categoryName].count += 1
-          return acc
-        }, {} as Record<string, any>) || {}
+          
+          let requestData = { period: 'month' };
+          try {
+            requestData = { ...requestData, ...await req.json() };
+          } catch (e) {
+            console.log('No request body, using defaults');
+          }
 
-        const totalIncome = Object.values(categoryIncome).reduce((sum: number, cat: any) => sum + cat.total, 0)
+          // Get income without JOIN
+          let query = supabase
+            .from('transactions')
+            .select('amount, date, category_id')
+            .eq('user_id', userId)
+            .eq('type', 'income');
 
-        return new Response(
-          JSON.stringify({
-            total_income: totalIncome,
-            by_category: Object.values(categoryIncome),
-            period: requestData.period,
-            currency: 'BRL'
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+          const dateRange = getPeriodDateRange(requestData.period);
+          if (dateRange) {
+            query = query.gte('date', dateRange.start).lte('date', dateRange.end);
+          }
+
+          const { data: income, error: incomeError } = await query;
+          
+          if (incomeError) {
+            console.error('Income by category error:', incomeError);
+            throw incomeError;
+          }
+
+          // Get categories separately
+          const categoryIds = [...new Set(income?.map(i => i.category_id).filter(Boolean))];
+          let categoriesMap = {};
+          
+          if (categoryIds.length > 0) {
+            const { data: categories } = await supabase
+              .from('categories')
+              .select('id, name, color')
+              .in('id', categoryIds);
+            
+            categoriesMap = categories?.reduce((acc, cat) => {
+              acc[cat.id] = cat;
+              return acc;
+            }, {}) || {};
+          }
+
+          const categoryIncome = income?.reduce((acc, incomeItem) => {
+            const category = incomeItem.category_id ? categoriesMap[incomeItem.category_id] : null;
+            const categoryName = category?.name || 'Sem categoria';
+            
+            if (!acc[categoryName]) {
+              acc[categoryName] = {
+                category: categoryName,
+                color: category?.color || '#10B981',
+                total: 0,
+                count: 0
+              }
+            }
+            acc[categoryName].total += Number(incomeItem.amount)
+            acc[categoryName].count += 1
+            return acc
+          }, {} as Record<string, any>) || {}
+
+          const totalIncome = Object.values(categoryIncome).reduce((sum: number, cat: any) => sum + cat.total, 0)
+
+          return new Response(
+            JSON.stringify({
+              total_income: totalIncome,
+              by_category: Object.values(categoryIncome),
+              period: requestData.period,
+              currency: 'BRL'
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        } catch (error) {
+          console.error('Income by category endpoint error:', error);
+          return new Response(
+            JSON.stringify({ 
+              error: 'Internal server error in income by category endpoint',
+              details: error.message 
+            }),
+            { 
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
       }
 
       case 'goals': {
@@ -642,58 +817,90 @@ serve(async (req) => {
       }
 
       case 'summary': {
-        if (req.method !== 'GET') {
-          return new Response(JSON.stringify({ error: 'Method not allowed. Use GET.' }), {
-            status: 405,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-        
-        const period = url.searchParams.get('period') || 'month';
-        
-        const { data: allTransactions } = await supabase
-          .from('transactions')
-          .select('amount, type, date')
-          .eq('user_id', userId)
-
-        let periodQuery = supabase
-          .from('transactions')
-          .select('amount, type')
-          .eq('user_id', userId);
+        try {
+          if (req.method !== 'GET') {
+            return new Response(JSON.stringify({ error: 'Method not allowed. Use GET.' }), {
+              status: 405,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
           
-        const dateRange = getPeriodDateRange(period);
-        if (dateRange) {
-          periodQuery = periodQuery.gte('date', dateRange.start).lte('date', dateRange.end);
+          const period = url.searchParams.get('period') || 'month';
+          
+          // Get all transactions
+          const { data: allTransactions, error: allTransError } = await supabase
+            .from('transactions')
+            .select('amount, type, date')
+            .eq('user_id', userId);
+            
+          if (allTransError) {
+            console.error('Summary all transactions error:', allTransError);
+            throw allTransError;
+          }
+
+          // Get period transactions
+          let periodQuery = supabase
+            .from('transactions')
+            .select('amount, type')
+            .eq('user_id', userId);
+            
+          const dateRange = getPeriodDateRange(period);
+          if (dateRange) {
+            periodQuery = periodQuery.gte('date', dateRange.start).lte('date', dateRange.end);
+          }
+          
+          const { data: periodTransactions, error: periodTransError } = await periodQuery;
+          
+          if (periodTransError) {
+            console.error('Summary period transactions error:', periodTransError);
+            throw periodTransError;
+          }
+
+          const totalIncome = allTransactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0
+          const totalExpenses = allTransactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0
+          const periodIncome = periodTransactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0
+          const periodExpenses = periodTransactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0
+
+          // Get active goals
+          const { data: activeGoals, error: goalsError } = await supabase
+            .from('goals')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('status', 'active');
+            
+          if (goalsError) {
+            console.error('Summary goals error:', goalsError);
+            // Don't throw here, just log and continue with 0 goals
+          }
+
+          return new Response(
+            JSON.stringify({
+              balance: totalIncome - totalExpenses,
+              total_income: totalIncome,
+              total_expenses: totalExpenses,
+              period_income: periodIncome,
+              period_expenses: periodExpenses,
+              period_balance: periodIncome - periodExpenses,
+              period: period,
+              active_goals: activeGoals?.length || 0,
+              currency: 'BRL',
+              last_updated: new Date().toISOString()
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        } catch (error) {
+          console.error('Summary endpoint error:', error);
+          return new Response(
+            JSON.stringify({ 
+              error: 'Internal server error in summary endpoint',
+              details: error.message 
+            }),
+            { 
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
         }
-        
-        const { data: periodTransactions } = await periodQuery;
-
-        const totalIncome = allTransactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0
-        const totalExpenses = allTransactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0
-        const periodIncome = periodTransactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0
-        const periodExpenses = periodTransactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0
-
-        const { data: activeGoals } = await supabase
-          .from('goals')
-          .select('id')
-          .eq('user_id', userId)
-          .eq('status', 'active')
-
-        return new Response(
-          JSON.stringify({
-            balance: totalIncome - totalExpenses,
-            total_income: totalIncome,
-            total_expenses: totalExpenses,
-            period_income: periodIncome,
-            period_expenses: periodExpenses,
-            period_balance: periodIncome - periodExpenses,
-            period: period,
-            active_goals: activeGoals?.length || 0,
-            currency: 'BRL',
-            last_updated: new Date().toISOString()
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
       }
 
       default:
