@@ -468,17 +468,26 @@ const AdminAPI = () => {
         {
           method: "GET",
           path: "/user-financial-api/user/{userId}/summary",
-          description: "Resumo financeiro completo",
+          description: "Resumo financeiro completo com dados detalhados opcionais",
           headers: { Authorization: "Bearer your-secure-bot-token" },
           params: { 
-            period: "string" 
+            period: "string?",
+            detailed: "boolean?"
           },
           paramDetails: {
             period: {
+              type: "string",
               description: "Período para cálculo do resumo ou data específica (yyyy-MM-dd)",
               options: ["month", "week", "year", "all", "yyyy-MM-dd"],
               example: "month",
               required: false
+            },
+            detailed: {
+              type: "boolean",
+              description: "Incluir dados detalhados de transações e metas",
+              example: "true",
+              required: false,
+              default: "false"
             }
           },
           response: { 
@@ -491,7 +500,8 @@ const AdminAPI = () => {
             period: "string",
             active_goals: "number",
             currency: "string",
-            last_updated: "string"
+            last_updated: "string",
+            details: "object?"
           },
           exampleResponse: {
             balance: 1250.75,
@@ -503,7 +513,64 @@ const AdminAPI = () => {
             period: "month",
             active_goals: 2,
             currency: "BRL",
-            last_updated: "2024-01-15T10:30:00Z"
+            last_updated: "2024-01-15T10:30:00Z",
+            details: {
+              income: {
+                transactions: [
+                  {
+                    id: "trans_001",
+                    title: "Salário",
+                    amount: 3500.00,
+                    type: "income",
+                    date: "2024-01-01",
+                    category: {
+                      name: "Salário",
+                      color: "#22c55e",
+                      icon: "dollar-sign"
+                    }
+                  }
+                ],
+                count: 1
+              },
+              expenses: {
+                transactions: [
+                  {
+                    id: "trans_002",
+                    title: "Compra no mercado",
+                    amount: 150.50,
+                    type: "expense",
+                    date: "2024-01-15",
+                    category: {
+                      name: "Alimentação",
+                      color: "#f97316",
+                      icon: "utensils"
+                    }
+                  }
+                ],
+                count: 15
+              },
+              goals: {
+                list: [
+                  {
+                    id: "goal_001",
+                    title: "Meta Alimentação Janeiro",
+                    target_amount: 800.00,
+                    current_amount: 450.50,
+                    progress_percentage: 56.3,
+                    is_exceeded: false,
+                    remaining_amount: 349.50,
+                    goal_type: "monthly_budget",
+                    month_year: "2024-01",
+                    category: {
+                      name: "Alimentação",
+                      color: "#f97316",
+                      icon: "utensils"
+                    }
+                  }
+                ],
+                count: 2
+              }
+            }
           }
         }
       ]
