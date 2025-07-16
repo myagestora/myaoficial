@@ -888,7 +888,9 @@ serve(async (req) => {
           }
           
           const period = url.searchParams.get('period');
+          const detailed = url.searchParams.get('detailed') === 'true';
           console.log('Summary endpoint period:', period);
+          console.log('Summary detailed mode:', detailed);
           
           // Get all transactions
           const { data: allTransactions, error: allTransError } = await supabase
@@ -937,19 +939,134 @@ serve(async (req) => {
             // Don't throw here, just log and continue with 0 goals
           }
 
+          let response = {
+            balance: totalIncome - totalExpenses,
+            total_income: totalIncome,
+            total_expenses: totalExpenses,
+            period_income: periodIncome,
+            period_expenses: periodExpenses,
+            period_balance: periodIncome - periodExpenses,
+            period: period,
+            active_goals: activeGoals?.length || 0,
+            currency: 'BRL',
+            last_updated: new Date().toISOString()
+          };
+
+          // Add detailed information if requested
+          if (detailed) {
+            let detailsQuery = supabase
+              .from('transactions')
+              .select('id, title, description, amount, type, date, category_id')
+              .eq('user_id', userId)
+              .order('date', { ascending: false });
+
+            if (dateRange) {
+              detailsQuery = detailsQuery.gte('date', dateRange.start).lte('date', dateRange.end);
+            }
+
+            const { data: detailedTransactions, error: detailsError } = await detailsQuery;
+            
+            if (detailsError) {
+              console.error('Summary detailed transactions error:', detailsError);
+              throw detailsError;
+            }
+
+            // Get categories for detailed transactions
+            const categoryIds = [...new Set(detailedTransactions?.map(t => t.category_id).filter(Boolean))];
+            let categoriesMap = {};
+            
+            if (categoryIds.length > 0) {
+              const { data: categories } = await supabase
+                .from('categories')
+                .select('id, name, color, icon')
+                .in('id', categoryIds);
+              
+              categoriesMap = categories?.reduce((acc, cat) => {
+                acc[cat.id] = cat;
+                return acc;
+              }, {}) || {};
+            }
+
+            // Get detailed goals with categories
+            let goalsQuery = supabase
+              .from('goals')
+              .select('id, title, description, target_amount, current_amount, goal_type, status, target_date, month_year, category_id')
+              .eq('user_id', userId)
+              .eq('status', 'active');
+
+            const { data: detailedGoals, error: detailedGoalsError } = await goalsQuery;
+            
+            if (detailedGoalsError) {
+              console.error('Summary detailed goals error:', detailedGoalsError);
+              throw detailedGoalsError;
+            }
+
+            // Enrich goals with category information and progress
+            if (detailedGoals) {
+              for (const goal of detailedGoals) {
+                if (goal.category_id && categoriesMap[goal.category_id]) {
+                  goal.category = categoriesMap[goal.category_id];
+                }
+                
+                // Calculate progress for monthly budget goals
+                if (goal.goal_type === 'monthly_budget' && goal.month_year) {
+                  try {
+                    const [year, month] = goal.month_year.split('-');
+                    const monthStartDate = new Date(parseInt(year), parseInt(month) - 1, 1).toISOString().split('T')[0];
+                    const monthEndDate = new Date(parseInt(year), parseInt(month), 0).toISOString().split('T')[0];
+
+                    const { data: monthlyExpenses } = await supabase
+                      .from('transactions')
+                      .select('amount')
+                      .eq('user_id', userId)
+                      .eq('type', 'expense')
+                      .eq('category_id', goal.category_id)
+                      .gte('date', monthStartDate)
+                      .lte('date', monthEndDate);
+
+                    const spentAmount = monthlyExpenses?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
+                    goal.current_amount = spentAmount;
+                    goal.progress_percentage = goal.target_amount > 0 ? (spentAmount / goal.target_amount) * 100 : 0;
+                    goal.is_exceeded = spentAmount > goal.target_amount;
+                    goal.remaining_amount = Math.max(0, goal.target_amount - spentAmount);
+                  } catch (e) {
+                    console.error('Error calculating goal progress:', e);
+                    goal.current_amount = 0;
+                    goal.progress_percentage = 0;
+                    goal.is_exceeded = false;
+                    goal.remaining_amount = goal.target_amount;
+                  }
+                }
+              }
+            }
+
+            // Separate income and expenses with categories
+            const enrichedTransactions = detailedTransactions?.map(transaction => ({
+              ...transaction,
+              category: transaction.category_id ? categoriesMap[transaction.category_id] : null
+            })) || [];
+
+            const incomeTransactions = enrichedTransactions.filter(t => t.type === 'income');
+            const expenseTransactions = enrichedTransactions.filter(t => t.type === 'expense');
+
+            response.details = {
+              income: {
+                transactions: incomeTransactions,
+                count: incomeTransactions.length
+              },
+              expenses: {
+                transactions: expenseTransactions,
+                count: expenseTransactions.length
+              },
+              goals: {
+                list: detailedGoals || [],
+                count: detailedGoals?.length || 0
+              }
+            };
+          }
+
           return new Response(
-            JSON.stringify({
-              balance: totalIncome - totalExpenses,
-              total_income: totalIncome,
-              total_expenses: totalExpenses,
-              period_income: periodIncome,
-              period_expenses: periodExpenses,
-              period_balance: periodIncome - periodExpenses,
-              period: period,
-              active_goals: activeGoals?.length || 0,
-              currency: 'BRL',
-              last_updated: new Date().toISOString()
-            }),
+            JSON.stringify(response),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         } catch (error) {
