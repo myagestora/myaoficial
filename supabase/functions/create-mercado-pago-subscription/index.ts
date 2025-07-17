@@ -119,6 +119,7 @@ serve(async (req) => {
       .insert({
         user_id: userData.user.id,
         plan_id: planId,
+        frequency: subscriptionFrequency,
         status: 'inactive', // Será ativado quando o pagamento for confirmado
         current_period_start: new Date().toISOString(),
         current_period_end: new Date(Date.now() + (subscriptionFrequency === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000).toISOString()

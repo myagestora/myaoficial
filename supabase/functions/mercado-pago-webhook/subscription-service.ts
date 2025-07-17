@@ -11,13 +11,45 @@ const supabaseClient = createClient(
 export async function activateUserSubscription(paymentRecord: PaymentRecord): Promise<void> {
   console.log('Pagamento aprovado, ativando assinatura para usuário:', paymentRecord.user_id);
   
+  // Buscar dados do plano para determinar a frequência
+  const { data: planData, error: planError } = await supabaseClient
+    .from('subscription_plans')
+    .select('*')
+    .eq('id', paymentRecord.plan_id)
+    .single();
+
+  if (planError) {
+    console.error('Erro ao buscar plano:', planError);
+    throw planError;
+  }
+
+  // Determinar frequência baseado no plano e valor do pagamento
+  let frequency = 'monthly';
+  if (planData.price_yearly && paymentRecord.amount >= planData.price_yearly) {
+    frequency = 'yearly';
+  } else if (planData.price_monthly && paymentRecord.amount >= planData.price_monthly) {
+    frequency = 'monthly';
+  }
+
+  console.log('Frequência determinada:', frequency, 'para valor:', paymentRecord.amount);
+  
   // Calcular datas do período
   const currentDate = new Date();
   const periodStart = new Date(currentDate);
   const periodEnd = new Date(currentDate);
   
-  // Assumir que é mensal por padrão (pode ser ajustado conforme necessário)
-  periodEnd.setMonth(periodEnd.getMonth() + 1);
+  // Calcular período baseado na frequência
+  if (frequency === 'yearly') {
+    periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+  } else {
+    periodEnd.setMonth(periodEnd.getMonth() + 1);
+  }
+
+  console.log('Período calculado:', {
+    start: periodStart.toISOString(),
+    end: periodEnd.toISOString(),
+    frequency
+  });
 
   // Verificar se já existe uma assinatura para este usuário e plano
   const { data: existingSubscription } = await supabaseClient
@@ -33,6 +65,7 @@ export async function activateUserSubscription(paymentRecord: PaymentRecord): Pr
       .from('user_subscriptions')
       .update({
         status: 'active',
+        frequency: frequency,
         current_period_start: periodStart.toISOString(),
         current_period_end: periodEnd.toISOString(),
         updated_at: new Date().toISOString()
@@ -53,6 +86,7 @@ export async function activateUserSubscription(paymentRecord: PaymentRecord): Pr
         user_id: paymentRecord.user_id,
         plan_id: paymentRecord.plan_id,
         status: 'active',
+        frequency: frequency,
         current_period_start: periodStart.toISOString(),
         current_period_end: periodEnd.toISOString(),
         created_at: new Date().toISOString(),

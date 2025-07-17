@@ -203,7 +203,7 @@ serve(async (req) => {
 
       // Se foi aprovado imediatamente, ativar assinatura
       if (mpPayment.status === 'approved') {
-        await activateSubscription(supabaseClient, subscriptionId, user.id);
+        await activateSubscription(supabaseClient, subscriptionId, user.id, frequency);
       }
 
       // Preparar resposta

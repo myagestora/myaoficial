@@ -129,19 +129,32 @@ export const savePaymentRecord = async (
   return paymentRecord;
 };
 
-export const activateSubscription = async (supabaseClient: any, subscriptionId: string, userId: string) => {
-  console.log('Ativando assinatura:', subscriptionId);
+export const activateSubscription = async (supabaseClient: any, subscriptionId: string, userId: string, frequency: string = 'monthly') => {
+  console.log('Ativando assinatura:', subscriptionId, 'com frequência:', frequency);
   
   const currentDate = new Date();
   const periodStart = new Date(currentDate);
   const periodEnd = new Date(currentDate);
-  periodEnd.setMonth(periodEnd.getMonth() + 1);
+  
+  // Calcular período baseado na frequência
+  if (frequency === 'yearly') {
+    periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+  } else {
+    periodEnd.setMonth(periodEnd.getMonth() + 1);
+  }
+
+  console.log('Período calculado:', {
+    start: periodStart.toISOString(),
+    end: periodEnd.toISOString(),
+    frequency
+  });
 
   // Atualizar assinatura
   const { error: subscriptionError } = await supabaseClient
     .from('user_subscriptions')
     .update({
       status: 'active',
+      frequency: frequency,
       current_period_start: periodStart.toISOString(),
       current_period_end: periodEnd.toISOString(),
       updated_at: new Date().toISOString()

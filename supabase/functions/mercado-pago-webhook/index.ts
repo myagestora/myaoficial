@@ -261,61 +261,101 @@ serve(async (req) => {
 
       console.log('Pagamento atualizado com sucesso');
 
-      // Se foi aprovado, ativar assinatura
-      if (newStatus === 'completed') {
-        console.log('Pagamento aprovado - ativando assinatura...');
-        
-        try {
-          // Se tem subscription_id vinculado, ativar a assinatura específica
-          if (paymentRecord.subscription_id) {
-            await supabaseClient
-              .from('user_subscriptions')
-              .update({
-                status: 'active',
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', paymentRecord.subscription_id);
-            
-            console.log('Assinatura específica ativada:', paymentRecord.subscription_id);
-          } else {
-            // Fallback: buscar assinatura por user_id e plan_id
-            const currentDate = new Date();
-            const periodEnd = new Date(currentDate);
-            periodEnd.setMonth(periodEnd.getMonth() + 1);
-
-            const { data: existingSubscription } = await supabaseClient
-              .from('user_subscriptions')
+        // Se foi aprovado, ativar assinatura
+        if (newStatus === 'completed') {
+          console.log('Pagamento aprovado - ativando assinatura...');
+          
+          try {
+            // Buscar dados do plano para determinar a frequência
+            const { data: planData, error: planError } = await supabaseClient
+              .from('subscription_plans')
               .select('*')
-              .eq('user_id', paymentRecord.user_id)
-              .eq('plan_id', paymentRecord.plan_id)
-              .maybeSingle();
+              .eq('id', paymentRecord.plan_id)
+              .single();
 
-            if (existingSubscription) {
+            if (planError) {
+              console.error('Erro ao buscar plano:', planError);
+              throw planError;
+            }
+
+            // Determinar frequência baseado no plano e valor do pagamento
+            let frequency = 'monthly';
+            if (planData.price_yearly && paymentRecord.amount >= planData.price_yearly) {
+              frequency = 'yearly';
+            } else if (planData.price_monthly && paymentRecord.amount >= planData.price_monthly) {
+              frequency = 'monthly';
+            }
+
+            console.log('Frequência determinada:', frequency, 'para valor:', paymentRecord.amount);
+
+            // Calcular período baseado na frequência
+            const currentDate = new Date();
+            const periodStart = new Date(currentDate);
+            const periodEnd = new Date(currentDate);
+            
+            if (frequency === 'yearly') {
+              periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+            } else {
+              periodEnd.setMonth(periodEnd.getMonth() + 1);
+            }
+
+            console.log('Período calculado:', {
+              start: periodStart.toISOString(),
+              end: periodEnd.toISOString(),
+              frequency
+            });
+
+            // Se tem subscription_id vinculado, ativar a assinatura específica
+            if (paymentRecord.subscription_id) {
               await supabaseClient
                 .from('user_subscriptions')
                 .update({
                   status: 'active',
-                  current_period_start: currentDate.toISOString(),
+                  frequency: frequency,
+                  current_period_start: periodStart.toISOString(),
                   current_period_end: periodEnd.toISOString(),
                   updated_at: new Date().toISOString()
                 })
-                .eq('id', existingSubscription.id);
+                .eq('id', paymentRecord.subscription_id);
               
-              console.log('Assinatura existente atualizada');
+              console.log('Assinatura específica ativada:', paymentRecord.subscription_id);
             } else {
-              await supabaseClient
+              // Fallback: buscar assinatura por user_id e plan_id
+              const { data: existingSubscription } = await supabaseClient
                 .from('user_subscriptions')
-                .insert({
-                  user_id: paymentRecord.user_id,
-                  plan_id: paymentRecord.plan_id,
-                  status: 'active',
-                  current_period_start: currentDate.toISOString(),
-                  current_period_end: periodEnd.toISOString(),
-                });
-              
-              console.log('Nova assinatura criada');
+                .select('*')
+                .eq('user_id', paymentRecord.user_id)
+                .eq('plan_id', paymentRecord.plan_id)
+                .maybeSingle();
+
+              if (existingSubscription) {
+                await supabaseClient
+                  .from('user_subscriptions')
+                  .update({
+                    status: 'active',
+                    frequency: frequency,
+                    current_period_start: periodStart.toISOString(),
+                    current_period_end: periodEnd.toISOString(),
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', existingSubscription.id);
+                
+                console.log('Assinatura existente atualizada');
+              } else {
+                await supabaseClient
+                  .from('user_subscriptions')
+                  .insert({
+                    user_id: paymentRecord.user_id,
+                    plan_id: paymentRecord.plan_id,
+                    status: 'active',
+                    frequency: frequency,
+                    current_period_start: periodStart.toISOString(),
+                    current_period_end: periodEnd.toISOString(),
+                  });
+                
+                console.log('Nova assinatura criada');
+              }
             }
-          }
 
           // Atualizar perfil
           await supabaseClient
