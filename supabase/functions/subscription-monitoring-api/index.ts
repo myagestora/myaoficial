@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
 
     console.log('API key validated successfully');
 
-    // Query to get subscription monitoring data
+    // Query to get subscription monitoring data (only active subscriptions)
     const { data: subscriptions, error: subscriptionsError } = await supabase
       .from('user_subscriptions')
       .select(`
@@ -112,6 +112,7 @@ Deno.serve(async (req) => {
           whatsapp
         )
       `)
+      .eq('status', 'active')
       .not('current_period_end', 'is', null);
 
     if (subscriptionsError) {
