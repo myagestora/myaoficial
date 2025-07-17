@@ -1116,6 +1116,53 @@ const AdminAPI = () => {
           }
         }
       ]
+    },
+    {
+      category: "Gestão de Contas",
+      icon: Shield,
+      color: "bg-red-500",
+      endpoints: [
+        {
+          method: "POST",
+          path: "/suspend-account",
+          description: "Suspende conta de um cliente baseado no subscription_id",
+          headers: { Authorization: "Bearer your-api-key" },
+          params: { 
+            subscription_id: "string"
+          },
+          paramDetails: {
+            subscription_id: {
+              type: "string",
+              description: "ID da assinatura a ser suspensa",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+              required: true
+            }
+          },
+          response: { 
+            success: "boolean",
+            message: "string",
+            data: "object"
+          },
+          exampleRequest: {
+            subscription_id: "123e4567-e89b-12d3-a456-426614174000"
+          },
+          exampleResponse: {
+            success: true,
+            message: "Account suspended successfully",
+            data: {
+              subscription_id: "123e4567-e89b-12d3-a456-426614174000",
+              user_id: "456e7890-e12b-34d5-a678-901234567890",
+              user_name: "João Silva",
+              user_email: "joao@email.com",
+              previous_subscription_status: "active",
+              new_subscription_status: "canceled",
+              previous_account_status: "active",
+              new_account_status: "suspended",
+              suspended_at: "2025-07-17T15:30:00Z"
+            }
+          }
+        }
+      ]
     }
   ];
 
