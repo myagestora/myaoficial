@@ -171,25 +171,28 @@ async function handleExpiringSubscriptions(supabase: any): Promise<ExpiringResul
   subscriptions.forEach(subscription => {
     if (!subscription.current_period_end) return;
 
-    // Get expiration date (only date part, no time)
-    const expirationDateString = subscription.current_period_end.split('T')[0];
+    // Get expiration date formatted in Brazilian timezone
+    const expirationDateBrazil = formatInTimeZone(new Date(subscription.current_period_end), BRAZIL_TIMEZONE, 'yyyy-MM-dd');
     
-    // Calculate days difference using Brazilian timezone
-    const expirationDate = new Date(expirationDateString + 'T00:00:00');
-    const todayDate = new Date(todayBrazil + 'T00:00:00');
-    const timeDiff = expirationDate.getTime() - todayDate.getTime();
-    const daysDiff = Math.round(timeDiff / (1000 * 3600 * 24));
+    // Calculate days difference using simple date arithmetic
+    // Convert both dates to Date objects with consistent timezone handling
+    const expDate = new Date(expirationDateBrazil + 'T12:00:00.000Z'); // Use noon UTC to avoid timezone issues
+    const todayDate = new Date(todayBrazil + 'T12:00:00.000Z');        // Use noon UTC to avoid timezone issues
+    
+    // Calculate difference in whole days
+    const timeDiff = expDate.getTime() - todayDate.getTime();
+    const daysDiff = Math.round(timeDiff / (1000 * 60 * 60 * 24));
 
     const subscriptionData: SubscriptionExpiringResponse = {
       subscription_id: subscription.id,
       user_name: subscription.profiles?.full_name || 'Nome não informado',
       phone: subscription.profiles?.whatsapp || null,
       plan_name: subscription.subscription_plans?.name || 'Plano não identificado',
-      expiration_date: expirationDateString,
+      expiration_date: expirationDateBrazil,
       days_until_expiration: daysDiff
     };
 
-    console.log(`Subscription ${subscription.id}: expires ${expirationDateString}, ${daysDiff} days from today`);
+    console.log(`Subscription ${subscription.id}: expires ${expirationDateBrazil}, ${daysDiff} days from today`);
 
     // Categorize based on days until expiration (CORRECT LOGIC)
     if (daysDiff === 0) {
