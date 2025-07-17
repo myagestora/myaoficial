@@ -175,3 +175,87 @@ async function ensureProfileExists(userId: string): Promise<void> {
     }
   }
 }
+
+export async function cancelUserSubscription(paymentRecord: PaymentRecord, reason: string): Promise<void> {
+  console.log('Cancelando assinatura para usuário:', paymentRecord.user_id, 'razão:', reason);
+  
+  try {
+    // Se tem subscription_id vinculado, cancelar a assinatura específica
+    if (paymentRecord.subscription_id) {
+      const { error: subscriptionError } = await supabaseClient
+        .from('user_subscriptions')
+        .update({
+          status: 'canceled',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', paymentRecord.subscription_id);
+
+      if (subscriptionError) {
+        console.error('Erro ao cancelar assinatura específica:', subscriptionError);
+        throw subscriptionError;
+      }
+      
+      console.log('Assinatura específica cancelada:', paymentRecord.subscription_id);
+    } else {
+      // Fallback: buscar e cancelar assinatura por user_id e plan_id
+      const { data: existingSubscription } = await supabaseClient
+        .from('user_subscriptions')
+        .select('*')
+        .eq('user_id', paymentRecord.user_id)
+        .eq('plan_id', paymentRecord.plan_id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (existingSubscription) {
+        const { error: subscriptionError } = await supabaseClient
+          .from('user_subscriptions')
+          .update({
+            status: 'canceled',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingSubscription.id);
+
+        if (subscriptionError) {
+          console.error('Erro ao cancelar assinatura:', subscriptionError);
+          throw subscriptionError;
+        }
+        
+        console.log('Assinatura cancelada por user_id/plan_id');
+      } else {
+        console.log('Nenhuma assinatura ativa encontrada para cancelar');
+      }
+    }
+
+    // Atualizar perfil do usuário para refletir status cancelado
+    // Só atualizar se não há outras assinaturas ativas
+    const { data: otherActiveSubscriptions } = await supabaseClient
+      .from('user_subscriptions')
+      .select('id')
+      .eq('user_id', paymentRecord.user_id)
+      .eq('status', 'active');
+
+    if (!otherActiveSubscriptions || otherActiveSubscriptions.length === 0) {
+      const { error: profileError } = await supabaseClient
+        .from('profiles')
+        .update({
+          subscription_status: 'canceled',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', paymentRecord.user_id);
+
+      if (profileError) {
+        console.error('Erro ao atualizar perfil:', profileError);
+        // Não falhar o processo por erro no perfil
+      } else {
+        console.log('Perfil atualizado - assinatura cancelada');
+      }
+    } else {
+      console.log('Usuário ainda possui outras assinaturas ativas - perfil não alterado');
+    }
+
+    console.log('Cancelamento de assinatura concluído com sucesso');
+  } catch (error) {
+    console.error('Erro durante cancelamento de assinatura:', error);
+    throw error;
+  }
+}

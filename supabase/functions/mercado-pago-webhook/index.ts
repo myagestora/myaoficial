@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { activateUserSubscription, cancelUserSubscription } from "./subscription-service.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -120,7 +121,7 @@ serve(async (req) => {
 
     // PRIMEIRO: Buscar pagamento no banco usando o payment_id
     console.log('Buscando pagamento no banco por mercado_pago_payment_id...');
-    const { data: paymentRecord, error: findError } = await supabaseClient
+    let { data: paymentRecord, error: findError } = await supabaseClient
       .from('payments')
       .select('*')
       .eq('mercado_pago_payment_id', paymentId.toString())
@@ -175,7 +176,7 @@ serve(async (req) => {
               .eq('id', altPaymentRecord.id);
             
             // Usar este registro
-            const finalPaymentRecord = altPaymentRecord;
+            paymentRecord = altPaymentRecord;
           }
         }
       }
@@ -222,7 +223,7 @@ serve(async (req) => {
       date_created: paymentData.date_created
     });
 
-    // Determinar novo status
+    // Determinar novo status baseado no status do MP
     let newStatus = 'pending';
     if (paymentData.status === 'approved') {
       newStatus = 'completed';
@@ -230,6 +231,10 @@ serve(async (req) => {
       newStatus = 'failed';
     } else if (paymentData.status === 'cancelled') {
       newStatus = 'cancelled';
+    } else if (paymentData.status === 'refunded') {
+      newStatus = 'refunded';
+    } else if (paymentData.status === 'charged_back') {
+      newStatus = 'charged_back';
     }
 
     console.log('Status atual no banco:', paymentRecord.status);
@@ -266,111 +271,38 @@ serve(async (req) => {
           console.log('Pagamento aprovado - ativando assinatura...');
           
           try {
-            // Buscar dados do plano para determinar a frequência
-            const { data: planData, error: planError } = await supabaseClient
-              .from('subscription_plans')
-              .select('*')
-              .eq('id', paymentRecord.plan_id)
-              .single();
-
-            if (planError) {
-              console.error('Erro ao buscar plano:', planError);
-              throw planError;
-            }
-
-            // Determinar frequência baseado no plano e valor do pagamento
-            let frequency = 'monthly';
-            if (planData.price_yearly && paymentRecord.amount >= planData.price_yearly) {
-              frequency = 'yearly';
-            } else if (planData.price_monthly && paymentRecord.amount >= planData.price_monthly) {
-              frequency = 'monthly';
-            }
-
-            console.log('Frequência determinada:', frequency, 'para valor:', paymentRecord.amount);
-
-            // Calcular período baseado na frequência
-            const currentDate = new Date();
-            const periodStart = new Date(currentDate);
-            const periodEnd = new Date(currentDate);
-            
-            if (frequency === 'yearly') {
-              periodEnd.setFullYear(periodEnd.getFullYear() + 1);
-            } else {
-              periodEnd.setMonth(periodEnd.getMonth() + 1);
-            }
-
-            console.log('Período calculado:', {
-              start: periodStart.toISOString(),
-              end: periodEnd.toISOString(),
-              frequency
+            await activateUserSubscription(paymentRecord);
+            console.log('Assinatura específica ativada:', paymentRecord.subscription_id);
+          } catch (error) {
+            console.error('Erro ao ativar assinatura:', error);
+            return new Response(JSON.stringify({ 
+              received: true,
+              error: 'Erro ao ativar assinatura'
+            }), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              status: 200,
             });
-
-            // Se tem subscription_id vinculado, ativar a assinatura específica
-            if (paymentRecord.subscription_id) {
-              await supabaseClient
-                .from('user_subscriptions')
-                .update({
-                  status: 'active',
-                  frequency: frequency,
-                  current_period_start: periodStart.toISOString(),
-                  current_period_end: periodEnd.toISOString(),
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', paymentRecord.subscription_id);
-              
-              console.log('Assinatura específica ativada:', paymentRecord.subscription_id);
-            } else {
-              // Fallback: buscar assinatura por user_id e plan_id
-              const { data: existingSubscription } = await supabaseClient
-                .from('user_subscriptions')
-                .select('*')
-                .eq('user_id', paymentRecord.user_id)
-                .eq('plan_id', paymentRecord.plan_id)
-                .maybeSingle();
-
-              if (existingSubscription) {
-                await supabaseClient
-                  .from('user_subscriptions')
-                  .update({
-                    status: 'active',
-                    frequency: frequency,
-                    current_period_start: periodStart.toISOString(),
-                    current_period_end: periodEnd.toISOString(),
-                    updated_at: new Date().toISOString()
-                  })
-                  .eq('id', existingSubscription.id);
-                
-                console.log('Assinatura existente atualizada');
-              } else {
-                await supabaseClient
-                  .from('user_subscriptions')
-                  .insert({
-                    user_id: paymentRecord.user_id,
-                    plan_id: paymentRecord.plan_id,
-                    status: 'active',
-                    frequency: frequency,
-                    current_period_start: periodStart.toISOString(),
-                    current_period_end: periodEnd.toISOString(),
-                  });
-                
-                console.log('Nova assinatura criada');
-              }
-            }
-
-          // Atualizar perfil
-          await supabaseClient
-            .from('profiles')
-            .update({
-              subscription_status: 'active',
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', paymentRecord.user_id);
-
-          console.log('Perfil atualizado - assinatura ativada');
-        } catch (subscriptionError) {
-          console.error('Erro na ativação da assinatura:', subscriptionError);
+          }
         }
-      }
+        
+        // Se foi cancelado ou reembolsado, inativar assinatura
+        if (newStatus === 'cancelled' || newStatus === 'refunded' || newStatus === 'charged_back') {
+          console.log('Pagamento cancelado/reembolsado - inativando assinatura...');
+          
+          try {
+            await cancelUserSubscription(paymentRecord, newStatus);
+            console.log('Assinatura cancelada para pagamento:', paymentRecord.id);
+          } catch (error) {
+            console.error('Erro ao cancelar assinatura:', error);
+            return new Response(JSON.stringify({ 
+              received: true,
+              error: 'Erro ao cancelar assinatura'
+            }), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              status: 200,
+            });
+          }
+        }
     } else {
       console.log('Status não mudou - não é necessário atualizar');
     }
