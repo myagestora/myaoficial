@@ -109,19 +109,32 @@ Deno.serve(async (req) => {
 });
 
 async function handleExpiringSubscriptions(supabase: any): Promise<ExpiringResult> {
-  // Get current date (UTC)
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
+  // Calculate dates in Brazilian timezone
+  const { formatInTimeZone } = await import('https://esm.sh/date-fns-tz@3.2.0');
+  const BRAZIL_TIMEZONE = 'America/Sao_Paulo';
   
-  // Calculate target dates
-  const in2Days = new Date(today);
-  in2Days.setUTCDate(today.getUTCDate() + 2);
+  const now = new Date();
   
-  const in5Days = new Date(today);
-  in5Days.setUTCDate(today.getUTCDate() + 5);
+  // Calculate exact target dates in Brazilian timezone
+  const todayBrazil = formatInTimeZone(now, BRAZIL_TIMEZONE, 'yyyy-MM-dd');
   
-  const in10Days = new Date(today);
-  in10Days.setUTCDate(today.getUTCDate() + 10);
+  const in2DaysDate = new Date(now);
+  in2DaysDate.setDate(in2DaysDate.getDate() + 2);
+  const in2DaysBrazil = formatInTimeZone(in2DaysDate, BRAZIL_TIMEZONE, 'yyyy-MM-dd');
+  
+  const in5DaysDate = new Date(now);
+  in5DaysDate.setDate(in5DaysDate.getDate() + 5);
+  const in5DaysBrazil = formatInTimeZone(in5DaysDate, BRAZIL_TIMEZONE, 'yyyy-MM-dd');
+  
+  const in10DaysDate = new Date(now);
+  in10DaysDate.setDate(in10DaysDate.getDate() + 10);
+  const in10DaysBrazil = formatInTimeZone(in10DaysDate, BRAZIL_TIMEZONE, 'yyyy-MM-dd');
+  
+  console.log(`Target dates (Brazil timezone):`);
+  console.log(`Today: ${todayBrazil}`);
+  console.log(`2 days: ${in2DaysBrazil}`);
+  console.log(`5 days: ${in5DaysBrazil}`);
+  console.log(`10 days: ${in10DaysBrazil}`);
 
   // Query active subscriptions expiring in the next 10 days
   const { data: subscriptions, error: subscriptionsError } = await supabase
@@ -139,8 +152,8 @@ async function handleExpiringSubscriptions(supabase: any): Promise<ExpiringResul
     `)
     .eq('status', 'active')
     .not('current_period_end', 'is', null)
-    .gte('current_period_end', today.toISOString().split('T')[0])
-    .lte('current_period_end', in10Days.toISOString().split('T')[0]);
+    .gte('current_period_end', todayBrazil)
+    .lte('current_period_end', in10DaysBrazil);
 
   if (subscriptionsError) {
     console.error('Error fetching expiring subscriptions:', subscriptionsError);
@@ -169,30 +182,41 @@ async function handleExpiringSubscriptions(supabase: any): Promise<ExpiringResul
   subscriptions.forEach(subscription => {
     if (!subscription.current_period_end) return;
 
-    const expirationDate = new Date(subscription.current_period_end);
-    expirationDate.setUTCHours(0, 0, 0, 0);
+    // Get expiration date (only date part, no time)
+    const expirationDateString = subscription.current_period_end.split('T')[0];
     
-    const timeDiff = expirationDate.getTime() - today.getTime();
-    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    // Calculate days difference using Brazilian timezone
+    const expirationDate = new Date(expirationDateString + 'T00:00:00');
+    const todayDate = new Date(todayBrazil + 'T00:00:00');
+    const timeDiff = expirationDate.getTime() - todayDate.getTime();
+    const daysDiff = Math.round(timeDiff / (1000 * 3600 * 24));
 
     const subscriptionData: SubscriptionExpiringResponse = {
       subscription_id: subscription.id,
       user_name: subscription.profiles?.full_name || 'Nome não informado',
       phone: subscription.profiles?.whatsapp || null,
       plan_name: subscription.subscription_plans?.name || 'Plano não identificado',
-      expiration_date: subscription.current_period_end.split('T')[0],
+      expiration_date: expirationDateString,
       days_until_expiration: daysDiff
     };
 
-    // Categorize by expiration timeframe
-    if (daysDiff === 0) {
+    console.log(`Subscription ${subscription.id}: expires ${expirationDateString}, ${daysDiff} days from today`);
+
+    // Categorize by exact expiration date
+    if (expirationDateString === todayBrazil) {
       expiringToday.push(subscriptionData);
-    } else if (daysDiff === 2) {
+      console.log(`  -> Categorized as expiring TODAY`);
+    } else if (expirationDateString === in2DaysBrazil) {
       expiringIn2Days.push(subscriptionData);
-    } else if (daysDiff === 5) {
+      console.log(`  -> Categorized as expiring in 2 DAYS`);
+    } else if (expirationDateString === in5DaysBrazil) {
       expiringIn5Days.push(subscriptionData);
-    } else if (daysDiff === 10) {
+      console.log(`  -> Categorized as expiring in 5 DAYS`);
+    } else if (expirationDateString === in10DaysBrazil) {
       expiringIn10Days.push(subscriptionData);
+      console.log(`  -> Categorized as expiring in 10 DAYS`);
+    } else {
+      console.log(`  -> NOT categorized (expires on different date)`);
     }
   });
 
