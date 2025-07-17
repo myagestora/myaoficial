@@ -105,18 +105,28 @@ Deno.serve(async (req) => {
 });
 
 async function handleExpiredYesterdaySubscriptions(supabase: any): Promise<ExpiredYesterdayResult> {
-  // Calculate yesterday's date
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
+  // Calculate yesterday's date range in Brazilian timezone
+  const { formatInTimeZone } = await import('https://esm.sh/date-fns-tz@3.2.0');
   
-  const yesterday = new Date(today);
-  yesterday.setUTCDate(today.getUTCDate() - 1);
+  const BRAZIL_TIMEZONE = 'America/Sao_Paulo';
   
-  const yesterdayString = yesterday.toISOString().split('T')[0];
+  // Get current time in Brazil
+  const now = new Date();
+  const brazilToday = formatInTimeZone(now, BRAZIL_TIMEZONE, 'yyyy-MM-dd');
+  
+  // Calculate yesterday in Brazilian timezone
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const brazilYesterday = formatInTimeZone(yesterday, BRAZIL_TIMEZONE, 'yyyy-MM-dd');
+  
+  // Create range for yesterday (start of yesterday to start of today in Brazilian timezone)
+  const yesterdayStart = `${brazilYesterday}T00:00:00-03:00`;
+  const todayStart = `${brazilToday}T00:00:00-03:00`;
 
-  console.log(`Looking for subscriptions that expired on: ${yesterdayString}`);
+  console.log(`Looking for subscriptions that expired on: ${brazilYesterday}`);
+  console.log(`Date range: ${yesterdayStart} to ${todayStart}`);
 
-  // Query active subscriptions that expired yesterday
+  // Query active subscriptions that expired yesterday using date range
   const { data: subscriptions, error: subscriptionsError } = await supabase
     .from('user_subscriptions')
     .select(`
@@ -131,7 +141,8 @@ async function handleExpiredYesterdaySubscriptions(supabase: any): Promise<Expir
       )
     `)
     .eq('status', 'active')
-    .eq('current_period_end', yesterdayString);
+    .gte('current_period_end', yesterdayStart)
+    .lt('current_period_end', todayStart);
 
   if (subscriptionsError) {
     console.error('Error fetching expired yesterday subscriptions:', subscriptionsError);
