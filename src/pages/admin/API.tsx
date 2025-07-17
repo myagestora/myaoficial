@@ -1011,8 +1011,74 @@ const AdminAPI = () => {
       endpoints: [
         {
           method: "POST",
-          path: "/subscription-monitoring-api/subscriptions",
-          description: "Lista assinaturas ativas por status de vencimento para automação",
+          path: "/subscription-expiring-api",
+          description: "Lista assinaturas ativas que estão próximas do vencimento (hoje, 2, 5 e 10 dias)",
+          headers: { Authorization: "Bearer your-api-key" },
+          params: {},
+          paramDetails: {},
+          response: { 
+            expiring_today: "array",
+            expiring_in_2_days: "array",
+            expiring_in_5_days: "array", 
+            expiring_in_10_days: "array",
+            total_expiring: "number"
+          },
+          exampleRequest: {},
+          exampleResponse: {
+            expiring_today: [
+              {
+                subscription_id: "sub_123e4567",
+                user_name: "João Silva",
+                phone: "+5511999999999",
+                plan_name: "MYA Gestora",
+                expiration_date: "2025-07-17",
+                days_until_expiration: 0
+              }
+            ],
+            expiring_in_2_days: [
+              {
+                subscription_id: "sub_456e7890",
+                user_name: "Maria Santos",
+                phone: "+5511888888888",
+                plan_name: "MYA Gestora Premium",
+                expiration_date: "2025-07-19",
+                days_until_expiration: 2
+              }
+            ],
+            expiring_in_5_days: [],
+            expiring_in_10_days: [],
+            total_expiring: 2
+          }
+        },
+        {
+          method: "POST",
+          path: "/subscription-expired-yesterday-api",
+          description: "Lista assinaturas ativas que venceram ontem (para atualizar status para past_due)",
+          headers: { Authorization: "Bearer your-api-key" },
+          params: {},
+          paramDetails: {},
+          response: { 
+            expired_yesterday: "array",
+            total_count: "number"
+          },
+          exampleRequest: {},
+          exampleResponse: {
+            expired_yesterday: [
+              {
+                subscription_id: "sub_789e0123",
+                user_name: "Pedro Costa",
+                phone: "+5511777777777",
+                plan_name: "MYA Gestora",
+                expiration_date: "2025-07-16"
+              }
+            ],
+            total_count: 1
+          }
+        },
+        {
+          method: "POST",
+          path: "/subscription-monitoring-api",
+          description: "API legada - Monitora assinaturas completas (usar APIs específicas acima para melhor performance)",
           headers: { Authorization: "Bearer your-api-key" },
           params: {},
           paramDetails: {},
@@ -1029,51 +1095,18 @@ const AdminAPI = () => {
           },
           exampleRequest: {},
           exampleResponse: {
-            expiring_today: [
-              {
-                subscription_id: "sub_123e4567",
-                user_name: "João Silva",
-                phone: "+5511999999999",
-                plan_name: "MYA Gestora",
-                frequency: "Mensal",
-                expiration_date: "2025-07-17",
-                days_difference: 0,
-                status: "active"
-              }
-            ],
-            expiring_in_2_days: [
-              {
-                subscription_id: "sub_456e7890",
-                user_name: "Maria Santos",
-                phone: "+5511888888888",
-                plan_name: "MYA Gestora Premium",
-                frequency: "Anual",
-                expiration_date: "2025-07-19",
-                days_difference: 2,
-                status: "active"
-              }
-            ],
+            expiring_today: [],
+            expiring_in_2_days: [],
             expiring_in_5_days: [],
             expiring_in_10_days: [],
-            expired_1_day: [
-              {
-                subscription_id: "sub_789e0123",
-                user_name: "Pedro Costa",
-                phone: "+5511777777777",
-                plan_name: "MYA Gestora",
-                frequency: "Mensal", 
-                expiration_date: "2025-07-16",
-                days_difference: -1,
-                status: "active"
-              }
-            ],
+            expired_1_day: [],
             expired_2_days: [],
             expired_5_days: [],
             expired_10_days: [],
             total_counts: {
-              expiring_soon: 2,
-              expired: 1,
-              total: 3
+              expiring_soon: 0,
+              expired: 0,
+              total: 0
             }
           }
         },
