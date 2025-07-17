@@ -1077,41 +1077,6 @@ const AdminAPI = () => {
         },
         {
           method: "POST",
-          path: "/subscription-monitoring-api",
-          description: "API legada - Monitora assinaturas completas (usar APIs específicas acima para melhor performance)",
-          headers: { Authorization: "Bearer your-api-key" },
-          params: {},
-          paramDetails: {},
-          response: { 
-            expiring_today: "array",
-            expiring_in_2_days: "array",
-            expiring_in_5_days: "array", 
-            expiring_in_10_days: "array",
-            expired_1_day: "array",
-            expired_2_days: "array",
-            expired_5_days: "array",
-            expired_10_days: "array",
-            total_counts: "object"
-          },
-          exampleRequest: {},
-          exampleResponse: {
-            expiring_today: [],
-            expiring_in_2_days: [],
-            expiring_in_5_days: [],
-            expiring_in_10_days: [],
-            expired_1_day: [],
-            expired_2_days: [],
-            expired_5_days: [],
-            expired_10_days: [],
-            total_counts: {
-              expiring_soon: 0,
-              expired: 0,
-              total: 0
-            }
-          }
-        },
-        {
-          method: "POST",
           path: "/subscription-monitoring-api/past-due",
           description: "Lista assinaturas vencidas (status past_due) nos últimos 30 dias para cobrança",
           headers: { Authorization: "Bearer your-api-key" },
