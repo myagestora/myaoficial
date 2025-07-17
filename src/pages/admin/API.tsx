@@ -1012,7 +1012,7 @@ const AdminAPI = () => {
         {
           method: "POST",
           path: "/subscription-monitoring-api/subscriptions",
-          description: "Lista assinaturas por status de vencimento para automação",
+          description: "Lista assinaturas ativas por status de vencimento para automação",
           headers: { Authorization: "Bearer your-api-key" },
           params: {},
           paramDetails: {},
@@ -1075,6 +1075,44 @@ const AdminAPI = () => {
               expired: 1,
               total: 3
             }
+          }
+        },
+        {
+          method: "POST",
+          path: "/subscription-monitoring-api/past-due",
+          description: "Lista assinaturas vencidas (status past_due) para cobrança",
+          headers: { Authorization: "Bearer your-api-key" },
+          params: {},
+          paramDetails: {},
+          response: { 
+            past_due_subscriptions: "array",
+            total_count: "number"
+          },
+          exampleRequest: {},
+          exampleResponse: {
+            past_due_subscriptions: [
+              {
+                subscription_id: "sub_abc123",
+                user_name: "Carlos Silva",
+                phone: "+5511666666666",
+                plan_name: "MYA Gestora",
+                frequency: "Mensal",
+                expiration_date: "2025-07-10",
+                days_overdue: 7,
+                status: "past_due"
+              },
+              {
+                subscription_id: "sub_def456",
+                user_name: "Ana Costa",
+                phone: "+5511555555555",
+                plan_name: "MYA Gestora Premium",
+                frequency: "Anual",
+                expiration_date: "2025-07-05",
+                days_overdue: 12,
+                status: "past_due"
+              }
+            ],
+            total_count: 2
           }
         }
       ]
