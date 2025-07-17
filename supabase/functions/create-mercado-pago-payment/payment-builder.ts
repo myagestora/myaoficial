@@ -17,7 +17,7 @@ export const buildPaymentData = (
   
   const basePaymentData: MercadoPagoPaymentData = {
     transaction_amount: Number(amount),
-    description: `${planName} - ${frequency === 'monthly' ? 'Mensal' : 'Anual'}`,
+    description: `MYA Gestora - ${planName} ${frequency === 'monthly' ? 'Mensal' : 'Anual'}`,
     external_reference: externalReference,
     statement_descriptor: 'MYAGESTORA',
     payer: {
