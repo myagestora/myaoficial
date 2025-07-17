@@ -58,7 +58,13 @@ verify_jwt = false
 [functions.whatsapp-expense-reminders]
 verify_jwt = false
 
-[functions.subscription-monitoring-api]
+[functions.subscription-expiring-api]
+verify_jwt = false
+
+[functions.subscription-expired-yesterday-api]
+verify_jwt = false
+
+[functions.subscription-past-due]
 verify_jwt = false
 
 [auth]
