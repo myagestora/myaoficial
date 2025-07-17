@@ -58,5 +58,8 @@ verify_jwt = false
 [functions.whatsapp-expense-reminders]
 verify_jwt = false
 
+[functions.subscription-monitoring-api]
+verify_jwt = false
+
 [auth]
 enabled = true
