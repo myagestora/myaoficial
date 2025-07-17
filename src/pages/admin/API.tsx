@@ -1080,7 +1080,7 @@ const AdminAPI = () => {
         {
           method: "POST",
           path: "/subscription-monitoring-api/past-due",
-          description: "Lista assinaturas vencidas (status past_due) para cobrança",
+          description: "Lista assinaturas vencidas (status past_due) nos últimos 30 dias para cobrança",
           headers: { Authorization: "Bearer your-api-key" },
           params: {},
           paramDetails: {},

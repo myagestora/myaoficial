@@ -241,7 +241,14 @@ async function handleSubscriptionMonitoring(supabase: any) {
 
 // Handler for past due subscriptions
 async function handlePastDueSubscriptions(supabase: any) {
-  // Query to get past due subscriptions
+  // Calculate date 30 days ago
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  
+  const thirtyDaysAgo = new Date(today);
+  thirtyDaysAgo.setUTCDate(today.getUTCDate() - 30);
+  
+  // Query to get past due subscriptions (expired within last 30 days)
   const { data: subscriptions, error: subscriptionsError } = await supabase
     .from('user_subscriptions')
     .select(`
@@ -258,7 +265,9 @@ async function handlePastDueSubscriptions(supabase: any) {
       )
     `)
     .eq('status', 'past_due')
-    .not('current_period_end', 'is', null);
+    .not('current_period_end', 'is', null)
+    .gte('current_period_end', thirtyDaysAgo.toISOString().split('T')[0])
+    .lte('current_period_end', today.toISOString().split('T')[0]);
 
   if (subscriptionsError) {
     console.error('Error fetching past due subscriptions:', subscriptionsError);
@@ -271,11 +280,7 @@ async function handlePastDueSubscriptions(supabase: any) {
     );
   }
 
-  console.log(`Found ${subscriptions.length} past due subscriptions`);
-
-  // Get current date (UTC)
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
+  console.log(`Found ${subscriptions.length} past due subscriptions (last 30 days)`);
 
   // Process each subscription to calculate days overdue
   const pastDueSubscriptions = subscriptions.map(subscription => {
