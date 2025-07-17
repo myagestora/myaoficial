@@ -892,40 +892,30 @@ serve(async (req) => {
           console.log('Summary endpoint period:', period);
           console.log('Summary detailed mode:', detailed);
           
-          // Get all transactions
-          const { data: allTransactions, error: allTransError } = await supabase
+          // Determine which transactions to use based on period filter
+          let transactionsQuery = supabase
             .from('transactions')
             .select('amount, type, date')
             .eq('user_id', userId);
             
-          if (allTransError) {
-            console.error('Summary all transactions error:', allTransError);
-            throw allTransError;
-          }
-
-          // Get period transactions
-          let periodQuery = supabase
-            .from('transactions')
-            .select('amount, type')
-            .eq('user_id', userId);
-            
           const dateRange = getPeriodDateRange(period);
           console.log('Summary date range:', dateRange);
+          
+          // Apply period filter if specified
           if (dateRange) {
-            periodQuery = periodQuery.gte('date', dateRange.start).lte('date', dateRange.end);
+            transactionsQuery = transactionsQuery.gte('date', dateRange.start).lte('date', dateRange.end);
           }
           
-          const { data: periodTransactions, error: periodTransError } = await periodQuery;
+          const { data: transactions, error: transError } = await transactionsQuery;
           
-          if (periodTransError) {
-            console.error('Summary period transactions error:', periodTransError);
-            throw periodTransError;
+          if (transError) {
+            console.error('Summary transactions error:', transError);
+            throw transError;
           }
 
-          const totalIncome = allTransactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0
-          const totalExpenses = allTransactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0
-          const periodIncome = periodTransactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0
-          const periodExpenses = periodTransactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0
+          // Calculate totals from filtered transactions
+          const totalIncome = transactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0
+          const totalExpenses = transactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0
 
           // Get active goals
           const { data: activeGoals, error: goalsError } = await supabase
@@ -943,9 +933,9 @@ serve(async (req) => {
             balance: totalIncome - totalExpenses,
             total_income: totalIncome,
             total_expenses: totalExpenses,
-            period_income: periodIncome,
-            period_expenses: periodExpenses,
-            period_balance: periodIncome - periodExpenses,
+            period_income: totalIncome,
+            period_expenses: totalExpenses,
+            period_balance: totalIncome - totalExpenses,
             period: period,
             active_goals: activeGoals?.length || 0,
             currency: 'BRL',
