@@ -75,8 +75,12 @@ Deno.serve(async (req) => {
     const { data: subscriptionData, error: subscriptionError } = await supabase
       .from('user_subscriptions')
       .select(`
-        *,
-        profiles (
+        id,
+        user_id,
+        status,
+        current_period_start,
+        current_period_end,
+        profiles!inner(
           id,
           full_name,
           email,
