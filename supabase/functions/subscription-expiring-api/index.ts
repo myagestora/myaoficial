@@ -115,23 +115,20 @@ async function handleExpiringSubscriptions(supabase: any): Promise<ExpiringResul
   
   const now = new Date();
   
-  // Calculate exact target dates in Brazilian timezone - Force UTC calculation to avoid timezone issues
+  // Calculate exact target dates in Brazilian timezone
   const todayBrazil = formatInTimeZone(now, BRAZIL_TIMEZONE, 'yyyy-MM-dd');
   
-  // Use UTC calculations to avoid DST and timezone shift issues
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const in2DaysDate = new Date(now);
+  in2DaysDate.setDate(in2DaysDate.getDate() + 2);
+  const in2DaysBrazil = formatInTimeZone(in2DaysDate, BRAZIL_TIMEZONE, 'yyyy-MM-dd');
   
-  const in2DaysUTC = new Date(today);
-  in2DaysUTC.setUTCDate(in2DaysUTC.getUTCDate() + 2);
-  const in2DaysBrazil = formatInTimeZone(in2DaysUTC, BRAZIL_TIMEZONE, 'yyyy-MM-dd');
+  const in5DaysDate = new Date(now);
+  in5DaysDate.setDate(in5DaysDate.getDate() + 5);
+  const in5DaysBrazil = formatInTimeZone(in5DaysDate, BRAZIL_TIMEZONE, 'yyyy-MM-dd');
   
-  const in5DaysUTC = new Date(today);
-  in5DaysUTC.setUTCDate(in5DaysUTC.getUTCDate() + 5);
-  const in5DaysBrazil = formatInTimeZone(in5DaysUTC, BRAZIL_TIMEZONE, 'yyyy-MM-dd');
-  
-  const in10DaysUTC = new Date(today);
-  in10DaysUTC.setUTCDate(in10DaysUTC.getUTCDate() + 10);
-  const in10DaysBrazil = formatInTimeZone(in10DaysUTC, BRAZIL_TIMEZONE, 'yyyy-MM-dd');
+  const in10DaysDate = new Date(now);
+  in10DaysDate.setDate(in10DaysDate.getDate() + 10);
+  const in10DaysBrazil = formatInTimeZone(in10DaysDate, BRAZIL_TIMEZONE, 'yyyy-MM-dd');
   
   console.log(`Target dates (Brazil timezone):`);
   console.log(`Today: ${todayBrazil}`);
