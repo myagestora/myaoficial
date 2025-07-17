@@ -109,33 +109,20 @@ Deno.serve(async (req) => {
 });
 
 async function handleExpiringSubscriptions(supabase: any): Promise<ExpiringResult> {
-  // Calculate dates in Brazilian timezone
   const { formatInTimeZone } = await import('https://esm.sh/date-fns-tz@3.2.0');
   const BRAZIL_TIMEZONE = 'America/Sao_Paulo';
   
   const now = new Date();
   
-  // Calculate exact target dates in Brazilian timezone
+  // Calculate today in Brazilian timezone for database query
   const todayBrazil = formatInTimeZone(now, BRAZIL_TIMEZONE, 'yyyy-MM-dd');
   
-  const in2DaysDate = new Date(now);
-  in2DaysDate.setDate(in2DaysDate.getDate() + 2);
-  const in2DaysBrazil = formatInTimeZone(in2DaysDate, BRAZIL_TIMEZONE, 'yyyy-MM-dd');
-  
-  const in5DaysDate = new Date(now);
-  in5DaysDate.setDate(in5DaysDate.getDate() + 5);
-  const in5DaysBrazil = formatInTimeZone(in5DaysDate, BRAZIL_TIMEZONE, 'yyyy-MM-dd');
-  
+  // Calculate 10 days from now for upper limit of query
   const in10DaysDate = new Date(now);
   in10DaysDate.setDate(in10DaysDate.getDate() + 10);
   const in10DaysBrazil = formatInTimeZone(in10DaysDate, BRAZIL_TIMEZONE, 'yyyy-MM-dd');
   
-  console.log(`Target dates (Brazil timezone):`);
-  console.log(`Today: ${todayBrazil}`);
-  console.log(`2 days: ${in2DaysBrazil}`);
-  console.log(`5 days: ${in5DaysBrazil}`);
-  console.log(`10 days: ${in10DaysBrazil}`);
-  console.log(`10 days length: ${in10DaysBrazil.length}`);
+  console.log(`Querying subscriptions from ${todayBrazil} to ${in10DaysBrazil}`);
   console.log(`Function redeployed at: ${new Date().toISOString()}`);
 
   // Query active subscriptions expiring in the next 10 days
@@ -175,7 +162,7 @@ async function handleExpiringSubscriptions(supabase: any): Promise<ExpiringResul
 
   console.log(`Found ${subscriptions.length} expiring subscriptions (next 10 days)`);
 
-  // Process and categorize subscriptions
+  // Process and categorize subscriptions based on days until expiration
   const expiringToday: SubscriptionExpiringResponse[] = [];
   const expiringIn2Days: SubscriptionExpiringResponse[] = [];
   const expiringIn5Days: SubscriptionExpiringResponse[] = [];
@@ -204,38 +191,21 @@ async function handleExpiringSubscriptions(supabase: any): Promise<ExpiringResul
 
     console.log(`Subscription ${subscription.id}: expires ${expirationDateString}, ${daysDiff} days from today`);
 
-    // Debug specific comparisons for troubleshooting
-    if (expirationDateString === '2025-07-27') {
-      console.log(`*** SPECIAL DEBUG FOR 2025-07-27 ***`);
-      console.log(`expirationDateString: "${expirationDateString}" (length: ${expirationDateString.length})`);
-      console.log(`in10DaysBrazil: "${in10DaysBrazil}" (length: ${in10DaysBrazil.length})`);
-      console.log(`Are they equal? ${expirationDateString === in10DaysBrazil}`);
-      console.log(`String comparison result: ${JSON.stringify(expirationDateString)} === ${JSON.stringify(in10DaysBrazil)}`);
-    }
-
-    // Categorize by exact expiration date with trimmed comparison
-    const trimmedExpiration = expirationDateString.trim();
-    const trimmedToday = todayBrazil.trim();
-    const trimmed2Days = in2DaysBrazil.trim();
-    const trimmed5Days = in5DaysBrazil.trim();
-    const trimmed10Days = in10DaysBrazil.trim();
-
-    if (trimmedExpiration === trimmedToday) {
+    // Categorize based on days until expiration (CORRECT LOGIC)
+    if (daysDiff === 0) {
       expiringToday.push(subscriptionData);
-      console.log(`  -> Categorized as expiring TODAY`);
-    } else if (trimmedExpiration === trimmed2Days) {
+      console.log(`  -> Categorized as expiring TODAY (${daysDiff} days)`);
+    } else if (daysDiff <= 2 && daysDiff > 0) {
       expiringIn2Days.push(subscriptionData);
-      console.log(`  -> Categorized as expiring in 2 DAYS`);
-    } else if (trimmedExpiration === trimmed5Days) {
+      console.log(`  -> Categorized as expiring in 2 DAYS (${daysDiff} days)`);
+    } else if (daysDiff <= 5 && daysDiff > 2) {
       expiringIn5Days.push(subscriptionData);
-      console.log(`  -> Categorized as expiring in 5 DAYS`);
-    } else if (trimmedExpiration === trimmed10Days) {
+      console.log(`  -> Categorized as expiring in 5 DAYS (${daysDiff} days)`);
+    } else if (daysDiff <= 10 && daysDiff > 5) {
       expiringIn10Days.push(subscriptionData);
-      console.log(`  -> Categorized as expiring in 10 DAYS`);
+      console.log(`  -> Categorized as expiring in 10 DAYS (${daysDiff} days)`);
     } else {
-      console.log(`  -> NOT categorized (expires on different date)`);
-      console.log(`    Expected one of: ${trimmedToday}, ${trimmed2Days}, ${trimmed5Days}, ${trimmed10Days}`);
-      console.log(`    Got: ${trimmedExpiration}`);
+      console.log(`  -> NOT categorized (${daysDiff} days - outside range)`);
     }
   });
 
