@@ -152,8 +152,8 @@ async function handleExpiringSubscriptions(supabase: any): Promise<ExpiringResul
     `)
     .eq('status', 'active')
     .not('current_period_end', 'is', null)
-    .gte('current_period_end', todayBrazil)
-    .lte('current_period_end', in10DaysBrazil);
+    .gte('current_period_end::date', todayBrazil)
+    .lte('current_period_end::date', in10DaysBrazil);
 
   if (subscriptionsError) {
     console.error('Error fetching expiring subscriptions:', subscriptionsError);
