@@ -110,7 +110,6 @@ Deno.serve(async (req) => {
 
 async function handleExpiringSubscriptions(supabase: any): Promise<ExpiringResult> {
   const { formatInTimeZone } = await import('https://esm.sh/date-fns-tz@3.2.0');
-  const { differenceInDays, parseISO } = await import('https://esm.sh/date-fns@3.6.0');
   const BRAZIL_TIMEZONE = 'America/Sao_Paulo';
   
   const now = new Date();
@@ -175,9 +174,12 @@ async function handleExpiringSubscriptions(supabase: any): Promise<ExpiringResul
     // Get expiration date formatted in Brazilian timezone (only date part)
     const expirationDateBrazil = formatInTimeZone(new Date(subscription.current_period_end), BRAZIL_TIMEZONE, 'yyyy-MM-dd');
     
-    // Use date-fns for precise day calculation (no timezone issues)
-    // Convert both dates to ISO strings and calculate difference
-    const daysDiff = differenceInDays(parseISO(expirationDateBrazil), parseISO(todayBrazil));
+    // Calculate days difference using pure JavaScript to avoid library conflicts
+    const expDate = new Date(expirationDateBrazil + 'T00:00:00.000Z');
+    const todayDate = new Date(todayBrazil + 'T00:00:00.000Z');
+    const daysDiff = Math.ceil((expDate.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    console.log(`DEBUG: ${subscription.profiles?.full_name} - Exp: ${expirationDateBrazil}, Today: ${todayBrazil}, Days diff: ${daysDiff}`);
 
     const subscriptionData: SubscriptionExpiringResponse = {
       subscription_id: subscription.id,
