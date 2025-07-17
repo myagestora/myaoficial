@@ -1161,6 +1161,47 @@ const AdminAPI = () => {
               suspended_at: "2025-07-17T15:30:00Z"
             }
           }
+        },
+        {
+          method: "POST",
+          path: "/activate-account",
+          description: "Ativa conta de um cliente suspenso baseado no subscription_id",
+          headers: { Authorization: "Bearer your-api-key" },
+          params: { 
+            subscription_id: "string"
+          },
+          paramDetails: {
+            subscription_id: {
+              type: "string",
+              description: "ID da assinatura a ser ativada",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+              required: true
+            }
+          },
+          response: { 
+            success: "boolean",
+            message: "string",
+            data: "object"
+          },
+          exampleRequest: {
+            subscription_id: "123e4567-e89b-12d3-a456-426614174000"
+          },
+          exampleResponse: {
+            success: true,
+            message: "Account activated successfully",
+            data: {
+              subscription_id: "123e4567-e89b-12d3-a456-426614174000",
+              user_id: "456e7890-e12b-34d5-a678-901234567890",
+              user_name: "João Silva",
+              user_email: "joao@email.com",
+              previous_subscription_status: "canceled",
+              new_subscription_status: "active",
+              previous_account_status: "suspended",
+              new_account_status: "active",
+              activated_at: "2025-07-17T15:30:00Z",
+              new_period_end: "2025-08-17T15:30:00Z"
+            }
+          }
         }
       ]
     }
