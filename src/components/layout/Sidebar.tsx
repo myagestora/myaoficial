@@ -35,6 +35,14 @@ const navigationItems = [{
   href: '/scheduled',
   icon: Calendar
 }, {
+  name: 'Contas',
+  href: '/accounts',
+  icon: CreditCard
+}, {
+  name: 'Cartões',
+  href: '/cards',
+  icon: CreditCard
+}, {
   name: 'Categorias',
   href: '/categories',
   icon: FolderOpen

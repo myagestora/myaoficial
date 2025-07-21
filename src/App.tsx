@@ -23,6 +23,8 @@ import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
 import Categories from "./pages/Categories";
+import BankAccounts from "./pages/BankAccounts";
+import CreditCards from "./pages/CreditCards";
 import Goals from "./pages/Goals";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
@@ -83,6 +85,8 @@ const App = () => (
               }>
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="transactions/*" element={<Transactions />} />
+                <Route path="accounts" element={<BankAccounts />} />
+                <Route path="cards" element={<CreditCards />} />
                 <Route path="categories" element={<Categories />} />
                 <Route path="goals/*" element={<Goals />} />
                 <Route path="reports" element={<Reports />} />
