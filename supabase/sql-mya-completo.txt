@@ -1,0 +1,211 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.api_keys (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  key text NOT NULL UNIQUE,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  last_used timestamp with time zone,
+  is_active boolean NOT NULL DEFAULT true,
+  created_by uuid,
+  CONSTRAINT api_keys_pkey PRIMARY KEY (id),
+  CONSTRAINT api_keys_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
+);
+CREATE TABLE public.bank_accounts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  name text NOT NULL,
+  type text NOT NULL DEFAULT 'checking'::text,
+  bank_name text,
+  account_number text,
+  balance numeric DEFAULT 0,
+  is_default boolean DEFAULT false,
+  color text DEFAULT '#3B82F6'::text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT bank_accounts_pkey PRIMARY KEY (id),
+  CONSTRAINT bank_accounts_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.categories (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid,
+  name text NOT NULL,
+  color text DEFAULT '#3B82F6'::text,
+  icon text DEFAULT 'folder'::text,
+  type USER-DEFINED NOT NULL,
+  is_default boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT categories_pkey PRIMARY KEY (id),
+  CONSTRAINT categories_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.credit_cards (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  name text NOT NULL,
+  bank_name text,
+  last_four_digits text,
+  credit_limit numeric,
+  current_balance numeric DEFAULT 0,
+  due_date integer,
+  is_default boolean DEFAULT false,
+  color text DEFAULT '#EF4444'::text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT credit_cards_pkey PRIMARY KEY (id),
+  CONSTRAINT credit_cards_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.goals (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  title text NOT NULL,
+  description text,
+  target_amount numeric NOT NULL,
+  current_amount numeric DEFAULT 0,
+  target_date date,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  goal_type text DEFAULT 'savings'::text CHECK (goal_type = ANY (ARRAY['savings'::text, 'monthly_budget'::text])),
+  category_id uuid,
+  month_year text,
+  status text DEFAULT 'active'::text CHECK (status = ANY (ARRAY['active'::text, 'completed'::text, 'paused'::text, 'cancelled'::text])),
+  CONSTRAINT goals_pkey PRIMARY KEY (id),
+  CONSTRAINT goals_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
+  CONSTRAINT goals_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id)
+);
+CREATE TABLE public.motivational_phrases (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  phrase text NOT NULL,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT motivational_phrases_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.notifications (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  title text NOT NULL,
+  message text NOT NULL,
+  type text NOT NULL DEFAULT 'info'::text,
+  created_by uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  expires_at timestamp with time zone,
+  is_active boolean NOT NULL DEFAULT true,
+  CONSTRAINT notifications_pkey PRIMARY KEY (id),
+  CONSTRAINT notifications_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
+);
+CREATE TABLE public.payments (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  subscription_id uuid,
+  plan_id uuid NOT NULL,
+  amount numeric NOT NULL,
+  currency text NOT NULL DEFAULT 'BRL'::text,
+  payment_method text NOT NULL,
+  mercado_pago_payment_id text,
+  mercado_pago_preference_id text,
+  status text NOT NULL DEFAULT 'pending'::text,
+  payment_date timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT payments_pkey PRIMARY KEY (id),
+  CONSTRAINT payments_subscription_id_fkey FOREIGN KEY (subscription_id) REFERENCES public.user_subscriptions(id),
+  CONSTRAINT payments_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
+  CONSTRAINT payments_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.subscription_plans(id)
+);
+CREATE TABLE public.profiles (
+  id uuid NOT NULL,
+  full_name text,
+  email text,
+  avatar_url text,
+  whatsapp text,
+  subscription_status text DEFAULT 'inactive'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  admin_override_status boolean DEFAULT false,
+  account_status text DEFAULT 'active'::text CHECK (account_status = ANY (ARRAY['active'::text, 'deactivated'::text, 'suspended'::text])),
+  expense_reminders_enabled boolean NOT NULL DEFAULT true,
+  CONSTRAINT profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.subscription_plans (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  description text,
+  price_monthly numeric,
+  price_yearly numeric,
+  features jsonb,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  is_special boolean NOT NULL DEFAULT false,
+  CONSTRAINT subscription_plans_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.system_config (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  key text NOT NULL UNIQUE,
+  value jsonb NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT system_config_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.transactions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  category_id uuid,
+  title text NOT NULL,
+  description text,
+  amount numeric NOT NULL,
+  type USER-DEFINED NOT NULL,
+  date date NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  is_recurring boolean DEFAULT false,
+  recurrence_frequency USER-DEFINED,
+  recurrence_interval integer DEFAULT 1,
+  recurrence_end_date date,
+  next_recurrence_date date,
+  parent_transaction_id uuid,
+  is_parent_template boolean DEFAULT false,
+  recurrence_count integer,
+  account_id uuid,
+  card_id uuid,
+  CONSTRAINT transactions_pkey PRIMARY KEY (id),
+  CONSTRAINT transactions_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.bank_accounts(id),
+  CONSTRAINT transactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
+  CONSTRAINT transactions_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id),
+  CONSTRAINT transactions_parent_transaction_id_fkey FOREIGN KEY (parent_transaction_id) REFERENCES public.transactions(id),
+  CONSTRAINT transactions_card_id_fkey FOREIGN KEY (card_id) REFERENCES public.credit_cards(id)
+);
+CREATE TABLE public.user_notifications_read (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  notification_id uuid NOT NULL,
+  read_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT user_notifications_read_pkey PRIMARY KEY (id),
+  CONSTRAINT user_notifications_read_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
+  CONSTRAINT user_notifications_read_notification_id_fkey FOREIGN KEY (notification_id) REFERENCES public.notifications(id)
+);
+CREATE TABLE public.user_roles (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  role USER-DEFINED NOT NULL DEFAULT 'user'::app_role,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT user_roles_pkey PRIMARY KEY (id),
+  CONSTRAINT user_roles_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.user_subscriptions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  plan_id uuid NOT NULL,
+  status USER-DEFINED DEFAULT 'inactive'::subscription_status,
+  current_period_start timestamp with time zone,
+  current_period_end timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  mercado_pago_subscription_id text,
+  frequency text DEFAULT 'monthly'::text,
+  CONSTRAINT user_subscriptions_pkey PRIMARY KEY (id),
+  CONSTRAINT user_subscriptions_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.subscription_plans(id),
+  CONSTRAINT user_subscriptions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
+  CONSTRAINT fk_user_subscriptions_user_id FOREIGN KEY (user_id) REFERENCES public.profiles(id)
+);
