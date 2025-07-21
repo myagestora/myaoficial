@@ -402,6 +402,8 @@ export type Database = {
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string | null
           user_id: string
+          account_id?: string | null;
+          card_id?: string | null;
         }
         Update: {
           amount?: number
@@ -424,6 +426,8 @@ export type Database = {
           type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string | null
           user_id?: string
+          account_id?: string | null;
+          card_id?: string | null;
         }
         Relationships: [
           {

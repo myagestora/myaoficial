@@ -75,13 +75,48 @@ export const MobileScheduledTransactionForm = () => {
   const [selectedAccountId, setSelectedAccountId] = React.useState<string | undefined>(undefined);
   const [selectedCardId, setSelectedCardId] = React.useState<string | undefined>(undefined);
 
+  // Fetch existing transaction for editing
+  const { data: existingTransaction } = useQuery({
+    queryKey: ['scheduled-transaction', id],
+    queryFn: async () => {
+      if (!id) return null;
+      
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user?.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id && !!user?.id
+  });
+
   // Reset selects ao abrir/fechar
   useEffect(() => {
     setMentionAccount(false);
     setMentionCard(false);
     setSelectedAccountId(undefined);
     setSelectedCardId(undefined);
-  }, [isEditing, id]);
+    if (existingTransaction && isEditing) {
+      if ((existingTransaction as any).account_id) {
+        setMentionAccount(true);
+        setSelectedAccountId((existingTransaction as any).account_id);
+      } else {
+        setMentionAccount(false);
+        setSelectedAccountId(undefined);
+      }
+      if ((existingTransaction as any).card_id) {
+        setMentionCard(true);
+        setSelectedCardId((existingTransaction as any).card_id);
+      } else {
+        setMentionCard(false);
+        setSelectedCardId(undefined);
+      }
+    }
+  }, [isEditing, id, existingTransaction]);
 
   const {
     register,
@@ -128,25 +163,6 @@ export const MobileScheduledTransactionForm = () => {
     enabled: !!user?.id
   });
 
-  // Fetch existing transaction for editing
-  const { data: existingTransaction } = useQuery({
-    queryKey: ['scheduled-transaction', id],
-    queryFn: async () => {
-      if (!id) return null;
-      
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('id', id)
-        .eq('user_id', user?.id)
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!id && !!user?.id
-  });
-
   // Reset form with existing data
   useEffect(() => {
     if (existingTransaction && isEditing) {
@@ -163,8 +179,29 @@ export const MobileScheduledTransactionForm = () => {
         custom_days: 1,
         start_date: existingTransaction.date,
       });
+      // Sincronizar estados locais de conta/cartão
+      const accId = (existingTransaction as any).account_id;
+      const cardId = (existingTransaction as any).card_id;
+      if (accId) {
+        setMentionAccount(true);
+        setSelectedAccountId(accId);
+        setValue('account_id', accId);
+      } else {
+        setMentionAccount(false);
+        setSelectedAccountId(undefined);
+        setValue('account_id', null);
+      }
+      if (cardId) {
+        setMentionCard(true);
+        setSelectedCardId(cardId);
+        setValue('card_id', cardId);
+      } else {
+        setMentionCard(false);
+        setSelectedCardId(undefined);
+        setValue('card_id', null);
+      }
     }
-  }, [existingTransaction, isEditing, reset]);
+  }, [existingTransaction, isEditing, reset, setValue]);
 
   // Filter categories by type
   const filteredCategories = categories.filter(cat => cat.type === watchedType);
@@ -184,7 +221,9 @@ export const MobileScheduledTransactionForm = () => {
           date: data.start_date,
           is_recurring: data.is_recurring || false,
           updated_at: new Date().toISOString(),
+          account_id: (data as any).account_id || null,
         };
+        if ((data as any).card_id !== undefined) transactionData.card_id = (data as any).card_id;
 
         if (data.is_recurring && data.recurrence_frequency) {
           transactionData.recurrence_frequency = data.recurrence_frequency;
@@ -296,9 +335,10 @@ export const MobileScheduledTransactionForm = () => {
   });
 
   const onSubmit = (data: ScheduledTransactionFormData) => {
-    const account_id = mentionAccount ? selectedAccountId : defaultAccount?.id;
-    const card_id = mentionCard ? selectedCardId : defaultCard?.id;
-    saveScheduledTransaction.mutate({ ...data, account_id, card_id });
+    // Se não houver conta selecionada nem padrão, salva como null
+    const account_id = mentionAccount ? selectedAccountId : (defaultAccount ? defaultAccount.id : null);
+    const card_id = mentionCard ? selectedCardId : undefined;
+    saveScheduledTransaction.mutate({ ...(data as any), account_id, card_id } as any);
   };
 
   const typeOptions = [
@@ -390,6 +430,13 @@ export const MobileScheduledTransactionForm = () => {
           </p>
         </div>
       </div>
+
+      {/* Aviso se não houver conta cadastrada */}
+      {bankAccounts.length === 0 && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 p-3 rounded mb-4 text-sm">
+          <b>Atenção:</b> Você ainda não cadastrou nenhuma conta bancária. Recomenda-se cadastrar uma para melhor controle financeiro, mas você pode continuar normalmente.
+        </div>
+      )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Tipo e Valor */}
@@ -589,7 +636,10 @@ export const MobileScheduledTransactionForm = () => {
             <Checkbox
               id="mention-account"
               checked={mentionAccount}
-              onCheckedChange={checked => setMentionAccount(!!checked)}
+              onCheckedChange={checked => {
+                setMentionAccount(!!checked);
+                if (!checked) setSelectedAccountId(undefined);
+              }}
             />
             <Label htmlFor="mention-account">Mencionar Conta bancária</Label>
           </div>
@@ -609,7 +659,10 @@ export const MobileScheduledTransactionForm = () => {
             <Checkbox
               id="mention-card"
               checked={mentionCard}
-              onCheckedChange={checked => setMentionCard(!!checked)}
+              onCheckedChange={checked => {
+                setMentionCard(!!checked);
+                if (!checked) setSelectedCardId(undefined);
+              }}
             />
             <Label htmlFor="mention-card">Mencionar Cartão de Crédito</Label>
           </div>

@@ -24,6 +24,8 @@ import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { InlineConfirmation } from '@/components/ui/inline-confirmation';
 import { RecurringDeletionOptions } from '@/components/ui/recurring-deletion-options';
+import { useBankAccounts } from '@/hooks/useBankAccounts';
+import { useCreditCards } from '@/hooks/useCreditCards';
 
 export const MobileScheduled = () => {
   const { user } = useAuth();
@@ -41,6 +43,9 @@ export const MobileScheduled = () => {
   });
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [recurringDeletingId, setRecurringDeletingId] = useState<string | null>(null);
+
+  const { bankAccounts } = useBankAccounts();
+  const { creditCards } = useCreditCards();
 
   // Fetch categories for filters
   const { data: categories = [] } = useQuery({
@@ -237,11 +242,7 @@ export const MobileScheduled = () => {
   };
 
   const handleEdit = (transaction: any) => {
-    // Por enquanto, vamos mostrar um toast informando que precisa ser implementado
-    toast({
-      title: 'Editar Transação',
-      description: 'Funcionalidade de edição será implementada em breve.',
-    });
+    navigate(`/scheduled/editar/${transaction.id}`);
   };
 
   const handleCreateNew = () => {
@@ -298,34 +299,37 @@ export const MobileScheduled = () => {
 
       {/* Lista de transações agendadas */}
       <div className="space-y-3">
-        {filteredTransactions.map((transaction) => (
-          <Card key={transaction.id} className="hover:shadow-sm transition-shadow">
-            <CardContent className="p-4">
-              <div className="space-y-3">
-                {/* Header da transação */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      transaction.type === 'income' 
-                        ? 'bg-green-100 text-green-600' 
-                        : 'bg-red-100 text-red-600'
-                    }`}>
-                      <Repeat size={18} />
+        {filteredTransactions.map((transaction) => {
+          const account = transaction.account_id ? bankAccounts.find(a => a.id === transaction.account_id) : null;
+          const card = transaction.card_id ? creditCards.find(c => c.id === transaction.card_id) : null;
+          return (
+            <Card key={transaction.id} className="hover:shadow-sm transition-shadow">
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  {/* Header da transação */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        transaction.type === 'income' 
+                          ? 'bg-green-100 text-green-600' 
+                          : 'bg-red-100 text-red-600'
+                      }`}>
+                        <Repeat size={18} />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">{transaction.title}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{transaction.description}</p>
+                        {transaction.categories && (
+                          <div className="flex items-center mt-1">
+                            <div 
+                              className="w-2 h-2 rounded-full mr-1" 
+                              style={{ backgroundColor: transaction.categories.color }}
+                            />
+                            <span className="text-xs text-muted-foreground">{transaction.categories.name}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-sm">{transaction.title}</p>
-                      <p className="text-xs text-muted-foreground">{transaction.description}</p>
-                      {transaction.categories && (
-                        <div className="flex items-center mt-1">
-                          <div 
-                            className="w-2 h-2 rounded-full mr-1" 
-                            style={{ backgroundColor: transaction.categories.color }}
-                          />
-                          <span className="text-xs text-muted-foreground">{transaction.categories.name}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
                   <div className="text-right">
                     <p className={`font-semibold text-sm ${
                       transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
@@ -353,6 +357,30 @@ export const MobileScheduled = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Linha de badges de conta/cartão, acima das ações */}
+                {(account || card) && (
+                  <div className="flex flex-wrap gap-2 justify-center items-center w-full py-2">
+                    {account && (
+                      <Badge variant="outline" className="text-xs" style={{
+                        backgroundColor: account.color + '20',
+                        color: account.color,
+                        borderColor: account.color
+                      }}>
+                        {account.name}
+                      </Badge>
+                    )}
+                    {card && (
+                      <Badge variant="outline" className="text-xs" style={{
+                        backgroundColor: card.color + '20',
+                        color: card.color,
+                        borderColor: card.color
+                      }}>
+                        {card.name}{card.last_four_digits ? ` •••• ${card.last_four_digits}` : ''}
+                      </Badge>
+                    )}
+                  </div>
+                )}
 
                 {/* Ações */}
                 <div className="flex space-x-2 pt-2 border-t">
@@ -401,7 +429,8 @@ export const MobileScheduled = () => {
               </div>
             </CardContent>
           </Card>
-        ))}
+        );
+      })}
       </div>
 
       {filteredTransactions.length === 0 && !isLoading && (

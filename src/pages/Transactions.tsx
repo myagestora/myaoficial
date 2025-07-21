@@ -204,15 +204,13 @@ const Transactions = () => {
   };
 
   // Função utilitária para buscar nome da conta/cartão
-  function getAccountName(account_id) {
+  function getAccount(account_id) {
     if (!account_id) return null;
-    const acc = bankAccounts.find(a => a.id === account_id);
-    return acc ? acc.name : null;
+    return bankAccounts.find(a => a.id === account_id) || null;
   }
-  function getCardName(card_id) {
+  function getCard(card_id) {
     if (!card_id) return null;
-    const card = creditCards.find(c => c.id === card_id);
-    return card ? `${card.name}${card.last_four_digits ? ' •••• ' + card.last_four_digits : ''}` : null;
+    return creditCards.find(c => c.id === card_id) || null;
   }
 
   const handleEditTransaction = (transaction: any) => {
@@ -407,14 +405,22 @@ const Transactions = () => {
                           </Badge>
                         )}
                         {/* Exibir conta/cartão se houver */}
-                        {transaction.account_id && getAccountName(transaction.account_id) && (
-                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                            Conta: {getAccountName(transaction.account_id)}
+                        {transaction.account_id && getAccount(transaction.account_id) && (
+                          <Badge variant="outline" className="text-xs" style={{
+                            backgroundColor: getAccount(transaction.account_id)?.color + '20',
+                            color: getAccount(transaction.account_id)?.color,
+                            borderColor: getAccount(transaction.account_id)?.color
+                          }}>
+                            Conta: {getAccount(transaction.account_id)?.name}
                           </Badge>
                         )}
-                        {transaction.card_id && getCardName(transaction.card_id) && (
-                          <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
-                            Cartão: {getCardName(transaction.card_id)}
+                        {transaction.card_id && getCard(transaction.card_id) && (
+                          <Badge variant="outline" className="text-xs" style={{
+                            backgroundColor: getCard(transaction.card_id)?.color + '20',
+                            color: getCard(transaction.card_id)?.color,
+                            borderColor: getCard(transaction.card_id)?.color
+                          }}>
+                            Cartão: {getCard(transaction.card_id)?.name}{getCard(transaction.card_id)?.last_four_digits ? ` •••• ${getCard(transaction.card_id)?.last_four_digits}` : ''}
                           </Badge>
                         )}
                       </div>

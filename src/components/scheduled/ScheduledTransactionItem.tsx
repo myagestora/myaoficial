@@ -4,6 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowUpCircle, ArrowDownCircle, Edit, Trash2, Repeat } from 'lucide-react';
 import { InlineConfirmation } from '@/components/ui/inline-confirmation';
 import { RecurringDeletionOptions } from '@/components/ui/recurring-deletion-options';
+import { useBankAccounts } from '@/hooks/useBankAccounts';
+import { useCreditCards } from '@/hooks/useCreditCards';
 interface ScheduledTransactionItemProps {
   transaction: any;
   onToggleStatus: (id: string, isActive: boolean) => void;
@@ -28,6 +30,12 @@ export const ScheduledTransactionItem = ({
   onDeleteSeries,
   onCancelDelete
 }: ScheduledTransactionItemProps) => {
+  const { bankAccounts } = useBankAccounts();
+  const { creditCards } = useCreditCards();
+
+  const account = transaction.account_id ? bankAccounts.find(a => a.id === transaction.account_id) : null;
+  const card = transaction.card_id ? creditCards.find(c => c.id === transaction.card_id) : null;
+
   const formatRecurrenceInfo = (transaction: any) => {
     const frequencyMap = {
       daily: 'Diário',
@@ -100,7 +108,25 @@ export const ScheduledTransactionItem = ({
           <div>
             <div className="flex items-center gap-2">
               <p className="font-medium text-lg">{transaction.title}</p>
-              
+              {/* Exibir conta/cartão se houver */}
+              {account && (
+                <Badge variant="outline" className="text-xs" style={{
+                  backgroundColor: account.color + '20',
+                  color: account.color,
+                  borderColor: account.color
+                }}>
+                  Conta: {account.name}
+                </Badge>
+              )}
+              {card && (
+                <Badge variant="outline" className="text-xs" style={{
+                  backgroundColor: card.color + '20',
+                  color: card.color,
+                  borderColor: card.color
+                }}>
+                  Cartão: {card.name}{card.last_four_digits ? ` •••• ${card.last_four_digits}` : ''}
+                </Badge>
+              )}
             </div>
             <div className="flex items-center space-x-3 mt-1">
               {transaction.categories && <Badge variant="secondary" style={{

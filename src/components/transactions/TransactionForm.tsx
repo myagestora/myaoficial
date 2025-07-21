@@ -36,6 +36,8 @@ const transactionSchema = z.object({
   recurrence_frequency: z.enum(['daily', 'weekly', 'biweekly', 'monthly', 'quarterly', 'semiannual', 'yearly', 'custom']).optional(),
   recurrence_count: z.number().min(1).max(365).optional(),
   custom_days: z.number().min(1).optional(),
+  account_id: z.string().uuid().optional().nullable(),
+  card_id: z.string().uuid().optional().nullable(),
 }).refine((data) => {
   if (data.is_recurring) {
     if (!data.recurrence_frequency || !data.recurrence_count) {
@@ -81,8 +83,43 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
       setMentionCard(false);
       setSelectedAccountId(undefined);
       setSelectedCardId(undefined);
+    } else if (transaction) {
+      // Preencher selects/checks de conta/cartão ao editar
+      const accId = (transaction as any).account_id;
+      const cardId = (transaction as any).card_id;
+      if (accId) {
+        setMentionAccount(true);
+        setSelectedAccountId(accId);
+        setValue('account_id', accId);
+      } else {
+        setMentionAccount(false);
+        setSelectedAccountId(undefined);
+        setValue('account_id', null);
+      }
+      if (cardId) {
+        setMentionCard(true);
+        setSelectedCardId(cardId);
+        setValue('card_id', cardId);
+      } else {
+        setMentionCard(false);
+        setSelectedCardId(undefined);
+        setValue('card_id', null);
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, transaction]);
+
+  // Se marcar o checkbox de conta e só houver uma conta, selecionar automaticamente
+  useEffect(() => {
+    if (mentionAccount && !selectedAccountId && bankAccounts.length === 1) {
+      setSelectedAccountId(bankAccounts[0].id);
+    }
+  }, [mentionAccount, bankAccounts, selectedAccountId]);
+
+  // Se desmarcar, limpar o valor
+  useEffect(() => {
+    if (!mentionAccount) setSelectedAccountId(undefined);
+    if (!mentionCard) setSelectedCardId(undefined);
+  }, [mentionAccount, mentionCard]);
 
   const {
     register,
@@ -205,7 +242,9 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
           description: data.description || null,
           user_id: user.id,
           is_recurring: false,
-        };
+          account_id: (data as any).account_id || null,
+        } as any;
+        if ((data as any).card_id) transactionData.card_id = (data as any).card_id;
 
         const { error } = await supabase
           .from('transactions')
@@ -235,10 +274,10 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
   });
 
   const updateTransactionMutation = useMutation({
-    mutationFn: async (data: TransactionFormData) => {
+    mutationFn: async (data: TransactionFormData & { account_id: string | null, card_id?: string | null }) => {
       if (!user || !transaction) throw new Error('Dados inválidos');
 
-      const transactionData = {
+      const transactionData: any = {
         title: data.title,
         amount: data.amount,
         type: data.type,
@@ -246,6 +285,8 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
         date: data.date,
         description: data.description || null,
         updated_at: getBrazilianTimestamp(),
+        account_id: data.account_id ?? null,
+        card_id: data.card_id !== undefined ? data.card_id : null,
       };
 
       const { error } = await supabase
@@ -324,13 +365,18 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
 
   // Ajuste no submit para incluir account_id e card_id
   const onSubmit = async (data: TransactionFormData) => {
-    const account_id = mentionAccount ? selectedAccountId : defaultAccount?.id;
-    const card_id = mentionCard ? selectedCardId : defaultCard?.id;
+    // Garantir que account_id seja sempre enviado corretamente
+    const account_id = mentionAccount ? selectedAccountId ?? null : null;
+    const card_id = mentionCard ? selectedCardId ?? null : null;
+
+    const payload: any = { ...data, account_id };
+    // Só adiciona card_id se marcado, senão envia null explicitamente
+    payload.card_id = mentionCard ? card_id : null;
 
     if (isEditing) {
-      updateTransactionMutation.mutate({ ...data, account_id, card_id });
+      updateTransactionMutation.mutate(payload);
     } else {
-      createTransactionMutation.mutate({ ...data, account_id, card_id });
+      createTransactionMutation.mutate(payload);
     }
   };
 
@@ -344,6 +390,11 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
           <DialogDescription>
             Preencha os dados da transação abaixo.
           </DialogDescription>
+          {bankAccounts.length === 0 && (
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 p-3 rounded mb-4 text-sm">
+              <b>Atenção:</b> Você ainda não cadastrou nenhuma conta bancária. Recomenda-se cadastrar uma para melhor controle financeiro, mas você pode continuar normalmente.
+            </div>
+          )}
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -573,7 +624,14 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
               <Checkbox
                 id="mention-account"
                 checked={mentionAccount}
-                onCheckedChange={checked => setMentionAccount(!!checked)}
+                onCheckedChange={checked => {
+                  setMentionAccount(!!checked);
+                  if (!checked) setSelectedAccountId(undefined);
+                  // Se marcar e só houver uma conta, selecionar automaticamente
+                  if (checked && bankAccounts.length === 1) {
+                    setSelectedAccountId(bankAccounts[0].id);
+                  }
+                }}
               />
               <Label htmlFor="mention-account">Mencionar Conta bancária</Label>
             </div>
@@ -599,7 +657,10 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
               <Checkbox
                 id="mention-card"
                 checked={mentionCard}
-                onCheckedChange={checked => setMentionCard(!!checked)}
+                onCheckedChange={checked => {
+                  setMentionCard(!!checked);
+                  if (!checked) setSelectedCardId(undefined);
+                }}
               />
               <Label htmlFor="mention-card">Mencionar Cartão de Crédito</Label>
             </div>

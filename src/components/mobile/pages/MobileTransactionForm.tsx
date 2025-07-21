@@ -264,13 +264,14 @@ export const MobileTransactionForm = () => {
   });
 
   const onSubmit = async (data: TransactionFormData) => {
-    const account_id = mentionAccount ? selectedAccountId : defaultAccount?.id;
-    const card_id = mentionCard ? selectedCardId : defaultCard?.id;
+    // Se não houver conta selecionada nem padrão, salva como null
+    const account_id = mentionAccount ? selectedAccountId : (defaultAccount ? defaultAccount.id : null);
+    const card_id = mentionCard ? selectedCardId : undefined;
 
     if (isEditing) {
-      updateTransactionMutation.mutate({ ...data, account_id, card_id });
+      updateTransactionMutation.mutate({ ...(data as any), account_id, card_id } as any);
     } else {
-      createTransactionMutation.mutate({ ...data, account_id, card_id });
+      createTransactionMutation.mutate({ ...(data as any), account_id, card_id } as any);
     }
   };
 
@@ -360,6 +361,13 @@ export const MobileTransactionForm = () => {
           </h1>
         </div>
       </div>
+
+      {/* Aviso se não houver conta cadastrada */}
+      {bankAccounts.length === 0 && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 p-3 rounded mb-4 text-sm">
+          <b>Atenção:</b> Você ainda não cadastrou nenhuma conta bancária. Recomenda-se cadastrar uma para melhor controle financeiro, mas você pode continuar normalmente.
+        </div>
+      )}
 
       {/* Loading para transação em edição */}
       {isEditing && loadingTransaction && (

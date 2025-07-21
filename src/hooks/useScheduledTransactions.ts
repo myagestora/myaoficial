@@ -30,6 +30,8 @@ export const useScheduledTransactions = () => {
           recurrence_interval,
           recurrence_end_date,
           next_recurrence_date,
+          account_id,
+          card_id,
           categories (
             id,
             name,

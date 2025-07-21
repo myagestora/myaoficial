@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { TransactionForm } from '@/components/transactions/TransactionForm';
+import { ScheduledTransactionForm } from '@/components/scheduled/ScheduledTransactionForm';
 import { ScheduledHeader } from '@/components/scheduled/ScheduledHeader';
 
 import { ScheduledFilters } from '@/components/scheduled/ScheduledFilters';
@@ -16,6 +16,7 @@ const Scheduled = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [recurringDeletingId, setRecurringDeletingId] = useState<string | null>(null);
+  const [editingTransaction, setEditingTransaction] = useState<any>(null);
   
   const { 
     scheduledTransactions, 
@@ -124,10 +125,8 @@ const Scheduled = () => {
   const handleEdit = (id: string) => {
     const transaction = filteredTransactions.find(t => t.id === id);
     if (!transaction) return;
-    
-    // Implementar edição usando o TransactionForm
+    setEditingTransaction(transaction);
     setIsFormOpen(true);
-    // TODO: Passar dados da transação para edição
   };
 
   if (isLoading) {
@@ -175,9 +174,13 @@ const Scheduled = () => {
         onCancelDelete={handleCancelDelete}
       />
 
-      <TransactionForm 
+      <ScheduledTransactionForm 
         isOpen={isFormOpen} 
-        onClose={() => setIsFormOpen(false)} 
+        onClose={() => {
+          setIsFormOpen(false);
+          setEditingTransaction(null);
+        }}
+        transaction={editingTransaction}
       />
     </div>
   );
