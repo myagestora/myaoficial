@@ -16,6 +16,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { ArrowLeft } from 'lucide-react';
 import { MobilePageWrapper } from '../MobilePageWrapper';
 import { getCurrentDateForInput, getBrazilianTimestamp } from '@/utils/timezoneUtils';
+import { useBankAccounts } from '@/hooks/useBankAccounts';
+import { useCreditCards } from '@/hooks/useCreditCards';
 
 const transactionSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
@@ -61,6 +63,22 @@ export const MobileTransactionForm = () => {
   const transactionType = watch('type');
   const isRecurring = watch('is_recurring');
   const selectedCategoryId = watch('category_id');
+
+  const { bankAccounts, defaultAccount } = useBankAccounts();
+  const { creditCards, defaultCard } = useCreditCards();
+
+  const [mentionAccount, setMentionAccount] = React.useState(false);
+  const [mentionCard, setMentionCard] = React.useState(false);
+  const [selectedAccountId, setSelectedAccountId] = React.useState<string | undefined>(undefined);
+  const [selectedCardId, setSelectedCardId] = React.useState<string | undefined>(undefined);
+
+  // Reset selects ao abrir/fechar
+  useEffect(() => {
+    setMentionAccount(false);
+    setMentionCard(false);
+    setSelectedAccountId(undefined);
+    setSelectedCardId(undefined);
+  }, [isEditing, id]);
 
   // Buscar transação para edição
   const { data: transaction, isLoading: loadingTransaction, error: transactionError } = useQuery({
@@ -246,10 +264,13 @@ export const MobileTransactionForm = () => {
   });
 
   const onSubmit = async (data: TransactionFormData) => {
+    const account_id = mentionAccount ? selectedAccountId : defaultAccount?.id;
+    const card_id = mentionCard ? selectedCardId : defaultCard?.id;
+
     if (isEditing) {
-      updateTransactionMutation.mutate(data);
+      updateTransactionMutation.mutate({ ...data, account_id, card_id });
     } else {
-      createTransactionMutation.mutate(data);
+      createTransactionMutation.mutate({ ...data, account_id, card_id });
     }
   };
 
@@ -514,6 +535,49 @@ export const MobileTransactionForm = () => {
                 </p>
               </div>
             </div>
+          )}
+        </div>
+
+        {/* NOVO BLOCO: Seleção de Conta/Cartão */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="mention-account"
+              checked={mentionAccount}
+              onCheckedChange={checked => setMentionAccount(!!checked)}
+            />
+            <Label htmlFor="mention-account">Mencionar Conta bancária</Label>
+          </div>
+          {mentionAccount && (
+            <MobileListSelect
+              value={selectedAccountId || ''}
+              onValueChange={setSelectedAccountId}
+              placeholder="Selecione a conta"
+              options={bankAccounts.map(account => ({
+                value: account.id,
+                label: `${account.name}${account.is_default ? ' (Padrão)' : ''}`,
+              }))}
+            />
+          )}
+
+          <div className="flex items-center gap-2 mt-2">
+            <Checkbox
+              id="mention-card"
+              checked={mentionCard}
+              onCheckedChange={checked => setMentionCard(!!checked)}
+            />
+            <Label htmlFor="mention-card">Mencionar Cartão de Crédito</Label>
+          </div>
+          {mentionCard && (
+            <MobileListSelect
+              value={selectedCardId || ''}
+              onValueChange={setSelectedCardId}
+              placeholder="Selecione o cartão"
+              options={creditCards.map(card => ({
+                value: card.id,
+                label: `${card.name}${card.last_four_digits ? ` •••• ${card.last_four_digits}` : ''}${card.is_default ? ' (Padrão)' : ''}`,
+              }))}
+            />
           )}
         </div>
 

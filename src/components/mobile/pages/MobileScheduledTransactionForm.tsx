@@ -25,6 +25,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { format, addDays, addWeeks, addMonths, addYears } from 'date-fns';
 import { generateRecurrenceDates, calculateTotalDuration } from '@/utils/recurrenceUtils';
+import { useBankAccounts } from '@/hooks/useBankAccounts';
+import { useCreditCards } from '@/hooks/useCreditCards';
 
 const scheduledTransactionSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
@@ -64,6 +66,22 @@ export const MobileScheduledTransactionForm = () => {
   const { id } = useParams();
   const queryClient = useQueryClient();
   const isEditing = !!id;
+
+  const { bankAccounts, defaultAccount } = useBankAccounts();
+  const { creditCards, defaultCard } = useCreditCards();
+
+  const [mentionAccount, setMentionAccount] = React.useState(false);
+  const [mentionCard, setMentionCard] = React.useState(false);
+  const [selectedAccountId, setSelectedAccountId] = React.useState<string | undefined>(undefined);
+  const [selectedCardId, setSelectedCardId] = React.useState<string | undefined>(undefined);
+
+  // Reset selects ao abrir/fechar
+  useEffect(() => {
+    setMentionAccount(false);
+    setMentionCard(false);
+    setSelectedAccountId(undefined);
+    setSelectedCardId(undefined);
+  }, [isEditing, id]);
 
   const {
     register,
@@ -278,7 +296,9 @@ export const MobileScheduledTransactionForm = () => {
   });
 
   const onSubmit = (data: ScheduledTransactionFormData) => {
-    saveScheduledTransaction.mutate(data);
+    const account_id = mentionAccount ? selectedAccountId : defaultAccount?.id;
+    const card_id = mentionCard ? selectedCardId : defaultCard?.id;
+    saveScheduledTransaction.mutate({ ...data, account_id, card_id });
   };
 
   const typeOptions = [
@@ -560,6 +580,49 @@ export const MobileScheduledTransactionForm = () => {
           />
           {errors.start_date && (
             <p className="text-sm text-destructive">{errors.start_date.message}</p>
+          )}
+        </div>
+
+        {/* NOVO BLOCO: Seleção de Conta/Cartão */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="mention-account"
+              checked={mentionAccount}
+              onCheckedChange={checked => setMentionAccount(!!checked)}
+            />
+            <Label htmlFor="mention-account">Mencionar Conta bancária</Label>
+          </div>
+          {mentionAccount && (
+            <MobileListSelect
+              value={selectedAccountId || ''}
+              onValueChange={setSelectedAccountId}
+              placeholder="Selecione a conta"
+              options={bankAccounts.map(account => ({
+                value: account.id,
+                label: `${account.name}${account.is_default ? ' (Padrão)' : ''}`,
+              }))}
+            />
+          )}
+
+          <div className="flex items-center gap-2 mt-2">
+            <Checkbox
+              id="mention-card"
+              checked={mentionCard}
+              onCheckedChange={checked => setMentionCard(!!checked)}
+            />
+            <Label htmlFor="mention-card">Mencionar Cartão de Crédito</Label>
+          </div>
+          {mentionCard && (
+            <MobileListSelect
+              value={selectedCardId || ''}
+              onValueChange={setSelectedCardId}
+              placeholder="Selecione o cartão"
+              options={creditCards.map(card => ({
+                value: card.id,
+                label: `${card.name}${card.last_four_digits ? ` •••• ${card.last_four_digits}` : ''}${card.is_default ? ' (Padrão)' : ''}`,
+              }))}
+            />
           )}
         </div>
 

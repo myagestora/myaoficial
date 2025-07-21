@@ -18,6 +18,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTransactionFilters } from '@/hooks/useTransactionFilters';
 import { toast } from '@/hooks/use-toast';
 import { shouldUseMobileLayout } from '@/hooks/useMobileDetection';
+import { useBankAccounts } from '@/hooks/useBankAccounts';
+import { useCreditCards } from '@/hooks/useCreditCards';
 
 const Transactions = () => {
   const location = useLocation();
@@ -35,6 +37,8 @@ const Transactions = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showSimpleDeleteDialog, setShowSimpleDeleteDialog] = useState(false);
   const queryClient = useQueryClient();
+  const { bankAccounts } = useBankAccounts();
+  const { creditCards } = useCreditCards();
 
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ['transactions', user?.id],
@@ -57,6 +61,8 @@ const Transactions = () => {
           next_recurrence_date,
           parent_transaction_id,
           category_id,
+          account_id,
+          card_id,
           categories (
             id,
             name,
@@ -196,6 +202,18 @@ const Transactions = () => {
       year: 'numeric' 
     });
   };
+
+  // Função utilitária para buscar nome da conta/cartão
+  function getAccountName(account_id) {
+    if (!account_id) return null;
+    const acc = bankAccounts.find(a => a.id === account_id);
+    return acc ? acc.name : null;
+  }
+  function getCardName(card_id) {
+    if (!card_id) return null;
+    const card = creditCards.find(c => c.id === card_id);
+    return card ? `${card.name}${card.last_four_digits ? ' •••• ' + card.last_four_digits : ''}` : null;
+  }
 
   const handleEditTransaction = (transaction: any) => {
     setEditingTransaction(transaction);
@@ -386,6 +404,17 @@ const Transactions = () => {
                           <Badge variant="outline" className="text-xs">
                             <Repeat className="h-3 w-3 mr-1" />
                             {formatRecurrenceInfo(transaction)}
+                          </Badge>
+                        )}
+                        {/* Exibir conta/cartão se houver */}
+                        {transaction.account_id && getAccountName(transaction.account_id) && (
+                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                            Conta: {getAccountName(transaction.account_id)}
+                          </Badge>
+                        )}
+                        {transaction.card_id && getCardName(transaction.card_id) && (
+                          <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                            Cartão: {getCardName(transaction.card_id)}
                           </Badge>
                         )}
                       </div>

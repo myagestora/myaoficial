@@ -22,6 +22,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { generateRecurrenceDates, formatRecurrenceInfo, calculateTotalDuration } from '@/utils/recurrenceUtils';
 import { getCurrentDateForInput, getBrazilianTimestamp } from '@/utils/timezoneUtils';
+import { useBankAccounts } from '@/hooks/useBankAccounts';
+import { useCreditCards } from '@/hooks/useCreditCards';
 
 const transactionSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
@@ -62,6 +64,25 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
   const queryClient = useQueryClient();
   const isEditing = !!transaction;
   const [previewDates, setPreviewDates] = useState<string[]>([]);
+
+  const { bankAccounts, defaultAccount } = useBankAccounts();
+  const { creditCards, defaultCard } = useCreditCards();
+
+  // Estados para exibir selects
+  const [mentionAccount, setMentionAccount] = useState(false);
+  const [mentionCard, setMentionCard] = useState(false);
+  const [selectedAccountId, setSelectedAccountId] = useState<string | undefined>(undefined);
+  const [selectedCardId, setSelectedCardId] = useState<string | undefined>(undefined);
+
+  // Reset selects ao abrir/fechar
+  useEffect(() => {
+    if (!isOpen) {
+      setMentionAccount(false);
+      setMentionCard(false);
+      setSelectedAccountId(undefined);
+      setSelectedCardId(undefined);
+    }
+  }, [isOpen]);
 
   const {
     register,
@@ -254,14 +275,6 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
     }
   });
 
-  const onSubmit = async (data: TransactionFormData) => {
-    if (isEditing) {
-      updateTransactionMutation.mutate(data);
-    } else {
-      createTransactionMutation.mutate(data);
-    }
-  };
-
   // Update preview when recurrence settings change
   useEffect(() => {
     if (isRecurring && recurrenceFrequency && recurrenceCount && startDate) {
@@ -308,6 +321,18 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
       }
     }
   }, [transaction, categories, setValue]);
+
+  // Ajuste no submit para incluir account_id e card_id
+  const onSubmit = async (data: TransactionFormData) => {
+    const account_id = mentionAccount ? selectedAccountId : defaultAccount?.id;
+    const card_id = mentionCard ? selectedCardId : defaultCard?.id;
+
+    if (isEditing) {
+      updateTransactionMutation.mutate({ ...data, account_id, card_id });
+    } else {
+      createTransactionMutation.mutate({ ...data, account_id, card_id });
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -541,6 +566,61 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
               )}
             </div>
           )}
+
+          {/* NOVO BLOCO: Seleção de Conta/Cartão */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="mention-account"
+                checked={mentionAccount}
+                onCheckedChange={checked => setMentionAccount(!!checked)}
+              />
+              <Label htmlFor="mention-account">Mencionar Conta bancária</Label>
+            </div>
+            {mentionAccount && (
+              <Select
+                value={selectedAccountId || ''}
+                onValueChange={setSelectedAccountId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a conta" />
+                </SelectTrigger>
+                <SelectContent>
+                  {bankAccounts.map(account => (
+                    <SelectItem key={account.id} value={account.id}>
+                      {account.name} {account.is_default && '(Padrão)'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            <div className="flex items-center gap-2 mt-2">
+              <Checkbox
+                id="mention-card"
+                checked={mentionCard}
+                onCheckedChange={checked => setMentionCard(!!checked)}
+              />
+              <Label htmlFor="mention-card">Mencionar Cartão de Crédito</Label>
+            </div>
+            {mentionCard && (
+              <Select
+                value={selectedCardId || ''}
+                onValueChange={setSelectedCardId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o cartão" />
+                </SelectTrigger>
+                <SelectContent>
+                  {creditCards.map(card => (
+                    <SelectItem key={card.id} value={card.id}>
+                      {card.name} {card.last_four_digits ? `•••• ${card.last_four_digits}` : ''} {card.is_default && '(Padrão)'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
 
           <DialogFooter>
             <Button 

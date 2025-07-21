@@ -11,6 +11,8 @@ import { MobileOptimizedCard } from '@/components/ui/mobile-optimized-card';
 import { MobileListItem } from '@/components/ui/mobile-list-item';
 import { DateRange } from 'react-day-picker';
 import { formatDateBrazilian } from '@/utils/timezoneUtils';
+import { useBankAccounts } from '@/hooks/useBankAccounts';
+import { useCreditCards } from '@/hooks/useCreditCards';
 
 interface RecentTransactionsProps {
   dateRange?: DateRange;
@@ -19,6 +21,20 @@ interface RecentTransactionsProps {
 export const RecentTransactions = ({ dateRange }: RecentTransactionsProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { bankAccounts } = useBankAccounts();
+  const { creditCards } = useCreditCards();
+
+  // Função utilitária para buscar nome da conta/cartão
+  function getAccountName(account_id: string | null) {
+    if (!account_id) return null;
+    const acc = bankAccounts.find(a => a.id === account_id);
+    return acc ? acc.name : null;
+  }
+  function getCardName(card_id: string | null) {
+    if (!card_id) return null;
+    const card = creditCards.find(c => c.id === card_id);
+    return card ? `${card.name}${card.last_four_digits ? ' •••• ' + card.last_four_digits : ''}` : null;
+  }
 
   const { data: transactions, isLoading } = useQuery({
     queryKey: ['recent-transactions', user?.id, dateRange],
@@ -37,7 +53,9 @@ export const RecentTransactions = ({ dateRange }: RecentTransactionsProps) => {
           created_at,
           categories (
             name
-          )
+          ),
+          account_id,
+          card_id
         `)
         .eq('user_id', user.id);
 
@@ -152,7 +170,22 @@ export const RecentTransactions = ({ dateRange }: RecentTransactionsProps) => {
               </div>
               
               {/* Título ocupando máximo de espaço - só evita sobrepor a categoria */}
-              <h3 className="font-semibold text-base leading-tight flex-1 pr-16">{transaction.title}</h3>
+              <h3 className="font-semibold text-base leading-tight flex-1 pr-16">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-medium text-base truncate">{transaction.title}</span>
+                  {/* Exibir conta/cartão se houver */}
+                  {transaction.account_id && getAccountName(transaction.account_id) && (
+                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                      Conta: {getAccountName(transaction.account_id)}
+                    </Badge>
+                  )}
+                  {transaction.card_id && getCardName(transaction.card_id) && (
+                    <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                      Cartão: {getCardName(transaction.card_id)}
+                    </Badge>
+                  )}
+                </div>
+              </h3>
             </div>
             
             {/* Descrição ocupando toda a largura do card */}
