@@ -232,11 +232,19 @@ const AdminAPI = () => {
         {
           method: "POST",
           path: "/user-financial-api/user/{userId}/transactions",
-          description: "Histórico de transações",
+          description: "Histórico de transações e criação de nova transação",
           headers: { Authorization: "Bearer your-secure-bot-token" },
           params: { 
             limit: "number?", 
-            period: "string?" 
+            period: "string?",
+            title: "string?", // NOVO para criação
+            amount: "number?", // NOVO para criação
+            type: "string?", // NOVO para criação
+            category_id: "string?", // NOVO para criação
+            date: "string?", // NOVO para criação
+            description: "string?", // NOVO para criação
+            account_id: "string?", // NOVO
+            card_id: "string?" // NOVO
           },
           paramDetails: {
             limit: {
@@ -252,25 +260,78 @@ const AdminAPI = () => {
               example: "month",
               required: false,
               options: ["week", "month", "quarter", "year", "all", "yyyy-MM-dd"]
+            },
+            title: {
+              type: "string",
+              description: "Título da transação (obrigatório para criação)",
+              example: "Compra no mercado",
+              required: false
+            },
+            amount: {
+              type: "number",
+              description: "Valor da transação (obrigatório para criação)",
+              example: -150.50,
+              required: false
+            },
+            type: {
+              type: "string",
+              description: "Tipo da transação (obrigatório para criação)",
+              example: "expense",
+              required: false,
+              options: ["income", "expense"]
+            },
+            category_id: {
+              type: "string",
+              description: "ID da categoria (obrigatório para criação)",
+              example: "cat-001",
+              required: false
+            },
+            date: {
+              type: "string",
+              description: "Data da transação (opcional, padrão: hoje)",
+              example: "2024-01-20",
+              required: false
+            },
+            description: {
+              type: "string",
+              description: "Descrição personalizada da transação (opcional)",
+              example: "Compra no supermercado Pão de Açúcar",
+              required: false
+            },
+            account_id: {
+              type: "string",
+              description: "ID da conta bancária vinculada (opcional)",
+              example: "acc-001",
+              required: false
+            },
+            card_id: {
+              type: "string",
+              description: "ID do cartão de crédito vinculado (opcional)",
+              example: "card-001",
+              required: false
             }
           },
           response: { transactions: "array", total_count: "number" },
           exampleRequest: {
-            limit: 10,
-            period: "month"
+            title: "Compra no mercado",
+            amount: -150.50,
+            type: "expense",
+            category_id: "cat-001",
+            date: "2024-01-20",
+            account_id: "acc-001",
+            card_id: "card-001"
           },
           exampleResponse: {
-            transactions: [
-              {
-                id: "trans_001",
-                title: "Compra no mercado",
-                amount: -150.50,
-                type: "expense",
-                category: "Alimentação",
-                date: "2024-01-15"
-              }
-            ],
-            total_count: 25
+            transaction: {
+              id: "trans_001",
+              title: "Compra no mercado",
+              amount: -150.50,
+              type: "expense",
+              category_id: "cat-001",
+              date: "2024-01-20",
+              account_id: "acc-001",
+              card_id: "card-001"
+            }
           }
         },
         {
@@ -825,7 +886,9 @@ const AdminAPI = () => {
             type: "string",
             category_id: "string",
             description: "string?",
-            date: "string?"
+            date: "string?",
+            account_id: "string?", // NOVO
+            card_id: "string?" // NOVO
           },
           paramDetails: {
             user_id: {
@@ -871,6 +934,18 @@ const AdminAPI = () => {
               example: "2024-01-20",
               required: false,
               default: "Data atual (UTC-3)"
+            },
+            account_id: {
+              type: "string",
+              description: "ID da conta bancária vinculada (opcional)",
+              example: "acc-001",
+              required: false
+            },
+            card_id: {
+              type: "string",
+              description: "ID do cartão de crédito vinculado (opcional)",
+              example: "card-001",
+              required: false
             }
           },
           response: { success: "boolean", transaction: "object", updated_balance: "object" },
@@ -881,7 +956,9 @@ const AdminAPI = () => {
             type: "expense",
             category_id: "cat-001",
             description: "Mensalidade da faculdade",
-            date: "2024-01-20"
+            date: "2024-01-20",
+            account_id: "acc-001",
+            card_id: "card-001"
           },
           exampleResponse: {
             success: true,
@@ -891,7 +968,9 @@ const AdminAPI = () => {
               amount: -1200.00,
               type: "expense",
               category: "Educação",
-              date: "2024-01-20"
+              date: "2024-01-20",
+              account_id: "acc-001",
+              card_id: "card-001"
             },
             updated_balance: {
               balance: 1100.25,
@@ -953,6 +1032,60 @@ const AdminAPI = () => {
               }
             ],
             total: 2
+          }
+        }
+      ]
+    },
+    {
+      category: "Contas e Cartões",
+      icon: Tag,
+      color: "bg-blue-500",
+      endpoints: [
+        {
+          method: "POST",
+          path: "/list-accounts",
+          description: "Lista contas bancárias e cartões de crédito do usuário",
+          headers: { Authorization: "Bearer your-api-key" },
+          params: {
+            user_id: "string"
+          },
+          paramDetails: {
+            user_id: {
+              type: "string",
+              description: "ID do usuário",
+              example: "12345678-1234-1234-1234-123456789012",
+              required: true
+            }
+          },
+          response: { success: "boolean", accounts: "array", cards: "array", total_accounts: "number", total_cards: "number" },
+          exampleRequest: {
+            user_id: "12345678-1234-1234-1234-123456789012"
+          },
+          exampleResponse: {
+            success: true,
+            accounts: [
+              {
+                id: "acc-001",
+                name: "Banco Inter",
+                type: "checking",
+                bank_name: "Banco Inter",
+                account_number: "12345-6",
+                balance: 1000.00,
+                is_default: true,
+                color: "#FBBF24"
+              }
+            ],
+            cards: [
+              {
+                id: "card-001",
+                name: "Nubank",
+                last_four_digits: "1234",
+                is_default: true,
+                color: "#A78BFA"
+              }
+            ],
+            total_accounts: 1,
+            total_cards: 1
           }
         }
       ]

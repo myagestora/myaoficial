@@ -346,6 +346,36 @@ serve(async (req) => {
             query = query.gte('date', dateRange.start).lte('date', dateRange.end);
           }
 
+          // NOVO: Inserir transação se requestData tiver campos obrigatórios
+          if (requestData.title && requestData.amount && requestData.type && requestData.category_id && requestData.date) {
+            const insertData: any = {
+              user_id: userId,
+              title: requestData.title,
+              amount: requestData.amount,
+              type: requestData.type,
+              category_id: requestData.category_id,
+              date: requestData.date,
+              description: requestData.description || '',
+            };
+            if (requestData.account_id) insertData.account_id = requestData.account_id;
+            if (requestData.card_id) insertData.card_id = requestData.card_id;
+            const { data: newTransaction, error: insertError } = await supabase
+              .from('transactions')
+              .insert(insertData)
+              .select()
+              .single();
+            if (insertError) {
+              return new Response(JSON.stringify({ error: 'Failed to create transaction', details: insertError.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              });
+            }
+            return new Response(JSON.stringify({ transaction: newTransaction }), {
+              status: 201,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
           const { data: transactions, error: transactionError } = await query;
           
           if (transactionError) {

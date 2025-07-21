@@ -14,6 +14,8 @@ interface QuickTransactionRequest {
   category_id: string;
   description?: string;
   date?: string;
+  account_id?: string; // NOVO
+  card_id?: string;    // NOVO
 }
 
 serve(async (req) => {
@@ -73,7 +75,9 @@ serve(async (req) => {
       type, 
       category_id, 
       description, 
-      date
+      date,
+      account_id, // NOVO
+      card_id     // NOVO
     }: QuickTransactionRequest = await req.json()
 
     // Validar dados obrigatórios
@@ -134,7 +138,9 @@ serve(async (req) => {
         amount: Math.abs(amount),
         type,
         date: transactionDate,
-        category_id: category_id
+        category_id: category_id,
+        account_id, // NOVO
+        card_id     // NOVO
       })
       .select(`
         id, title, description, amount, type, date,
