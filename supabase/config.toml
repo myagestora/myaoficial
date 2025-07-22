@@ -69,3 +69,12 @@ verify_jwt = false
 
 [auth]
 enabled = true
+
+[functions.list-accounts]
+verify_jwt = false
+
+[functions.activate-account]
+verify_jwt = false
+
+[functions.suspend-account]
+verify_jwt = false
