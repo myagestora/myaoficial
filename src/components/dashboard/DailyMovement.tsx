@@ -14,7 +14,7 @@ interface DailyMovementProps {
   dateRange: DateRange | undefined;
 }
 
-export const DailyMovement = ({ dateRange }: DailyMovementProps) => {
+export const DailyMovement = ({ dateRange, hideTitle }: DailyMovementProps & { hideTitle?: boolean }) => {
   const { user } = useAuth();
 
   const { data: dailyData, isLoading } = useQuery({
@@ -81,9 +81,11 @@ export const DailyMovement = ({ dateRange }: DailyMovementProps) => {
   if (isLoading) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Movimentação Diária (Entradas e Saídas)</CardTitle>
-        </CardHeader>
+        {!hideTitle && (
+          <CardHeader>
+            <CardTitle>Movimentação Diária (Entradas e Saídas)</CardTitle>
+          </CardHeader>
+        )}
         <CardContent>
           <div className="animate-pulse">
             <div className="h-[300px] bg-gray-200 rounded"></div>
@@ -95,11 +97,13 @@ export const DailyMovement = ({ dateRange }: DailyMovementProps) => {
 
   return (
     <Card className="w-full touch-manipulation">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base md:text-lg font-semibold truncate">
-          Movimentação Diária
-        </CardTitle>
-      </CardHeader>
+      {!hideTitle && (
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base md:text-lg font-semibold truncate">
+            Movimentação Diária
+          </CardTitle>
+        </CardHeader>
+      )}
       <CardContent className="p-0 pt-3">
         <ResponsiveContainer width="100%" height={250}>
           <BarChart data={dailyData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>

@@ -26,7 +26,7 @@ All colors MUST be HSL.
 }
 
 :root {
-  --background: 0 0% 100%;
+  --background: 0 0% 98%; /* #f9f9fb em HSL */
   --foreground: 222.2 84% 4.9%;
 
     --card: 0 0% 100%;
@@ -125,6 +125,14 @@ All colors MUST be HSL.
     -webkit-text-size-adjust: 100%;
     -moz-text-size-adjust: 100%;
     text-size-adjust: 100%;
+  }
+
+  body, html, main, .container, .max-w-7xl {
+    background-color: #f9f9fb !important;
+  }
+
+  .bg-background {
+    background-color: #f9f9fb !important;
   }
 
   /* Mobile-first responsive improvements */

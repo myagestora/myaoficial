@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { Plus, CreditCard, Edit, Trash2, DollarSign } from 'lucide-react';
+import { Plus, Edit, Trash2, DollarSign, CreditCard, Bank } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -9,9 +8,8 @@ import { useBankAccounts, type BankAccount } from '@/hooks/useBankAccounts';
 import { BankAccountForm } from '@/components/accounts/BankAccountForm';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useToast } from '@/components/ui/use-toast';
-import { ModernCard } from '@/components/ui/card';
 
-export default function BankAccounts() {
+export default function MobileBankAccounts() {
   const { bankAccounts, isLoading, deleteBankAccount } = useBankAccounts();
   const { transactions } = useTransactions();
   const [editingAccount, setEditingAccount] = useState<BankAccount | null>(null);
@@ -73,62 +71,69 @@ export default function BankAccounts() {
   };
 
   if (isLoading) {
-    return <div className="p-6">Carregando contas...</div>;
+    return <div className="p-4">Carregando contas...</div>;
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      {/* Header padrão */}
-      <header className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight mb-2">Contas Bancárias</h1>
-          <p className="text-base md:text-lg text-muted-foreground">Gerencie suas contas bancárias</p>
+    <div className="space-y-5 p-3 bg-[#F3F6FB] min-h-screen">
+      {/* Header da seção */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center bg-blue-100">
+            <Bank className="w-5 h-5 text-blue-600" />
+          </div>
+          <h2 className="text-lg font-bold text-gray-900">Minhas contas</h2>
         </div>
         <Dialog open={formOpen} onOpenChange={setFormOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Nova Conta
+            <Button size="icon" className="bg-blue-600 text-white hover:bg-blue-700 shadow-md">
+              <Plus className="w-5 h-5" />
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>
-                {editingAccount ? 'Editar Conta' : 'Nova Conta Bancária'}
-              </DialogTitle>
+              <DialogTitle>{editingAccount ? 'Editar Conta' : 'Nova Conta Bancária'}</DialogTitle>
             </DialogHeader>
-            <BankAccountForm
-              account={editingAccount}
-              onSuccess={handleCloseForm}
-            />
+            <BankAccountForm account={editingAccount} onSuccess={handleCloseForm} />
           </DialogContent>
         </Dialog>
-      </header>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      </div>
+      <div className="space-y-4">
         {bankAccounts.map((account) => (
-          <ModernCard
-            key={account.id}
-            icon={<DollarSign className="w-6 h-6" />}
-            iconBgColor={account.color}
-            title={account.name}
-            value={formatBalance(getAccountBalance(account.id, account.balance))}
-            valueColor="text-blue-700"
-            description={getAccountTypeLabel(account.type)}
-            className="relative"
-          >
-            <div className="absolute top-4 right-4 flex gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleEdit(account)}
-              >
-                <Edit className="w-4 h-4" />
+          <div key={account.id} className="bg-white rounded-2xl shadow-lg p-4 flex items-center gap-4 relative">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: account.color }}>
+              <DollarSign className="w-7 h-7 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-bold text-base text-gray-900 truncate">{account.name}</span>
+                {account.is_default && <Badge variant="secondary">Padrão</Badge>}
+              </div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-gray-400">{getAccountTypeLabel(account.type)}</span>
+                <span className="font-bold text-blue-700 text-lg">{formatBalance(getAccountBalance(account.id, account.balance))}</span>
+              </div>
+              {account.bank_name && (
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-gray-400">Banco</span>
+                  <span className="text-xs text-gray-700">{account.bank_name}</span>
+                </div>
+              )}
+              {account.account_number && (
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-gray-400">Número</span>
+                  <span className="text-xs text-gray-700">{account.account_number}</span>
+                </div>
+              )}
+            </div>
+            <div className="absolute top-3 right-3 flex gap-1">
+              <Button variant="ghost" size="icon" onClick={() => handleEdit(account)}>
+                <Edit className="w-5 h-5" />
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <Trash2 className="w-4 h-4" />
+                  <Button variant="ghost" size="icon">
+                    <Trash2 className="w-5 h-5" />
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
@@ -149,54 +154,30 @@ export default function BankAccounts() {
                 </AlertDialogContent>
               </AlertDialog>
             </div>
-            {account.is_default && (
-              <Badge variant="secondary" className="absolute top-4 left-16">Padrão</Badge>
-            )}
-            <div className="flex flex-col gap-1 mt-2">
-              {account.bank_name && (
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Banco</span>
-                  <span className="text-foreground">{account.bank_name}</span>
-                </div>
-              )}
-              {account.account_number && (
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Número</span>
-                  <span className="text-foreground">{account.account_number}</span>
-                </div>
-              )}
-            </div>
-          </ModernCard>
+          </div>
         ))}
-
         {bankAccounts.length === 0 && (
-          <div className="col-span-full">
-            <Card className="p-12 text-center">
-              <CreditCard className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">
-                Nenhuma conta cadastrada
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                Adicione sua primeira conta bancária para começar a organizar suas finanças.
-              </p>
-              <Dialog open={formOpen} onOpenChange={setFormOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Criar primeira conta
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Nova Conta Bancária</DialogTitle>
-                  </DialogHeader>
-                  <BankAccountForm onSuccess={handleCloseForm} />
-                </DialogContent>
-              </Dialog>
-            </Card>
+          <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+            <CreditCard className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
+            <h3 className="text-base font-semibold text-foreground mb-1">Nenhuma conta cadastrada</h3>
+            <p className="text-xs text-muted-foreground mb-2">Adicione sua primeira conta bancária para começar a organizar suas finanças.</p>
+            <Dialog open={formOpen} onOpenChange={setFormOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="bg-blue-600 text-white hover:bg-blue-700 shadow-md">
+                  <Plus className="w-4 h-4 mr-1" />
+                  Criar primeira conta
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Nova Conta Bancária</DialogTitle>
+                </DialogHeader>
+                <BankAccountForm onSuccess={handleCloseForm} />
+              </DialogContent>
+            </Dialog>
           </div>
         )}
       </div>
     </div>
   );
-}
+} 

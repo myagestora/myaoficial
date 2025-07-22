@@ -40,3 +40,55 @@
 .read-the-docs {
   color: #888;
 }
+
+body {
+  font-family: 'Inter', 'Nunito', 'Roboto', Arial, sans-serif;
+  background-color: #F3F6FB;
+  color: #222;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+html {
+  font-size: 16px;
+}
+
+html, body, main, .container, .max-w-7xl {
+  background-color: #f9f9fb !important;
+}
+
+.container, .max-w-7xl {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Inter', 'Nunito', 'Roboto', Arial, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.card, .bg-card, .bg-white {
+  background: #fff !important;
+  border-radius: 1.25rem !important;
+  box-shadow: 0 2px 16px 0 rgba(16, 30, 54, 0.06);
+}
+
+.text-muted-foreground {
+  color: #6B7280 !important;
+}
+
+.text-foreground {
+  color: #222 !important;
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 15px;
+  }
+  .container, .max-w-7xl {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}

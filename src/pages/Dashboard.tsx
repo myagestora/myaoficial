@@ -12,6 +12,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { DateRange } from 'react-day-picker';
 import { getCurrentDateForInput } from '@/utils/timezoneUtils';
+import { ModernCard } from '@/components/ui/card';
+import { useBankAccounts } from '@/hooks/useBankAccounts';
+import { useCreditCards } from '@/hooks/useCreditCards';
+import { CreditCard, Wallet } from 'lucide-react';
+import { useTransactions } from '@/hooks/useTransactions';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -202,6 +207,45 @@ const Dashboard = () => {
     enabled: !!user?.id
   });
 
+  const { bankAccounts, isLoading: loadingAccounts } = useBankAccounts();
+  const { creditCards, isLoading: loadingCards } = useCreditCards();
+  const { transactions, isLoading: loadingTransactions } = useTransactions();
+
+  // Função para saldo real da conta
+  const getAccountBalance = (accountId, initialBalance) => {
+    if (!transactions) return initialBalance;
+    let saldo = initialBalance;
+    transactions.forEach((t) => {
+      if ((t as any).account_id === accountId) {
+        if (t.type === 'income') saldo += t.amount;
+        if (t.type === 'expense') saldo -= t.amount;
+      }
+    });
+    return saldo;
+  };
+
+  // Função para saldo real do cartão
+  const getCardBalance = (cardId, initialBalance) => {
+    if (!transactions) return initialBalance;
+    let saldo = 0;
+    transactions.forEach((t) => {
+      if ((t as any).card_id === cardId && t.type === 'expense') {
+        saldo += t.amount;
+      }
+    });
+    return saldo;
+  };
+
+  // Função para exibir tipo de conta em português
+  const getAccountTypeLabel = (type) => {
+    const types = {
+      checking: 'Conta Corrente',
+      savings: 'Poupança',
+      investment: 'Investimento',
+    };
+    return types[type] || type;
+  };
+
   if (statsLoading || goalsLoading) {
     return (
       <div className="p-6 space-y-6">
@@ -232,118 +276,189 @@ const Dashboard = () => {
   const predictedBalance = currentStats.totalIncome - currentStats.totalExpenses;
 
   return (
-    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
-      {/* Header */}
-      <div className="flex flex-col space-y-4 lg:flex-row lg:justify-between lg:items-center lg:space-y-0 gap-4">
-        <div>
-          <h1 className="text-xl md:text-3xl font-bold text-foreground leading-tight">Dashboard</h1>
-          <p className="text-sm md:text-base text-muted-foreground">Bem-vindo ao seu controle financeiro</p>
-        </div>
-        <div className="w-full md:w-auto">
-          <PeriodFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
-        </div>
-      </div>
+    <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
+      {/* Header padrão */}
+      <header className="mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight mb-2">Dashboard</h1>
+        <p className="text-base md:text-lg text-muted-foreground">Bem-vindo ao seu controle financeiro</p>
+      </header>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
         {/* Receitas */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium leading-tight">Receitas</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg md:text-2xl font-bold text-green-600 leading-tight">
-              R$ {currentStats.totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-            <p className="text-xs text-muted-foreground leading-tight">Total de receitas</p>
-          </CardContent>
-        </Card>
-
+        <ModernCard
+          icon={<TrendingUp className="h-6 w-6 text-green-600" />}
+          iconBgColor="#DCFCE7"
+          title="Receitas"
+          value={`R$ ${currentStats.totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+          valueColor="text-green-600"
+          description="Total de receitas"
+        />
         {/* Despesas Pagas */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium leading-tight">Despesas Pagas</CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg md:text-2xl font-bold text-red-600 leading-tight">
-              R$ {currentStats.paidExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-            <p className="text-xs text-muted-foreground leading-tight">Despesas realizadas</p>
-          </CardContent>
-        </Card>
-
+        <ModernCard
+          icon={<TrendingDown className="h-6 w-6 text-red-600" />}
+          iconBgColor="#FEE2E2"
+          title="Despesas Pagas"
+          value={`R$ ${currentStats.paidExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+          valueColor="text-red-600"
+          description="Despesas realizadas"
+        />
         {/* A Pagar */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium leading-tight">A Pagar</CardTitle>
-            <TrendingDown className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg md:text-2xl font-bold text-orange-600 leading-tight">
-              R$ {currentStats.pendingExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-            <p className="text-xs text-muted-foreground leading-tight">Despesas pendentes</p>
-          </CardContent>
-        </Card>
-
+        <ModernCard
+          icon={<TrendingDown className="h-6 w-6 text-orange-600" />}
+          iconBgColor="#FFEDD5"
+          title="A Pagar"
+          value={`R$ ${currentStats.pendingExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+          valueColor="text-orange-600"
+          description="Despesas pendentes"
+        />
         {/* Saldo Atual */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium leading-tight">Saldo</CardTitle>
-            <DollarSign className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-lg md:text-2xl font-bold leading-tight ${
-              currentStats.balance >= 0 ? 'text-blue-600' : 'text-red-600'
-            }`}>
-              R$ {currentStats.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-            <p className="text-xs text-muted-foreground leading-tight">Saldo atual</p>
-          </CardContent>
-        </Card>
-
+        <ModernCard
+          icon={<DollarSign className="h-6 w-6 text-blue-600" />}
+          iconBgColor="#DBEAFE"
+          title="Saldo"
+          value={`R$ ${currentStats.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+          valueColor={currentStats.balance >= 0 ? 'text-blue-600' : 'text-red-600'}
+          description="Saldo atual"
+        />
         {/* Saldo Previsto */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium leading-tight">Saldo Previsto</CardTitle>
-            <DollarSign className="h-4 w-4 text-cyan-600" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-lg md:text-2xl font-bold leading-tight ${
-              predictedBalance >= 0 ? 'text-cyan-600' : 'text-red-600'
-            }`}>
-              R$ {predictedBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-            <p className="text-xs text-muted-foreground leading-tight">Saldo após todas as despesas do período</p>
-          </CardContent>
-        </Card>
-
+        <ModernCard
+          icon={<DollarSign className="h-6 w-6 text-cyan-600" />}
+          iconBgColor="#CFFAFE"
+          title="Saldo Previsto"
+          value={`R$ ${predictedBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+          valueColor={predictedBalance >= 0 ? 'text-cyan-600' : 'text-red-600'}
+          description="Saldo após todas as despesas do período"
+        />
         {/* Metas */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium leading-tight">Metas</CardTitle>
-            <Target className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg md:text-2xl font-bold text-purple-600 leading-tight">{currentGoalsProgress}%</div>
-            <p className="text-xs text-muted-foreground leading-tight">Progresso das metas</p>
-          </CardContent>
-        </Card>
+        <ModernCard
+          icon={<Target className="h-6 w-6 text-purple-600" />}
+          iconBgColor="#EDE9FE"
+          title="Metas"
+          value={`${currentGoalsProgress}%`}
+          valueColor="text-purple-600"
+          description="Progresso das metas"
+        />
+      </div>
+
+      {/* Seção Cartões */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold mb-3 flex items-center gap-2"><CreditCard className="w-5 h-5 text-purple-600" /> Cartões</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {loadingCards || loadingTransactions ? (
+            <div>Carregando cartões...</div>
+          ) : creditCards.length === 0 ? (
+            <div>Nenhum cartão cadastrado</div>
+          ) : creditCards.map((card) => {
+            const saldoAtual = getCardBalance(card.id, card.current_balance);
+            const utilizacao = card.credit_limit ? (saldoAtual / card.credit_limit) * 100 : 0;
+            return (
+              <div key={card.id} className="bg-white rounded-2xl shadow p-4 flex items-center gap-4 relative border border-gray-100">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: card.color }}>
+                  <CreditCard className="w-7 h-7 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-bold text-base text-gray-900 truncate">{card.name}</span>
+                    {card.is_default && <span className="text-xs bg-gray-100 text-gray-600 rounded px-2 py-0.5 ml-2">Padrão</span>}
+                  </div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-gray-400">Limite</span>
+                    <span className="font-bold text-purple-700">{card.credit_limit?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                  </div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-gray-400">Utilização</span>
+                    <span className="text-xs text-gray-700">{utilizacao.toFixed(1)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
+                    <div className="bg-purple-500 h-2 rounded-full transition-all" style={{ width: `${utilizacao}%` }} />
+                  </div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-gray-400">Saldo Atual</span>
+                    <span className="font-bold text-blue-700">{saldoAtual.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                  </div>
+                  {card.last_four_digits && (
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-gray-400">Final</span>
+                      <span className="text-xs text-gray-700">**** {card.last_four_digits}</span>
+                    </div>
+                  )}
+                  {card.due_date && (
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-gray-400">Vencimento</span>
+                      <span className="text-xs text-gray-700">Dia {card.due_date}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Seção Contas */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold mb-3 flex items-center gap-2"><Wallet className="w-5 h-5 text-blue-600" /> Contas</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {loadingAccounts || loadingTransactions ? (
+            <div>Carregando contas...</div>
+          ) : bankAccounts.length === 0 ? (
+            <div>Nenhuma conta cadastrada</div>
+          ) : bankAccounts.map((account) => (
+            <div key={account.id} className="bg-white rounded-2xl shadow p-4 flex items-center gap-4 relative border border-gray-100">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: account.color }}>
+                <Wallet className="w-7 h-7 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-bold text-base text-gray-900 truncate">{account.name}</span>
+                  {account.is_default && <span className="text-xs bg-gray-100 text-gray-600 rounded px-2 py-0.5 ml-2">Padrão</span>}
+                </div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-gray-400">Tipo</span>
+                  <span className="text-xs">{getAccountTypeLabel(account.type)}</span>
+                </div>
+                {account.bank_name && (
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-gray-400">Banco</span>
+                    <span className="text-xs text-gray-700">{account.bank_name}</span>
+                  </div>
+                )}
+                {account.account_number && (
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-gray-400">Número</span>
+                    <span className="text-xs text-gray-700">{account.account_number}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-gray-400">Saldo</span>
+                  <span className="font-bold text-blue-700">{getAccountBalance(account.id, account.balance).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <MonthlyOverview dateRange={dateRange} />
-        <ExpenseChart dateRange={dateRange} />
+        <ModernCard className="h-full">
+          <MonthlyOverview dateRange={dateRange} />
+        </ModernCard>
+        <ModernCard className="h-full">
+          <ExpenseChart dateRange={dateRange} />
+        </ModernCard>
       </div>
 
       {/* Daily Movement */}
-      <DailyMovement dateRange={dateRange} />
+      <ModernCard className="mt-6">
+        <DailyMovement dateRange={dateRange} />
+      </ModernCard>
 
       {/* Recent Transactions */}
-      <RecentTransactions dateRange={dateRange} />
+      <ModernCard className="mt-6">
+        <RecentTransactions dateRange={dateRange} />
+      </ModernCard>
     </div>
   );
 };

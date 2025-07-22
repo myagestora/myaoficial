@@ -11,6 +11,8 @@ import { exportToCSV, exportToPDF, ReportData, TransactionData } from '@/utils/e
 import { toast } from 'sonner';
 import { GoalsSection } from '@/components/reports/GoalsSection';
 import { PeriodFilter } from '@/components/dashboard/PeriodFilter';
+import { ModernCard } from '@/components/ui/card';
+import { TrendingUp, TrendingDown, DollarSign, PiggyBank } from 'lucide-react';
 
 const Reports = () => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -168,12 +170,12 @@ const Reports = () => {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      {/* Header padrão */}
+      <header className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Relatórios</h1>
-          <p className="text-gray-600 dark:text-gray-400">Análise detalhada das suas finanças</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight mb-2">Relatórios</h1>
+          <p className="text-base md:text-lg text-muted-foreground">Análise detalhada das suas finanças</p>
         </div>
         <div className="flex space-x-2">
           <Button variant="outline" onClick={handleExportCSV} className="md:px-4 px-2">
@@ -185,7 +187,7 @@ const Reports = () => {
             <span className="hidden md:inline">Exportar PDF</span>
           </Button>
         </div>
-      </div>
+      </header>
 
       {/* Filters */}
       <Card>
@@ -199,131 +201,101 @@ const Reports = () => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              R$ {transactionData?.totalIncome?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
-            </div>
-            <p className="text-xs text-muted-foreground">No período selecionado</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Despesa Total</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              R$ {transactionData?.totalExpenses?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
-            </div>
-            <p className="text-xs text-muted-foreground">No período selecionado</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Economia</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${(transactionData?.balance || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              R$ {transactionData?.balance?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
-            </div>
-            <p className="text-xs text-muted-foreground">No período selecionado</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Taxa de Poupança</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
-              {transactionData?.savingsRate?.toFixed(1) || '0,0'}%
-            </div>
-            <p className="text-xs text-muted-foreground">No período selecionado</p>
-          </CardContent>
-        </Card>
+        <ModernCard
+          icon={<TrendingUp className="h-6 w-6 text-green-600" />}
+          iconBgColor="#DCFCE7"
+          title="Receita Total"
+          value={`R$ ${transactionData?.totalIncome?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`}
+          valueColor="text-green-600"
+          description="No período selecionado"
+        />
+        <ModernCard
+          icon={<TrendingDown className="h-6 w-6 text-red-600" />}
+          iconBgColor="#FEE2E2"
+          title="Despesa Total"
+          value={`R$ ${transactionData?.totalExpenses?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`}
+          valueColor="text-red-600"
+          description="No período selecionado"
+        />
+        <ModernCard
+          icon={<DollarSign className={`h-6 w-6 ${(transactionData?.balance || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`} />}
+          iconBgColor="#E0F2FE"
+          title="Economia"
+          value={`R$ ${transactionData?.balance?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`}
+          valueColor={(transactionData?.balance || 0) >= 0 ? 'text-green-600' : 'text-red-600'}
+          description="No período selecionado"
+        />
+        <ModernCard
+          icon={<PiggyBank className="h-6 w-6 text-purple-600" />}
+          iconBgColor="#EDE9FE"
+          title="Taxa de Poupança"
+          value={`${transactionData?.savingsRate?.toFixed(1) || '0,0'}%`}
+          valueColor="text-purple-600"
+          description="No período selecionado"
+        />
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Monthly Overview */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Visão Mensal - Receitas vs Despesas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={transactionData?.monthlyData || []}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
-                <Bar dataKey="income" fill="#10b981" name="Receitas" />
-                <Bar dataKey="expenses" fill="#ef4444" name="Despesas" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Category Breakdown */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Distribuição de Gastos por Categoria</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={transactionData?.categoryData || []}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                >
-                  {(transactionData?.categoryData || []).map((entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Goals Section */}
-      <GoalsSection dateRange={dateRange} />
-
-      {/* Trend Analysis */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Tendência de Economia</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <ModernCard className="h-full">
+          <div className="mb-2 font-semibold text-lg">Visão Mensal - Receitas vs Despesas</div>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={transactionData?.trendData || []}>
+            <BarChart data={transactionData?.monthlyData || []}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
               <Tooltip formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
-              <Line 
-                type="monotone" 
-                dataKey="value" 
-                stroke="#8884d8" 
-                strokeWidth={3}
-                dot={{ fill: '#8884d8', strokeWidth: 2, r: 6 }}
-              />
-            </LineChart>
+              <Bar dataKey="income" fill="#10b981" name="Receitas" />
+              <Bar dataKey="expenses" fill="#ef4444" name="Despesas" />
+            </BarChart>
           </ResponsiveContainer>
-        </CardContent>
-      </Card>
+        </ModernCard>
+        <ModernCard className="h-full">
+          <div className="mb-2 font-semibold text-lg">Distribuição de Gastos por Categoria</div>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={transactionData?.categoryData || []}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                outerRadius={100}
+                fill="#8884d8"
+                dataKey="value"
+                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+              >
+                {(transactionData?.categoryData || []).map((entry: any, index: number) => (
+                  <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
+            </PieChart>
+          </ResponsiveContainer>
+        </ModernCard>
+      </div>
+
+      {/* Trend Analysis */}
+      <ModernCard className="mt-6">
+        <div className="mb-2 font-semibold text-lg">Tendência de Economia</div>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={transactionData?.trendData || []}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="month" />
+            <YAxis />
+            <Tooltip formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
+            <Line 
+              type="monotone" 
+              dataKey="value" 
+              stroke="#8884d8" 
+              strokeWidth={3}
+              dot={{ fill: '#8884d8', strokeWidth: 2, r: 6 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </ModernCard>
+
+      {/* Goals Section */}
+      <GoalsSection dateRange={dateRange} />
     </div>
   );
 };

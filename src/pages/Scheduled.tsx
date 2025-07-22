@@ -10,6 +10,9 @@ import { ScheduledFilters } from '@/components/scheduled/ScheduledFilters';
 import { ScheduledTransactionsList } from '@/components/scheduled/ScheduledTransactionsList';
 import { useScheduledTransactions } from '@/hooks/useScheduledTransactions';
 import { useScheduledFilters } from '@/hooks/useScheduledFilters';
+import { ModernCard } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 
 const Scheduled = () => {
   const { user } = useAuth();
@@ -148,31 +151,45 @@ const Scheduled = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <ScheduledHeader onNewSchedule={() => setIsFormOpen(true)} />
-      
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      {/* Header padrão */}
+      <header className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight mb-2">Agendamentos</h1>
+          <p className="text-base md:text-lg text-muted-foreground">Gerencie suas transações recorrentes</p>
+        </div>
+        <Button onClick={() => setIsFormOpen(true)} className="min-h-[44px] md:w-auto w-auto md:px-4 px-3 text-base font-medium" size="lg">
+          <Plus className="h-5 w-5 md:mr-2" />
+          <span className="hidden md:inline">Novo Agendamento</span>
+        </Button>
+      </header>
 
-      <ScheduledFilters
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        filters={filters}
-        onFiltersChange={setFilters}
-        categories={categories}
-      />
+      {/* Filtros e lista */}
+      <ModernCard className="mb-4">
+        <ScheduledFilters
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          filters={filters}
+          onFiltersChange={setFilters}
+          categories={categories}
+        />
+      </ModernCard>
 
-      <ScheduledTransactionsList
-        transactions={filteredTransactions}
-        onToggleStatus={handleToggleStatus}
-        onDelete={handleDelete}
-        onEdit={handleEdit}
-        hasFiltersOrSearch={hasFiltersOrSearch}
-        deletingId={deletingId}
-        recurringDeletingId={recurringDeletingId}
-        onConfirmDelete={handleConfirmDelete}
-        onDeleteSingle={handleDeleteSingle}
-        onDeleteSeries={handleDeleteSeries}
-        onCancelDelete={handleCancelDelete}
-      />
+      <ModernCard>
+        <ScheduledTransactionsList
+          transactions={filteredTransactions}
+          onToggleStatus={handleToggleStatus}
+          onDelete={handleDelete}
+          onEdit={handleEdit}
+          hasFiltersOrSearch={hasFiltersOrSearch}
+          deletingId={deletingId}
+          recurringDeletingId={recurringDeletingId}
+          onConfirmDelete={handleConfirmDelete}
+          onDeleteSingle={handleDeleteSingle}
+          onDeleteSeries={handleDeleteSeries}
+          onCancelDelete={handleCancelDelete}
+        />
+      </ModernCard>
 
       <ScheduledTransactionForm 
         isOpen={isFormOpen} 

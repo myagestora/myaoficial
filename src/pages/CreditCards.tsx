@@ -9,6 +9,7 @@ import { useCreditCards, type CreditCard } from '@/hooks/useCreditCards';
 import { CreditCardForm } from '@/components/cards/CreditCardForm';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useToast } from '@/components/ui/use-toast';
+import { ModernCard } from '@/components/ui/card';
 
 export default function CreditCards() {
   const { creditCards, isLoading, deleteCreditCard } = useCreditCards();
@@ -71,11 +72,12 @@ export default function CreditCards() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      <div className="flex justify-between items-center mb-6">
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      {/* Header padrão */}
+      <header className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Cartões de Crédito</h1>
-          <p className="text-muted-foreground">Gerencie seus cartões de crédito</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight mb-2">Cartões de Crédito</h1>
+          <p className="text-base md:text-lg text-muted-foreground">Gerencie seus cartões de crédito</p>
         </div>
         <Dialog open={formOpen} onOpenChange={setFormOpen}>
           <DialogTrigger asChild>
@@ -96,124 +98,95 @@ export default function CreditCards() {
             />
           </DialogContent>
         </Dialog>
-      </div>
+      </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {creditCards.map((card) => {
           const saldoAtual = getCardBalance(card.id, card.current_balance);
           const utilizacao = card.credit_limit ? (saldoAtual / card.credit_limit) * 100 : 0;
           return (
-            <Card key={card.id} className="relative">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: card.color }}
-                    />
-                    <CardTitle className="text-lg">{card.name}</CardTitle>
-                    {card.is_default && (
-                      <Badge variant="secondary">Padrão</Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(card)}
-                    >
-                      <Edit className="w-4 h-4" />
+            <ModernCard
+              key={card.id}
+              icon={<CreditCardIcon className="w-6 h-6" />}
+              iconBgColor={card.color}
+              title={card.name}
+              value={formatCurrency(saldoAtual)}
+              valueColor="text-blue-700"
+              description={card.bank_name || ''}
+              className="relative"
+            >
+              <div className="absolute top-4 right-4 flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleEdit(card)}
+                >
+                  <Edit className="w-4 h-4" />
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <Trash2 className="w-4 h-4" />
                     </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Excluir cartão</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Tem certeza que deseja excluir este cartão? Esta ação não pode ser desfeita.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => deleteCreditCard.mutate(card.id, { onError: handleDeleteError })}
-                          >
-                            Excluir
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir cartão</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Tem certeza que deseja excluir este cartão? Esta ação não pode ser desfeita.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => deleteCreditCard.mutate(card.id, { onError: handleDeleteError })}
+                      >
+                        Excluir
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+              {card.is_default && (
+                <Badge variant="secondary" className="absolute top-4 left-16">Padrão</Badge>
+              )}
+              <div className="flex flex-col gap-1 mt-2">
+                {card.credit_limit && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Limite</span>
+                    <span className="text-foreground">{formatCurrency(card.credit_limit)}</span>
                   </div>
+                )}
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Utilização</span>
+                  <span className="text-foreground">{utilizacao.toFixed(1)}%</span>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Saldo Atual</span>
-                    <span className="text-lg font-semibold text-foreground">
-                      {formatCurrency(saldoAtual)}
-                    </span>
+                <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
+                  <div
+                    className="bg-primary h-2 rounded-full transition-all"
+                    style={{
+                      width: `${utilizacao}%`,
+                      backgroundColor: utilizacao > 80 ? '#ef4444' : card.color
+                    }}
+                  />
+                </div>
+                {card.last_four_digits && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Final</span>
+                    <span className="text-foreground">**** {card.last_four_digits}</span>
                   </div>
-
-                  {card.credit_limit && (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Limite</span>
-                        <span className="text-sm text-foreground">
-                          {formatCurrency(card.credit_limit)}
-                        </span>
-                      </div>
-
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Utilização</span>
-                          <span className="text-sm text-foreground">
-                            {utilizacao.toFixed(1)}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-primary h-2 rounded-full transition-all"
-                            style={{
-                              width: `${utilizacao}%`,
-                              backgroundColor: utilizacao > 80 ? '#ef4444' : card.color
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {card.bank_name && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Banco</span>
-                      <span className="text-sm text-foreground">{card.bank_name}</span>
+                )}
+                {card.due_date && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Vencimento</span>
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3 text-muted-foreground" />
+                      <span className="text-foreground">Dia {card.due_date}</span>
                     </div>
-                  )}
-
-                  {card.last_four_digits && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Final</span>
-                      <span className="text-sm text-foreground">**** {card.last_four_digits}</span>
-                    </div>
-                  )}
-
-                  {card.due_date && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Vencimento</span>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-muted-foreground" />
-                        <span className="text-sm text-foreground">Dia {card.due_date}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                  </div>
+                )}
+              </div>
+            </ModernCard>
           );
         })}
 

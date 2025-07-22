@@ -11,7 +11,7 @@ interface MonthlyOverviewProps {
   dateRange: DateRange | undefined;
 }
 
-export const MonthlyOverview = ({ dateRange }: MonthlyOverviewProps) => {
+export const MonthlyOverview = ({ dateRange, hideTitle }: MonthlyOverviewProps & { hideTitle?: boolean }) => {
   const { user } = useAuth();
 
   const { data: monthlyData, isLoading } = useQuery({
@@ -94,9 +94,11 @@ export const MonthlyOverview = ({ dateRange }: MonthlyOverviewProps) => {
   if (isLoading) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Evolução do Saldo no Período</CardTitle>
-        </CardHeader>
+        {!hideTitle && (
+          <CardHeader>
+            <CardTitle>Evolução do Saldo no Período</CardTitle>
+          </CardHeader>
+        )}
         <CardContent>
           <div className="animate-pulse">
             <div className="h-[300px] bg-gray-200 rounded"></div>
@@ -108,9 +110,11 @@ export const MonthlyOverview = ({ dateRange }: MonthlyOverviewProps) => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Evolução do Saldo no Período</CardTitle>
-      </CardHeader>
+      {!hideTitle && (
+        <CardHeader>
+          <CardTitle>Evolução do Saldo no Período</CardTitle>
+        </CardHeader>
+      )}
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={monthlyData}>

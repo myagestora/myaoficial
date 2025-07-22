@@ -12,7 +12,7 @@ interface ExpenseChartProps {
   dateRange: DateRange | undefined;
 }
 
-export const ExpenseChart = ({ dateRange }: ExpenseChartProps) => {
+export const ExpenseChart = ({ dateRange, hideTitle }: ExpenseChartProps & { hideTitle?: boolean }) => {
   const { user } = useAuth();
 
   const { data: expenseData, isLoading } = useQuery({
@@ -114,9 +114,11 @@ export const ExpenseChart = ({ dateRange }: ExpenseChartProps) => {
   if (isLoading) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Despesas (Pagas e A Pagar)</CardTitle>
-        </CardHeader>
+        {!hideTitle && (
+          <CardHeader>
+            <CardTitle>Despesas (Pagas e A Pagar)</CardTitle>
+          </CardHeader>
+        )}
         <CardContent>
           <div className="animate-pulse">
             <div className="h-[300px] bg-gray-200 rounded"></div>
@@ -129,9 +131,11 @@ export const ExpenseChart = ({ dateRange }: ExpenseChartProps) => {
   if (!expenseData || expenseData.length === 0) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Despesas (Pagas e A Pagar)</CardTitle>
-        </CardHeader>
+        {!hideTitle && (
+          <CardHeader>
+            <CardTitle>Despesas (Pagas e A Pagar)</CardTitle>
+          </CardHeader>
+        )}
         <CardContent>
           <div className="flex items-center justify-center h-[300px]">
             <p className="text-gray-500">Nenhuma despesa encontrada</p>
@@ -143,9 +147,11 @@ export const ExpenseChart = ({ dateRange }: ExpenseChartProps) => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Despesas (Pagas e A Pagar)</CardTitle>
-      </CardHeader>
+      {!hideTitle && (
+        <CardHeader>
+          <CardTitle>Despesas (Pagas e A Pagar)</CardTitle>
+        </CardHeader>
+      )}
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>

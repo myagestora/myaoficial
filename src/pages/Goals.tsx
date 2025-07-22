@@ -18,6 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { ModernCard } from '@/components/ui/card';
 
 const Goals = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -126,62 +127,49 @@ const Goals = () => {
   const totalSaved = savingsGoals.reduce((acc, goal) => acc + goal.current_amount, 0);
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      {/* Header padrão */}
+      <header className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Metas Financeiras</h1>
-          <p className="text-gray-600 dark:text-gray-400">Defina e acompanhe seus objetivos financeiros</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight mb-2">Metas Financeiras</h1>
+          <p className="text-base md:text-lg text-muted-foreground">Defina e acompanhe seus objetivos financeiros</p>
         </div>
         <Button onClick={() => setIsFormOpen(true)} className="bg-primary hover:bg-primary/90 min-h-[44px] md:px-4 px-3">
           <Plus className="h-5 w-5 md:mr-2" />
           <span className="hidden md:inline">Nova Meta</span>
         </Button>
-      </div>
+      </header>
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Metas Ativas</CardTitle>
-            <Target className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeGoals.length}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Metas Concluídas</CardTitle>
-            <Target className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{completedGoals.length}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Economizado</CardTitle>
-            <DollarSign className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
-              R$ {totalSaved.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Metas Mensais</CardTitle>
-            <Calendar className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{monthlyBudgetGoals.length}</div>
-          </CardContent>
-        </Card>
+        <ModernCard
+          icon={<Target className="h-6 w-6 text-blue-600" />}
+          iconBgColor="#DBEAFE"
+          title="Metas Ativas"
+          value={activeGoals.length}
+          valueColor="text-blue-600"
+        />
+        <ModernCard
+          icon={<Target className="h-6 w-6 text-green-600" />}
+          iconBgColor="#DCFCE7"
+          title="Metas Concluídas"
+          value={completedGoals.length}
+          valueColor="text-green-600"
+        />
+        <ModernCard
+          icon={<DollarSign className="h-6 w-6 text-purple-600" />}
+          iconBgColor="#EDE9FE"
+          title="Total Economizado"
+          value={`R$ ${totalSaved.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+          valueColor="text-purple-600"
+        />
+        <ModernCard
+          icon={<Calendar className="h-6 w-6 text-orange-600" />}
+          iconBgColor="#FFEDD5"
+          title="Metas Mensais"
+          value={monthlyBudgetGoals.length}
+          valueColor="text-orange-600"
+        />
       </div>
 
       {/* Monthly Goals Status */}

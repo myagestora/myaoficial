@@ -19,7 +19,10 @@ import {
   ArrowDownRight,
   Clock,
   MessageCircle,
-  Phone
+  Phone,
+  Home,
+  ArrowUpCircle,
+  ArrowDownCircle
 } from 'lucide-react';
 import { MobilePageWrapper } from '../MobilePageWrapper';
 import { useNavigate } from 'react-router-dom';
@@ -32,6 +35,14 @@ import { DateRange } from 'react-day-picker';
 import { endOfMonth, startOfMonth, format } from 'date-fns';
 import { getCurrentDateForInput, getBrazilianDate, formatDateBrazilian } from '@/utils/timezoneUtils';
 import { ptBR } from 'date-fns/locale';
+import { useBankAccounts } from '@/hooks/useBankAccounts';
+import { useCreditCards } from '@/hooks/useCreditCards';
+import { useTransactions } from '@/hooks/useTransactions';
+import { ExpenseChart } from '@/components/dashboard/ExpenseChart';
+import { MonthlyOverview } from '@/components/dashboard/MonthlyOverview';
+import { DailyMovement } from '@/components/dashboard/DailyMovement';
+import { RecentTransactions } from '@/components/dashboard/RecentTransactions';
+import { Progress } from '@/components/ui/progress';
 
 export const MobileDashboard = () => {
   const [showValues, setShowValues] = useState(true);
@@ -42,6 +53,9 @@ export const MobileDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { goals } = useGoals();
+  const { bankAccounts, isLoading: loadingAccounts } = useBankAccounts();
+  const { creditCards, isLoading: loadingCards } = useCreditCards();
+  const { transactions, isLoading: loadingTransactions } = useTransactions();
 
   // Buscar perfil do usuário para obter nome
   const { data: profile } = useQuery({
@@ -133,15 +147,170 @@ export const MobileDashboard = () => {
     enabled: !!user?.id && !!dateRange?.from && !!dateRange?.to
   });
 
-  // Calcular progresso das metas
-  const goalsProgress = goals && goals.length > 0 
-    ? Math.round(goals.reduce((sum, goal) => {
-        const progress = goal.target_amount > 0 
-          ? ((goal.current_amount || 0) / goal.target_amount) * 100 
-          : 0;
-        return sum + Math.min(progress, 100);
-      }, 0) / goals.length)
-    : 0;
+  // Calcular progresso das metas igual ao desktop
+  const { data: goalsProgress, isLoading: goalsLoading } = useQuery({
+    queryKey: ['goals-progress-mobile', user?.id, dateRange],
+    queryFn: async () => {
+      if (!user?.id) return 0;
+      const { data: goals, error } = await supabase
+        .from('goals')
+        .select(`
+          id,
+          current_amount, 
+          target_amount, 
+          status, 
+          goal_type,
+          category_id,
+          month_year,
+          target_date,
+          categories (
+            name,
+            color
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'active');
+      if (error || !goals || goals.length === 0) return 0;
+      // Filtrar metas relevantes para o período selecionado
+      const relevantGoals = goals.filter(goal => {
+        if (!dateRange?.from || !dateRange?.to) return true;
+        if (goal.goal_type === 'monthly_budget' && goal.month_year) {
+          const [goalYear, goalMonth] = goal.month_year.split('-').map(Number);
+          const goalDate = new Date(goalYear, goalMonth - 1, 1);
+          const fromMonth = new Date(dateRange.from.getFullYear(), dateRange.from.getMonth(), 1);
+          const toMonth = new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), 1);
+          return goalDate >= fromMonth && goalDate <= toMonth;
+        }
+        if (goal.goal_type === 'savings' && goal.target_date) {
+          const targetDate = new Date(goal.target_date);
+          return targetDate >= dateRange.from && targetDate <= dateRange.to;
+        }
+        return true;
+      });
+      if (relevantGoals.length === 0) return 0;
+      // Calcular progresso para cada meta
+      const goalProgressPromises = relevantGoals.map(async (goal) => {
+        if (goal.goal_type === 'monthly_budget' && goal.category_id && goal.month_year) {
+          const [goalYear, goalMonth] = goal.month_year.split('-').map(Number);
+          const startDate = new Date(goalYear, goalMonth - 1, 1);
+          const endDate = new Date(goalYear, goalMonth, 1);
+          const { data: transactions } = await supabase
+            .from('transactions')
+            .select('amount')
+            .eq('user_id', user.id)
+            .eq('category_id', goal.category_id)
+            .eq('type', 'expense')
+            .gte('date', startDate.toISOString().split('T')[0])
+            .lt('date', endDate.toISOString().split('T')[0]);
+          const spentAmount = transactions?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
+          const targetAmount = Number(goal.target_amount || 0);
+          if (targetAmount === 0) return 0;
+          const usagePercentage = (spentAmount / targetAmount) * 100;
+          let progress;
+          if (spentAmount <= targetAmount) {
+            progress = Math.max(0, 100 - usagePercentage);
+          } else {
+            progress = 0;
+          }
+          return Math.min(progress, 100);
+        } else {
+          const currentAmount = Number(goal.current_amount || 0);
+          const targetAmount = Number(goal.target_amount || 0);
+          if (targetAmount === 0) return 0;
+          const progress = (currentAmount / targetAmount) * 100;
+          return Math.min(progress, 100);
+        }
+      });
+      const goalProgresses = await Promise.all(goalProgressPromises);
+      const totalProgress = goalProgresses.reduce((sum, progress) => sum + progress, 0);
+      const averageProgress = Math.round(totalProgress / goalProgresses.length);
+      return averageProgress;
+    },
+    enabled: !!user?.id && !!dateRange?.from && !!dateRange?.to
+  });
+
+  // Buscar metas do mês detalhadas
+  const { data: metasMes, isLoading: metasLoading } = useQuery({
+    queryKey: ['goals-list-mobile', user?.id, dateRange],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data: goals, error } = await supabase
+        .from('goals')
+        .select(`
+          id,
+          title,
+          current_amount,
+          target_amount,
+          status,
+          goal_type,
+          category_id,
+          month_year,
+          target_date,
+          categories (name, color)
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'active');
+      if (error || !goals || goals.length === 0) return [];
+      // Filtrar metas relevantes para o período selecionado
+      const relevantGoals = goals.filter(goal => {
+        if (!dateRange?.from || !dateRange?.to) return true;
+        if (goal.goal_type === 'monthly_budget' && goal.month_year) {
+          const [goalYear, goalMonth] = goal.month_year.split('-').map(Number);
+          const goalDate = new Date(goalYear, goalMonth - 1, 1);
+          const fromMonth = new Date(dateRange.from.getFullYear(), dateRange.from.getMonth(), 1);
+          const toMonth = new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), 1);
+          return goalDate >= fromMonth && goalDate <= toMonth;
+        }
+        if (goal.goal_type === 'savings' && goal.target_date) {
+          const targetDate = new Date(goal.target_date);
+          return targetDate >= dateRange.from && targetDate <= dateRange.to;
+        }
+        return true;
+      });
+      if (relevantGoals.length === 0) return [];
+      // Calcular progresso para cada meta
+      const goalProgressPromises = relevantGoals.map(async (goal) => {
+        let progress = 0;
+        if (goal.goal_type === 'monthly_budget' && goal.category_id && goal.month_year) {
+          const [goalYear, goalMonth] = goal.month_year.split('-').map(Number);
+          const startDate = new Date(goalYear, goalMonth - 1, 1);
+          const endDate = new Date(goalYear, goalMonth, 1);
+          const { data: transactions } = await supabase
+            .from('transactions')
+            .select('amount')
+            .eq('user_id', user.id)
+            .eq('category_id', goal.category_id)
+            .eq('type', 'expense')
+            .gte('date', startDate.toISOString().split('T')[0])
+            .lt('date', endDate.toISOString().split('T')[0]);
+          const spentAmount = transactions?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
+          const targetAmount = Number(goal.target_amount || 0);
+          if (targetAmount > 0) {
+            const usagePercentage = (spentAmount / targetAmount) * 100;
+            progress = spentAmount <= targetAmount ? Math.max(0, 100 - usagePercentage) : 0;
+          }
+          return {
+            ...goal,
+            progress: Math.round(progress),
+            current_amount: spentAmount,
+          };
+        } else {
+          const currentAmount = Number(goal.current_amount || 0);
+          const targetAmount = Number(goal.target_amount || 0);
+          if (targetAmount > 0) {
+            progress = (currentAmount / targetAmount) * 100;
+          }
+          return {
+            ...goal,
+            progress: Math.round(Math.min(progress, 100)),
+            current_amount: currentAmount,
+          };
+        }
+      });
+      return Promise.all(goalProgressPromises);
+    },
+    enabled: !!user?.id && !!dateRange?.from && !!dateRange?.to
+  });
 
   const formatCurrency = (value: number) => {
     if (!showValues) return '****';
@@ -161,317 +330,284 @@ export const MobileDashboard = () => {
     return formatCurrency(value);
   };
 
+  // Função para saldo real da conta
+  const getAccountBalance = (accountId, initialBalance) => {
+    if (!transactions) return initialBalance;
+    let saldo = initialBalance;
+    transactions.forEach((t) => {
+      if ((t as any).account_id === accountId) {
+        if (t.type === 'income') saldo += t.amount;
+        if (t.type === 'expense') saldo -= t.amount;
+      }
+    });
+    return saldo;
+  };
+
+  // Função para saldo real do cartão
+  const getCardBalance = (cardId, initialBalance) => {
+    if (!transactions) return initialBalance;
+    let saldo = 0;
+    transactions.forEach((t) => {
+      if ((t as any).card_id === cardId && t.type === 'expense') {
+        saldo += t.amount;
+      }
+    });
+    return saldo;
+  };
+
   return (
-    <MobilePageWrapper className="bg-gradient-to-br from-background to-primary/5">
-      {/* WhatsApp Suporte Info Card */}
-      {supportWhatsapp && (
-        <Card className="mb-4 bg-gradient-to-r from-green-500/10 to-green-600/5 border-green-500/20 shadow-md">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-green-500/20 rounded-full">
-                  <MessageCircle className="h-5 w-5 text-green-600" />
+    <div className="bg-[#F6F8FA] min-h-screen p-2 space-y-3">
+      {/* Header de boas-vindas */}
+      <div className="flex items-center gap-2 mb-1">
+        <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+          <Home className="w-5 h-5 text-blue-700" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-green-800 dark:text-green-200">WhatsApp</p>
-                  <p className="text-xs text-green-600 dark:text-green-300">Para falar com nossa IA Mya</p>
+          <h1 className="text-base font-semibold text-gray-900">Olá, {profile?.full_name?.split(' ')[0] || 'Usuário'}!</h1>
+          <p className="text-[11px] text-gray-400">Resumo financeiro do mês</p>
                 </div>
               </div>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
-                onClick={() => window.open(`https://wa.me/55${supportWhatsapp}`, '_blank')}
-              >
-                <div className="flex items-center space-x-2">
-                  <Phone className="h-4 w-4" />
-                  <Badge variant="outline" className="border-green-500/30 text-green-700 dark:text-green-300">
-                    {supportWhatsapp}
-                  </Badge>
-                </div>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* Header com período */}
-      <div className="space-y-4 mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-sm text-muted-foreground">
-              Olá, {profile?.full_name?.split(' ')[0] || 'Usuário'}! 👋
-              {dateRange?.from && dateRange?.to && (
-                <span className="block mt-1">
-                  {format(dateRange.from, 'dd MMM', { locale: ptBR }) + ' - ' + 
-                   format(dateRange.to, 'dd MMM yyyy', { locale: ptBR })}
-                </span>
-              )}
-            </p>
+      {/* Cards de resumo estilo desktop: 3 por linha, 2 linhas */}
+      <div className="grid grid-cols-3 gap-2 mb-1">
+        {/* Receitas */}
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3 flex flex-col items-start min-w-0">
+          <div className="w-6 h-6 rounded-md bg-green-50 flex items-center justify-center mb-1">
+            <TrendingUp className="w-4 h-4 text-green-600" />
+                </div>
+          <span className="text-[11px] text-gray-400">Receitas</span>
+          <span className="text-base font-semibold text-green-700 leading-tight">{isLoading ? '...' : formatCurrency(stats?.income || 0)}</span>
+            </div>
+        {/* Despesas Pagas */}
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3 flex flex-col items-start min-w-0">
+          <div className="w-6 h-6 rounded-md bg-red-50 flex items-center justify-center mb-1">
+            <TrendingDown className="w-4 h-4 text-red-600" />
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowValues(!showValues)}
-            className="shrink-0"
-          >
-            {showValues ? <Eye size={20} /> : <EyeOff size={20} />}
-          </Button>
+          <span className="text-[11px] text-gray-400">Despesas Pagas</span>
+          <span className="text-base font-semibold text-red-700 leading-tight">{isLoading ? '...' : formatCurrency(stats?.paidExpenses || 0)}</span>
         </div>
-        
-        <PeriodFilter 
-          dateRange={dateRange} 
-          onDateRangeChange={setDateRange}
-        />
+        {/* Despesas a Pagar */}
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3 flex flex-col items-start min-w-0">
+          <div className="w-6 h-6 rounded-md bg-orange-50 flex items-center justify-center mb-1">
+            <Clock className="w-4 h-4 text-orange-500" />
+      </div>
+          <span className="text-[11px] text-gray-400">A Pagar</span>
+          <span className="text-base font-semibold text-orange-600 leading-tight">{isLoading ? '...' : formatCurrency(stats?.pendingExpenses || 0)}</span>
+              </div>
+        {/* Saldo */}
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3 flex flex-col items-start min-w-0">
+          <div className="w-6 h-6 rounded-md bg-blue-50 flex items-center justify-center mb-1">
+            <Wallet className="w-4 h-4 text-blue-600" />
+              </div>
+          <span className="text-[11px] text-gray-400">Saldo</span>
+          <span className="text-base font-semibold text-blue-700 leading-tight">{isLoading ? '...' : formatCurrency(stats?.balance || 0)}</span>
+            </div>
+        {/* Saldo Previsto */}
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3 flex flex-col items-start min-w-0">
+          <div className="w-6 h-6 rounded-md bg-gray-50 flex items-center justify-center mb-1">
+            <ArrowUpRight className="w-4 h-4 text-gray-500" />
+          </div>
+          <span className="text-[11px] text-gray-400">Saldo Previsto</span>
+          <span className="text-base font-semibold text-gray-700 leading-tight">{isLoading ? '...' : formatCurrency((stats?.balance || 0) - (stats?.pendingExpenses || 0))}</span>
+        </div>
+        {/* Metas */}
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3 flex flex-col items-start min-w-0">
+          <div className="w-6 h-6 rounded-md bg-purple-50 flex items-center justify-center mb-1">
+            <Target className="w-4 h-4 text-purple-600" />
+          </div>
+          <span className="text-[11px] text-gray-400">Metas</span>
+          <span className="text-base font-semibold text-purple-700 leading-tight">{goalsLoading ? '...' : goalsProgress ?? 0}%</span>
+        </div>
       </div>
 
-      {/* Saldo Principal */}
-      <Card className="bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 text-white border-0 shadow-xl mb-6">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <div className="bg-white/20 p-3 rounded-full">
-                <Wallet className="h-6 w-6" />
+      {/* Seção Meus Cartões */}
+      <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1">
+            <CreditCard className="w-5 h-5 text-purple-600" />
+            <span className="font-semibold text-sm text-gray-900">Meus cartões</span>
+          </div>
+          <button className="text-xs text-purple-600 font-semibold hover:underline" onClick={() => navigate('/cards')}>Ver todos</button>
+        </div>
+        {/* Cartões reais */}
+        {loadingCards || loadingTransactions ? (
+          <div className="text-center text-xs text-gray-400">Carregando cartões...</div>
+        ) : creditCards.length === 0 ? (
+          <div className="text-center text-xs text-gray-400">Nenhum cartão cadastrado</div>
+        ) : creditCards.map((card) => {
+          const saldoAtual = getCardBalance(card.id, card.current_balance);
+          const utilizacao = card.credit_limit ? (saldoAtual / card.credit_limit) * 100 : 0;
+          return (
+            <div key={card.id} className="flex items-center gap-2 mt-1 min-h-[38px]">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: card.color }}>
+                <CreditCard className="w-4 h-4 text-white" />
               </div>
-              <div>
-                <p className="text-white/80 text-sm font-medium">Saldo Atual</p>
-                <p className="text-white/60 text-xs">Receitas - Despesas Pagas</p>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1">
+                  <span className="font-semibold text-sm text-gray-900 truncate">{card.name}</span>
+                  {card.due_date && <span className="text-[10px] text-gray-400">{card.due_date.toString().padStart(2, '0')}</span>}
+                </div>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <span className="text-green-700 font-semibold text-[15px]">{formatCurrency(saldoAtual)}</span>
+                  {card.credit_limit && <span className="text-[11px] text-gray-400">/ {formatCurrency(card.credit_limit)}</span>}
+                </div>
+                {card.credit_limit && (
+                  <div className="w-full bg-gray-200 rounded h-1 mt-1">
+                    <div className="bg-green-500 h-1 rounded" style={{ width: `${utilizacao}%` }} />
+                  </div>
+                )}
               </div>
             </div>
-            <div className={`flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-medium ${
-              (stats?.balance || 0) >= 0 
-                ? 'bg-green-500/20 text-green-100' 
-                : 'bg-red-500/20 text-red-100'
-            }`}>
-              {(stats?.balance || 0) >= 0 ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-              <span>{(stats?.balance || 0) >= 0 ? 'Positivo' : 'Negativo'}</span>
+          );
+        })}
+      </div>
+
+      {/* Seção Minhas Contas */}
+      <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1">
+            <PiggyBank className="w-5 h-5 text-blue-600" />
+            <span className="font-semibold text-sm text-gray-900">Minhas contas</span>
+          </div>
+          <button className="text-xs text-blue-600 font-semibold hover:underline" onClick={() => navigate('/accounts')}>Ver todas</button>
+        </div>
+        {/* Contas reais */}
+        {loadingAccounts || loadingTransactions ? (
+          <div className="text-center text-xs text-gray-400">Carregando contas...</div>
+        ) : bankAccounts.length === 0 ? (
+          <div className="text-center text-xs text-gray-400">Nenhuma conta cadastrada</div>
+        ) : bankAccounts.map((account) => (
+          <div key={account.id} className="flex items-center gap-2 mt-1 min-h-[38px]">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: account.color }}>
+              <Wallet className="w-4 h-4 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="font-semibold text-sm text-gray-900 truncate">{account.name}</span>
+              <div className="flex items-center gap-1 mt-0.5">
+                <span className="text-blue-700 font-semibold text-[15px]">{formatCurrency(getAccountBalance(account.id, account.balance))}</span>
+              </div>
             </div>
           </div>
-          <div className="text-3xl font-bold">
-            {isLoading ? '...' : formatCurrency(stats?.balance || 0)}
+        ))}
+            </div>
+
+      {/* Seção Gráficos e Transações Recentes */}
+      <div className="space-y-3 mt-3">
+        {/* Gráfico: Despesas por Categoria */}
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-0">
+          <div className="flex items-center gap-1 mb-0 p-4 pb-0">
+            <TrendingDown className="w-5 h-5 text-red-600" />
+            <span className="font-semibold text-sm text-gray-900">Despesas por Categoria</span>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Ações Rápidas */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <Button 
-          className="h-20 flex-col space-y-2 bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 border-0 shadow-lg"
-          onClick={() => navigate('/transactions')}
-        >
-          <Plus size={24} />
-          <span className="text-sm font-medium">Nova Transação</span>
-        </Button>
-        <Button 
-          variant="outline" 
-          className="h-20 flex-col space-y-2 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-2 border-slate-200 dark:border-slate-700 hover:bg-gradient-to-br hover:from-slate-100 hover:to-slate-200 dark:hover:from-slate-700 dark:hover:to-slate-800"
-          onClick={() => navigate('/reports')}
-        >
-          <BarChart3 size={24} />
-          <span className="text-sm font-medium">Relatórios</span>
-        </Button>
+          <div className="p-4 pt-2">
+            <ExpenseChart dateRange={dateRange} hideTitle />
+          </div>
+        </div>
+        {/* Gráfico: Evolução do Saldo */}
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-0">
+          <div className="flex items-center gap-1 mb-0 p-4 pb-0">
+            <ArrowUpRight className="w-5 h-5 text-blue-600" />
+            <span className="font-semibold text-sm text-gray-900">Evolução do Saldo</span>
+          </div>
+          <div className="p-4 pt-2">
+            <MonthlyOverview dateRange={dateRange} hideTitle />
+          </div>
+        </div>
+        {/* Gráfico: Movimentação Diária */}
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-0">
+          <div className="flex items-center gap-1 mb-0 p-4 pb-0">
+            <BarChart3 className="w-5 h-5 text-cyan-600" />
+            <span className="font-semibold text-sm text-gray-900">Movimentação Diária</span>
+              </div>
+          <div className="p-4 pt-2">
+            <DailyMovement dateRange={dateRange} hideTitle />
+              </div>
+            </div>
+        {/* Card Metas do Mês */}
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-4 mb-3">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-1">
+              <PiggyBank className="w-5 h-5 text-purple-600" />
+              <span className="font-semibold text-sm text-gray-900">Metas do Mês</span>
+            </div>
+            <button className="text-xs text-purple-600 font-semibold hover:underline" onClick={() => navigate('/goals')}>Ver todas</button>
+          </div>
+          {/* Listar metas do mês */}
+          {(metasLoading ? [] : metasMes || []).slice(0, 2).map((goal: any, idx: number) => (
+            <div key={goal?.id || idx} className="mb-3 last:mb-0 bg-purple-50/40 rounded-lg p-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-medium text-xs text-gray-900 truncate">{goal?.title || 'Meta'}</span>
+                <span className="text-xs text-purple-700 font-semibold">{goal?.progress || 0}%</span>
+              </div>
+              <Progress value={goal?.progress || 0} className="h-1 bg-purple-200" />
+              <div className="flex items-center justify-between mt-1 text-[11px] text-gray-500">
+                <span>R$ {goal?.current_amount?.toLocaleString('pt-BR') || '0,00'}</span>
+                <span>R$ {goal?.target_amount?.toLocaleString('pt-BR') || '0,00'}</span>
+              </div>
+            </div>
+          ))}
       </div>
 
-      {/* Cards de Estatísticas */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900 border-emerald-200 dark:border-emerald-800">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="bg-emerald-500 p-2 rounded-lg">
-                <TrendingUp className="h-4 w-4 text-white" />
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">Receitas</p>
-                <p className="text-sm font-bold text-emerald-800 dark:text-emerald-200">
-                  {isLoading ? '...' : formatShortCurrency(stats?.income || 0)}
-                </p>
-              </div>
+        {/* Transações Recentes - visual moderno */}
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-4 mb-3">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-1">
+              <Clock className="w-5 h-5 text-blue-600" />
+              <span className="font-semibold text-sm text-gray-900">Transações Recentes</span>
             </div>
-            <div className="text-xs text-emerald-600 dark:text-emerald-400">
-              Total do período
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 border-red-200 dark:border-red-800">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="bg-red-500 p-2 rounded-lg">
-                <TrendingDown className="h-4 w-4 text-white" />
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-red-700 dark:text-red-300 font-medium">Despesas</p>
-                <p className="text-sm font-bold text-red-800 dark:text-red-200">
-                  {isLoading ? '...' : formatShortCurrency(stats?.paidExpenses || 0)}
-                </p>
-              </div>
-            </div>
-            <div className="text-xs text-red-600 dark:text-red-400">
-              Já pagas
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 border-orange-200 dark:border-orange-800">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="bg-orange-500 p-2 rounded-lg">
-                <Clock className="h-4 w-4 text-white" />
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-orange-700 dark:text-orange-300 font-medium">A Pagar</p>
-                <p className="text-sm font-bold text-orange-800 dark:text-orange-200">
-                  {isLoading ? '...' : formatShortCurrency(stats?.pendingExpenses || 0)}
-                </p>
-              </div>
-            </div>
-            <div className="text-xs text-orange-600 dark:text-orange-400">
-              Pendentes
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 border-purple-200 dark:border-purple-800">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="bg-purple-500 p-2 rounded-lg">
-                <Target className="h-4 w-4 text-white" />
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-purple-700 dark:text-purple-300 font-medium">Metas</p>
-                <p className="text-sm font-bold text-purple-800 dark:text-purple-200">
-                  {goalsProgress}%
-                </p>
-              </div>
-            </div>
-            <div className="text-xs text-purple-600 dark:text-purple-400">
-              Progresso médio
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Metas em Destaque */}
-      {goals && goals.length > 0 && (
-        <Card className="mb-6">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center">
-                <PiggyBank className="h-5 w-5 mr-2 text-purple-600" />
-                Metas do Mês
-              </CardTitle>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => navigate('/goals')}
-                className="text-xs"
-              >
-                Ver todas
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {goals.slice(0, 2).map((goal) => (
-              <div key={goal.id} className="space-y-3 p-3 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950 dark:to-blue-950 rounded-lg border border-purple-100 dark:border-purple-800">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-slate-800 dark:text-slate-200">{goal.title}</span>
-                  <span className="text-xs text-purple-600 dark:text-purple-400 font-semibold">
-                    {Math.round(((goal.current_amount || 0) / goal.target_amount) * 100)}%
-                  </span>
+            <button className="text-xs text-blue-600 font-semibold hover:underline" onClick={() => navigate('/transactions')}>Ver Todas</button>
                 </div>
                 <div className="space-y-2">
-                  <div className="w-full bg-purple-200 dark:bg-purple-800 rounded-full h-2">
-                    <div 
-                      className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all duration-300" 
-                      style={{ width: `${Math.min(100, ((goal.current_amount || 0) / goal.target_amount) * 100)}%` }}
-                    />
+            {(stats?.recentTransactions || []).map((transaction: any, idx: number) => {
+              const isIncome = transaction.type === 'income';
+              const iconBg = isIncome ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600';
+              const icon = isIncome ? <ArrowUpCircle className="w-4 h-4" /> : <ArrowDownCircle className="w-4 h-4" />;
+              const valueColor = isIncome ? 'text-green-700' : 'text-red-700';
+              let badgeName = '';
+              if (transaction.account_id && transaction.account_name) badgeName = transaction.account_name;
+              if (transaction.card_id && transaction.card_name) badgeName = transaction.card_name;
+              return (
+                <div key={transaction.id || idx} className="rounded-xl border border-gray-100 shadow-sm p-2 flex flex-col gap-1 relative bg-white">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center ${iconBg}`}>{icon}</div>
+                    <span className="font-semibold text-sm text-gray-900 truncate flex-1">{transaction.title}</span>
+                    {transaction.categories?.name && <span className="text-[11px] text-gray-500 ml-2">{transaction.categories.name}</span>}
                   </div>
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{formatShortCurrency(goal.current_amount || 0)}</span>
-                    <span>{formatShortCurrency(goal.target_amount)}</span>
+                  <div className="flex items-center justify-between mt-0.5">
+                    <span className={`font-bold ${valueColor} text-base`}>{isIncome ? '+' : '-'}R$ {Math.abs(Number(transaction.amount)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                    <span className="text-[11px] text-gray-400">{transaction.date ? new Date(transaction.date).toLocaleDateString('pt-BR') : ''}</span>
                   </div>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Transações Recentes */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base flex items-center">
-              <CreditCard className="h-5 w-5 mr-2 text-blue-600" />
-              Recentes
-            </CardTitle>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => navigate('/transactions')}
-              className="text-xs"
-            >
-              Ver todas
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {stats?.recentTransactions && stats.recentTransactions.length > 0 ? (
-            stats.recentTransactions.map((transaction) => (
-              <div key={transaction.id} className="flex items-center justify-between p-3 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    transaction.type === 'income' 
-                      ? 'bg-gradient-to-br from-green-500 to-green-600 text-white' 
-                      : 'bg-gradient-to-br from-red-500 to-red-600 text-white'
-                  }`}>
-                    {transaction.type === 'income' ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{transaction.title}</p>
-                    <div className="flex items-center space-x-2">
-                      <p className="text-xs text-muted-foreground">
-                        {formatDateBrazilian(transaction.date, 'dd MMM')}
-                      </p>
-                      {transaction.categories && (
-                        <div className="flex items-center">
-                          <div 
-                            className="w-2 h-2 rounded-full mr-1" 
-                            style={{ backgroundColor: transaction.categories.color }}
-                          />
-                          <span className="text-xs text-muted-foreground">{transaction.categories.name}</span>
-                        </div>
-                      )}
+                  {badgeName && (
+                    <div className="flex items-center justify-end mt-1">
+                      <span className="text-[11px] text-gray-500 italic">{badgeName}</span>
                     </div>
-                  </div>
+                  )}
                 </div>
-                <div className="text-right">
-                  <p className={`text-sm font-bold ${
-                    transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {transaction.type === 'income' ? '+' : '-'}{formatShortCurrency(transaction.amount)}
-                  </p>
+              );
+            })}
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="text-center py-6">
-              <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3">
-                <CreditCard className="h-8 w-8 text-muted-foreground" />
               </div>
-              <p className="text-sm text-muted-foreground mb-3">Nenhuma transação encontrada</p>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => navigate('/transactions')}
-              >
-                Adicionar primeira transação
-              </Button>
+
+      {/* Menu inferior compacto */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t z-50 flex items-center justify-around h-12 shadow-sm">
+        <button className="flex flex-col items-center justify-center text-blue-600">
+          <Home className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px] font-semibold">Início</span>
+        </button>
+        <button className="flex flex-col items-center justify-center text-gray-400">
+          <CreditCard className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px] font-semibold">Transações</span>
+        </button>
+        <button className="flex flex-col items-center justify-center text-gray-400">
+          <BarChart3 className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px] font-semibold">Relatórios</span>
+        </button>
+        <button className="flex flex-col items-center justify-center text-gray-400">
+          <Target className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px] font-semibold">Metas</span>
+        </button>
+      </nav>
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </MobilePageWrapper>
   );
 };
