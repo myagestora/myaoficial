@@ -7,9 +7,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useCreditCards, type CreditCard } from '@/hooks/useCreditCards';
 import { CreditCardForm } from '@/components/cards/CreditCardForm';
+import { useTransactions } from '@/hooks/useTransactions';
 
 export default function CreditCards() {
   const { creditCards, isLoading, deleteCreditCard } = useCreditCards();
+  const { transactions } = useTransactions();
   const [editingCard, setEditingCard] = useState<CreditCard | null>(null);
   const [formOpen, setFormOpen] = useState(false);
 
@@ -33,6 +35,17 @@ export default function CreditCards() {
   const getUsagePercentage = (currentBalance: number, creditLimit?: number) => {
     if (!creditLimit || creditLimit === 0) return 0;
     return Math.min((currentBalance / creditLimit) * 100, 100);
+  };
+
+  const getCardBalance = (cardId: string, initialBalance: number) => {
+    if (!transactions) return initialBalance;
+    let saldo = 0;
+    transactions.forEach((t: any) => {
+      if (t.card_id === cardId && t.type === 'expense') {
+        saldo += t.amount;
+      }
+    });
+    return saldo;
   };
 
   if (isLoading) {
@@ -121,7 +134,7 @@ export default function CreditCards() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Saldo Atual</span>
                   <span className="text-lg font-semibold text-foreground">
-                    {formatCurrency(card.current_balance)}
+                    {formatCurrency(getCardBalance(card.id, card.current_balance))}
                   </span>
                 </div>
 

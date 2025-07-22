@@ -7,9 +7,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useBankAccounts, type BankAccount } from '@/hooks/useBankAccounts';
 import { BankAccountForm } from '@/components/accounts/BankAccountForm';
+import { useTransactions } from '@/hooks/useTransactions';
 
 export default function BankAccounts() {
   const { bankAccounts, isLoading, deleteBankAccount } = useBankAccounts();
+  const { transactions } = useTransactions();
   const [editingAccount, setEditingAccount] = useState<BankAccount | null>(null);
   const [formOpen, setFormOpen] = useState(false);
 
@@ -37,6 +39,18 @@ export default function BankAccounts() {
       investment: 'Investimento',
     };
     return types[type as keyof typeof types] || type;
+  };
+
+  const getAccountBalance = (accountId: string, initialBalance: number) => {
+    if (!transactions) return initialBalance;
+    let saldo = initialBalance;
+    transactions.forEach((t: any) => {
+      if (t.account_id === accountId) {
+        if (t.type === 'income') saldo += t.amount;
+        if (t.type === 'expense') saldo -= t.amount;
+      }
+    });
+    return saldo;
   };
 
   if (isLoading) {
@@ -125,7 +139,7 @@ export default function BankAccounts() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Saldo</span>
                   <span className="text-lg font-semibold text-foreground">
-                    {formatBalance(account.balance)}
+                    {formatBalance(getAccountBalance(account.id, account.balance))}
                   </span>
                 </div>
                 
