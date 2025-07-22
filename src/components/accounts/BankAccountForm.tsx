@@ -26,7 +26,7 @@ interface BankAccountFormProps {
 }
 
 export const BankAccountForm = ({ account, onSuccess }: BankAccountFormProps) => {
-  const { createBankAccount, updateBankAccount } = useBankAccounts();
+  const { createBankAccount, updateBankAccount, bankAccounts } = useBankAccounts();
 
   const {
     register,
@@ -47,7 +47,7 @@ export const BankAccountForm = ({ account, onSuccess }: BankAccountFormProps) =>
     } : {
       type: 'checking',
       balance: 0,
-      is_default: false,
+      is_default: bankAccounts && bankAccounts.length === 0 ? true : false,
       color: '#3B82F6',
     },
   });
@@ -79,8 +79,28 @@ export const BankAccountForm = ({ account, onSuccess }: BankAccountFormProps) =>
   ];
 
   const colorOptions = [
-    '#3B82F6', '#EF4444', '#10B981', '#F59E0B',
-    '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'
+    '#3B82F6', // azul
+    '#EF4444', // vermelho
+    '#10B981', // verde
+    '#F59E0B', // laranja
+    '#8B5CF6', // roxo
+    '#EC4899', // rosa
+    '#06B6D4', // ciano
+    '#84CC16', // verde limão
+    '#6366F1', // azul violeta
+    '#F472B6', // rosa claro
+    '#FBBF24', // amarelo
+    '#A3E635', // verde claro
+    '#F87171', // vermelho claro
+    '#A21CAF', // roxo escuro
+    '#F43F5E', // vermelho magenta
+    '#0EA5E9', // azul claro
+    '#F59E42', // laranja claro
+    '#14B8A6', // teal
+    '#E11D48', // vermelho escuro
+    '#FDE68A', // amarelo pastel
+    '#111827', // preto quase puro
+    '#374151', // cinza escuro
   ];
 
   return (
@@ -147,7 +167,7 @@ export const BankAccountForm = ({ account, onSuccess }: BankAccountFormProps) =>
 
       <div className="space-y-2">
         <Label>Cor</Label>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 w-full justify-start">
           {colorOptions.map((color) => (
             <button
               key={color}

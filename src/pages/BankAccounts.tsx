@@ -8,12 +8,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useBankAccounts, type BankAccount } from '@/hooks/useBankAccounts';
 import { BankAccountForm } from '@/components/accounts/BankAccountForm';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function BankAccounts() {
   const { bankAccounts, isLoading, deleteBankAccount } = useBankAccounts();
   const { transactions } = useTransactions();
   const [editingAccount, setEditingAccount] = useState<BankAccount | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const { toast } = useToast();
 
   const handleEdit = (account: BankAccount) => {
     setEditingAccount(account);
@@ -51,6 +53,22 @@ export default function BankAccounts() {
       }
     });
     return saldo;
+  };
+
+  const handleDeleteError = (error: any) => {
+    if (error?.message?.includes('violates foreign key constraint') || error?.message?.includes('transactions_account_id_fkey')) {
+      toast({
+        title: 'Não é possível excluir',
+        description: 'Esta conta possui transações vinculadas. Exclua ou transfira as transações antes de remover a conta.',
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Erro ao excluir conta bancária',
+        description: error.message || 'Ocorreu um erro ao tentar excluir a conta.',
+        variant: 'destructive',
+      });
+    }
   };
 
   if (isLoading) {
@@ -124,7 +142,7 @@ export default function BankAccounts() {
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
                         <AlertDialogAction
-                          onClick={() => deleteBankAccount.mutate(account.id)}
+                          onClick={() => deleteBankAccount.mutate(account.id, { onError: handleDeleteError })}
                         >
                           Excluir
                         </AlertDialogAction>

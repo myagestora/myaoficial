@@ -8,10 +8,12 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useCreditCards, type CreditCard } from '@/hooks/useCreditCards';
 import { CreditCardForm } from '@/components/cards/CreditCardForm';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function CreditCards() {
   const { creditCards, isLoading, deleteCreditCard } = useCreditCards();
   const { transactions } = useTransactions();
+  const { toast } = useToast();
   const [editingCard, setEditingCard] = useState<CreditCard | null>(null);
   const [formOpen, setFormOpen] = useState(false);
 
@@ -48,6 +50,22 @@ export default function CreditCards() {
     return saldo;
   };
 
+  const handleDeleteError = (error: any) => {
+    if (error?.message?.includes('violates foreign key constraint') || error?.message?.includes('transactions_card_id_fkey')) {
+      toast({
+        title: 'Não é possível excluir',
+        description: 'Este cartão possui transações vinculadas. Exclua ou transfira as transações antes de remover o cartão.',
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Erro ao excluir cartão de crédito',
+        description: error.message || 'Ocorreu um erro ao tentar excluir o cartão.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (isLoading) {
     return <div className="p-6">Carregando cartões...</div>;
   }
@@ -81,119 +99,123 @@ export default function CreditCards() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {creditCards.map((card) => (
-          <Card key={card.id} className="relative">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: card.color }}
-                  />
-                  <CardTitle className="text-lg">{card.name}</CardTitle>
-                  {card.is_default && (
-                    <Badge variant="secondary">Padrão</Badge>
-                  )}
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleEdit(card)}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Excluir cartão</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Tem certeza que deseja excluir este cartão? Esta ação não pode ser desfeita.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => deleteCreditCard.mutate(card.id)}
-                        >
-                          Excluir
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
+        {creditCards.map((card) => {
+          const saldoAtual = getCardBalance(card.id, card.current_balance);
+          const utilizacao = card.credit_limit ? (saldoAtual / card.credit_limit) * 100 : 0;
+          return (
+            <Card key={card.id} className="relative">
+              <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Saldo Atual</span>
-                  <span className="text-lg font-semibold text-foreground">
-                    {formatCurrency(getCardBalance(card.id, card.current_balance))}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-4 h-4 rounded-full"
+                      style={{ backgroundColor: card.color }}
+                    />
+                    <CardTitle className="text-lg">{card.name}</CardTitle>
+                    {card.is_default && (
+                      <Badge variant="secondary">Padrão</Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEdit(card)}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Excluir cartão</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Tem certeza que deseja excluir este cartão? Esta ação não pode ser desfeita.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => deleteCreditCard.mutate(card.id, { onError: handleDeleteError })}
+                          >
+                            Excluir
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Saldo Atual</span>
+                    <span className="text-lg font-semibold text-foreground">
+                      {formatCurrency(saldoAtual)}
+                    </span>
+                  </div>
 
-                {card.credit_limit && (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Limite</span>
-                      <span className="text-sm text-foreground">
-                        {formatCurrency(card.credit_limit)}
-                      </span>
-                    </div>
-
-                    <div className="space-y-1">
+                  {card.credit_limit && (
+                    <>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Utilização</span>
+                        <span className="text-sm text-muted-foreground">Limite</span>
                         <span className="text-sm text-foreground">
-                          {getUsagePercentage(card.current_balance, card.credit_limit).toFixed(1)}%
+                          {formatCurrency(card.credit_limit)}
                         </span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-primary h-2 rounded-full transition-all"
-                          style={{
-                            width: `${getUsagePercentage(card.current_balance, card.credit_limit)}%`,
-                            backgroundColor: getUsagePercentage(card.current_balance, card.credit_limit) > 80 ? '#ef4444' : card.color
-                          }}
-                        />
+
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Utilização</span>
+                          <span className="text-sm text-foreground">
+                            {utilizacao.toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-primary h-2 rounded-full transition-all"
+                            style={{
+                              width: `${utilizacao}%`,
+                              backgroundColor: utilizacao > 80 ? '#ef4444' : card.color
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {card.bank_name && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Banco</span>
+                      <span className="text-sm text-foreground">{card.bank_name}</span>
+                    </div>
+                  )}
+
+                  {card.last_four_digits && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Final</span>
+                      <span className="text-sm text-foreground">**** {card.last_four_digits}</span>
+                    </div>
+                  )}
+
+                  {card.due_date && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Vencimento</span>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-sm text-foreground">Dia {card.due_date}</span>
                       </div>
                     </div>
-                  </>
-                )}
-
-                {card.bank_name && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Banco</span>
-                    <span className="text-sm text-foreground">{card.bank_name}</span>
-                  </div>
-                )}
-
-                {card.last_four_digits && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Final</span>
-                    <span className="text-sm text-foreground">**** {card.last_four_digits}</span>
-                  </div>
-                )}
-
-                {card.due_date && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Vencimento</span>
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3 text-muted-foreground" />
-                      <span className="text-sm text-foreground">Dia {card.due_date}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
 
         {creditCards.length === 0 && (
           <div className="col-span-full">

@@ -228,6 +228,9 @@ const Dashboard = () => {
 
   const currentGoalsProgress = goalsProgress || 0;
 
+  // Novo: saldo previsto = receitas - (despesas pagas + a pagar)
+  const predictedBalance = currentStats.totalIncome - currentStats.totalExpenses;
+
   return (
     <div className="p-4 md:p-6 space-y-4 md:space-y-6">
       {/* Header */}
@@ -242,7 +245,8 @@ const Dashboard = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
+        {/* Receitas */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs md:text-sm font-medium leading-tight">Receitas</CardTitle>
@@ -256,6 +260,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
+        {/* Despesas Pagas */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs md:text-sm font-medium leading-tight">Despesas Pagas</CardTitle>
@@ -269,6 +274,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
+        {/* A Pagar */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs md:text-sm font-medium leading-tight">A Pagar</CardTitle>
@@ -282,6 +288,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
+        {/* Saldo Atual */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs md:text-sm font-medium leading-tight">Saldo</CardTitle>
@@ -297,6 +304,23 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
+        {/* Saldo Previsto */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xs md:text-sm font-medium leading-tight">Saldo Previsto</CardTitle>
+            <DollarSign className="h-4 w-4 text-cyan-600" />
+          </CardHeader>
+          <CardContent>
+            <div className={`text-lg md:text-2xl font-bold leading-tight ${
+              predictedBalance >= 0 ? 'text-cyan-600' : 'text-red-600'
+            }`}>
+              R$ {predictedBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </div>
+            <p className="text-xs text-muted-foreground leading-tight">Saldo após todas as despesas do período</p>
+          </CardContent>
+        </Card>
+
+        {/* Metas */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs md:text-sm font-medium leading-tight">Metas</CardTitle>
