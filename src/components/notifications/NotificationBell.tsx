@@ -117,9 +117,9 @@ export const NotificationBell = () => {
         <Button 
           variant="ghost" 
           size="sm" 
-          className="h-9 w-9 sm:h-10 sm:w-10 p-0 relative text-white hover:bg-white/20 touch-manipulation"
+          className="h-9 w-9 sm:h-10 sm:w-10 p-0 relative text-gray-500 hover:bg-white/20 touch-manipulation"
         >
-          <Bell className="h-5 w-5" />
+          <Bell className="h-5 w-5 text-gray-500" />
           {unreadNotifications.length > 0 && (
             <Badge 
               variant="destructive" 
@@ -131,9 +131,8 @@ export const NotificationBell = () => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent 
-        className="w-[90vw] sm:w-80 max-h-[70vh] overflow-y-auto bg-white dark:bg-gray-800 border shadow-lg z-50" 
-        align="end"
-        sideOffset={8}
+        className="w-80 max-h-[70vh] overflow-y-auto bg-white dark:bg-gray-800 border shadow-lg z-50" 
+        align="center"
       >
         <DropdownMenuLabel className="flex items-center gap-2">
           <Bell className="h-4 w-4" />

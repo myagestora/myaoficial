@@ -368,55 +368,55 @@ export const MobileDashboard = () => {
                 </div>
               </div>
 
-      {/* Cards de resumo estilo desktop: 3 por linha, 2 linhas */}
-      <div className="grid grid-cols-3 gap-2 mb-1">
+      {/* Cards de resumo estilo mobile: 2 por linha, verticais */}
+      <div className="grid grid-cols-2 gap-2 mb-2">
         {/* Receitas */}
-        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3 flex flex-col items-start min-w-0">
-          <div className="w-6 h-6 rounded-md bg-green-50 flex items-center justify-center mb-1">
-            <TrendingUp className="w-4 h-4 text-green-600" />
-                </div>
-          <span className="text-[11px] text-gray-400">Receitas</span>
-          <span className="text-base font-semibold text-green-700 leading-tight">{isLoading ? '...' : formatCurrency(stats?.income || 0)}</span>
-            </div>
-        {/* Despesas Pagas */}
-        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3 flex flex-col items-start min-w-0">
-          <div className="w-6 h-6 rounded-md bg-red-50 flex items-center justify-center mb-1">
-            <TrendingDown className="w-4 h-4 text-red-600" />
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm px-3 py-2 flex flex-col items-center min-w-0">
+          <div className="flex items-center gap-1 mb-1">
+            <TrendingUp className="w-5 h-5 text-green-600 bg-green-50 rounded p-1" />
+            <span className="text-xs text-gray-500 font-medium">Receitas</span>
           </div>
-          <span className="text-[11px] text-gray-400">Despesas Pagas</span>
-          <span className="text-base font-semibold text-red-700 leading-tight">{isLoading ? '...' : formatCurrency(stats?.paidExpenses || 0)}</span>
+          <span className="text-base font-bold text-green-700 text-center whitespace-nowrap">{isLoading ? '...' : formatCurrency(stats?.income || 0)}</span>
         </div>
-        {/* Despesas a Pagar */}
-        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3 flex flex-col items-start min-w-0">
-          <div className="w-6 h-6 rounded-md bg-orange-50 flex items-center justify-center mb-1">
-            <Clock className="w-4 h-4 text-orange-500" />
-      </div>
-          <span className="text-[11px] text-gray-400">A Pagar</span>
-          <span className="text-base font-semibold text-orange-600 leading-tight">{isLoading ? '...' : formatCurrency(stats?.pendingExpenses || 0)}</span>
-              </div>
-        {/* Saldo */}
-        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3 flex flex-col items-start min-w-0">
-          <div className="w-6 h-6 rounded-md bg-blue-50 flex items-center justify-center mb-1">
-            <Wallet className="w-4 h-4 text-blue-600" />
-              </div>
-          <span className="text-[11px] text-gray-400">Saldo</span>
-          <span className="text-base font-semibold text-blue-700 leading-tight">{isLoading ? '...' : formatCurrency(stats?.balance || 0)}</span>
-            </div>
-        {/* Saldo Previsto */}
-        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3 flex flex-col items-start min-w-0">
-          <div className="w-6 h-6 rounded-md bg-gray-50 flex items-center justify-center mb-1">
-            <ArrowUpRight className="w-4 h-4 text-gray-500" />
+        {/* Despesas Pagas */}
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm px-3 py-2 flex flex-col items-center min-w-0">
+          <div className="flex items-center gap-1 mb-1">
+            <TrendingDown className="w-5 h-5 text-red-600 bg-red-50 rounded p-1" />
+            <span className="text-xs text-gray-500 font-medium">Despesas</span>
           </div>
-          <span className="text-[11px] text-gray-400">Saldo Previsto</span>
-          <span className="text-base font-semibold text-gray-700 leading-tight">{isLoading ? '...' : formatCurrency((stats?.balance || 0) - (stats?.pendingExpenses || 0))}</span>
+          <span className="text-base font-bold text-red-700 text-center whitespace-nowrap">{isLoading ? '...' : formatCurrency(stats?.paidExpenses || 0)}</span>
+        </div>
+        {/* A Pagar */}
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm px-3 py-2 flex flex-col items-center min-w-0">
+          <div className="flex items-center gap-1 mb-1">
+            <Clock className="w-5 h-5 text-orange-500 bg-orange-50 rounded p-1" />
+            <span className="text-xs text-gray-500 font-medium">A Pagar</span>
+          </div>
+          <span className="text-base font-bold text-orange-600 text-center whitespace-nowrap">{isLoading ? '...' : formatCurrency(stats?.pendingExpenses || 0)}</span>
+        </div>
+        {/* Saldo */}
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm px-3 py-2 flex flex-col items-center min-w-0">
+          <div className="flex items-center gap-1 mb-1">
+            <Wallet className="w-5 h-5 text-blue-600 bg-blue-50 rounded p-1" />
+            <span className="text-xs text-gray-500 font-medium">Saldo</span>
+          </div>
+          <span className="text-base font-bold text-blue-700 text-center whitespace-nowrap">{isLoading ? '...' : formatCurrency(stats?.balance || 0)}</span>
+        </div>
+        {/* Saldo Previsto */}
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm px-3 py-2 flex flex-col items-center min-w-0">
+          <div className="flex items-center gap-1 mb-1">
+            <ArrowUpRight className="w-5 h-5 text-gray-500 bg-gray-50 rounded p-1" />
+            <span className="text-xs text-gray-500 font-medium">Saldo Previsto</span>
+          </div>
+          <span className="text-base font-bold text-gray-700 text-center whitespace-nowrap">{isLoading ? '...' : formatCurrency((stats?.balance || 0) - (stats?.pendingExpenses || 0))}</span>
         </div>
         {/* Metas */}
-        <div className="bg-white rounded-lg border border-gray-100 shadow-sm p-3 flex flex-col items-start min-w-0">
-          <div className="w-6 h-6 rounded-md bg-purple-50 flex items-center justify-center mb-1">
-            <Target className="w-4 h-4 text-purple-600" />
+        <div className="bg-white rounded-lg border border-gray-100 shadow-sm px-3 py-2 flex flex-col items-center min-w-0">
+          <div className="flex items-center gap-1 mb-1">
+            <Target className="w-5 h-5 text-purple-600 bg-purple-50 rounded p-1" />
+            <span className="text-xs text-gray-500 font-medium">Metas</span>
           </div>
-          <span className="text-[11px] text-gray-400">Metas</span>
-          <span className="text-base font-semibold text-purple-700 leading-tight">{goalsLoading ? '...' : goalsProgress ?? 0}%</span>
+          <span className="text-base font-bold text-purple-700 text-center whitespace-nowrap">{goalsLoading ? '...' : goalsProgress ?? 0}%</span>
         </div>
       </div>
 
@@ -436,7 +436,8 @@ export const MobileDashboard = () => {
           <div className="text-center text-xs text-gray-400">Nenhum cartão cadastrado</div>
         ) : creditCards.map((card, idx) => {
           const saldoAtual = getCardBalance(card.id, card.current_balance);
-          const utilizacao = card.credit_limit ? (saldoAtual / card.credit_limit) * 100 : 0;
+          const utilizacaoReal = card.credit_limit ? (saldoAtual / card.credit_limit) * 100 : 0;
+          const utilizacao = card.credit_limit ? Math.min(utilizacaoReal, 100) : 0;
           return (
             <div key={card.id} className={`flex items-center gap-2 mt-${idx === 0 ? 1 : 4} min-h-[38px]`}>
               <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: card.color }}>
@@ -451,13 +452,18 @@ export const MobileDashboard = () => {
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <span className="text-green-700 font-semibold text-[15px]">{formatCurrency(saldoAtual)}</span>
-                  {card.credit_limit && <span className="text-[11px] text-gray-400">/ {formatCurrency(card.credit_limit)}</span>}
+                <div className="flex items-center gap-1 mt-0.5 w-full justify-between">
+                  <div className="flex items-center gap-1">
+                    <span className="text-green-700 font-semibold text-[15px]">{formatCurrency(saldoAtual)}</span>
+                    {card.credit_limit && <span className="text-[11px] text-gray-400">/ {formatCurrency(card.credit_limit)}</span>}
+                  </div>
+                  {card.credit_limit && (
+                    <span className="text-[11px] text-gray-500">{utilizacaoReal.toFixed(0)}%</span>
+                  )}
                 </div>
                 {card.credit_limit && (
-                  <div className="w-full bg-gray-200 rounded h-1 mt-1">
-                    <div className="bg-green-500 h-1 rounded" style={{ width: `${utilizacao}%` }} />
+                  <div className="w-full bg-gray-200 rounded h-1">
+                    <div className="h-1 rounded" style={{ width: `${utilizacao}%`, backgroundColor: card.color }} />
                   </div>
                 )}
               </div>
@@ -584,7 +590,7 @@ export const MobileDashboard = () => {
                   </div>
                   <div className="flex items-center justify-between mt-0.5">
                     <span className={`font-bold ${valueColor} text-base`}>{isIncome ? '+' : '-'}R$ {Math.abs(Number(transaction.amount)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                    <span className="text-[11px] text-gray-400">{transaction.date ? new Date(transaction.date).toLocaleDateString('pt-BR') : ''}</span>
+                    <span className="text-[11px] text-gray-400">{transaction.date ? (() => { const [y, m, d] = transaction.date.split('-'); return `${d}/${m}/${y}` })() : ''}</span>
                   </div>
                   {badgeName && (
                     <div className="flex items-center justify-end mt-1">
@@ -597,26 +603,6 @@ export const MobileDashboard = () => {
                 </div>
               </div>
               </div>
-
-      {/* Menu inferior compacto */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t z-50 flex items-center justify-around h-12 shadow-sm">
-        <button className="flex flex-col items-center justify-center text-blue-600">
-          <Home className="w-5 h-5 mb-0.5" />
-          <span className="text-[10px] font-semibold">Início</span>
-        </button>
-        <button className="flex flex-col items-center justify-center text-gray-400">
-          <CreditCard className="w-5 h-5 mb-0.5" />
-          <span className="text-[10px] font-semibold">Transações</span>
-        </button>
-        <button className="flex flex-col items-center justify-center text-gray-400">
-          <BarChart3 className="w-5 h-5 mb-0.5" />
-          <span className="text-[10px] font-semibold">Relatórios</span>
-        </button>
-        <button className="flex flex-col items-center justify-center text-gray-400">
-          <Target className="w-5 h-5 mb-0.5" />
-          <span className="text-[10px] font-semibold">Metas</span>
-        </button>
-      </nav>
-            </div>
+    </div>
   );
 };

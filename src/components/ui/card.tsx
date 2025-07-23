@@ -100,20 +100,20 @@ export const ModernCard = React.forwardRef<HTMLDivElement, ModernCardProps>(
       {...props}
     >
       {(icon || title) && (
-        <div className="flex items-center gap-3 mb-1">
+        <div className="flex items-center gap-2 mb-1">
           {icon && (
             <div
               className="rounded-full flex items-center justify-center"
-              style={{ backgroundColor: iconBgColor, width: 40, height: 40 }}
+              style={{ backgroundColor: iconBgColor, width: 25, height: 25, minWidth: 25, minHeight: 25 }}
             >
               {icon}
             </div>
           )}
-          {title && <span className="font-bold text-lg text-gray-900">{title}</span>}
+          {title && <span className="font-semibold text-gray-900" style={{ fontSize: '0.8rem' }}>{title}</span>}
         </div>
       )}
       {typeof value !== 'undefined' && (
-        <span className={cn('text-2xl font-bold', valueColor)}>{value}</span>
+        <span className={cn('font-bold', valueColor)} style={{ fontSize: '1.1rem' }}>{value}</span>
       )}
       {description && <span className="text-sm text-gray-400">{description}</span>}
       {children}

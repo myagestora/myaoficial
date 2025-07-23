@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -66,6 +66,8 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
   const queryClient = useQueryClient();
   const isEditing = !!transaction;
   const [previewDates, setPreviewDates] = useState<string[]>([]);
+  const [amountMasked, setAmountMasked] = useState('');
+  const amountInputRef = useRef<HTMLInputElement>(null);
 
   const { bankAccounts, defaultAccount } = useBankAccounts();
   const { creditCards, defaultCard } = useCreditCards();
@@ -380,6 +382,22 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
     }
   };
 
+  useEffect(() => {
+    if (watch('amount') !== undefined && watch('amount') !== null && !isNaN(watch('amount'))) {
+      setAmountMasked(formatCurrencyInput(String(Math.round(Number(watch('amount') * 100)))));
+    } else {
+      setAmountMasked('R$ 0,00');
+    }
+  }, [watch('amount')]);
+
+  function formatCurrencyInput(value: string) {
+    let raw = value.replace(/\D/g, '');
+    if (!raw) return 'R$ 0,00';
+    let intValue = parseInt(raw, 10);
+    let cents = (intValue / 100).toFixed(2).replace('.', ',');
+    return 'R$ ' + cents.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
@@ -426,10 +444,16 @@ export const TransactionForm = ({ isOpen, onClose, transaction }: TransactionFor
               <Label htmlFor="amount">Valor</Label>
               <Input
                 id="amount"
-                type="number"
-                step="0.01"
-                placeholder="0,00"
-                {...register('amount', { valueAsNumber: true })}
+                type="text"
+                inputMode="numeric"
+                ref={amountInputRef}
+                value={amountMasked}
+                onChange={e => {
+                  const raw = e.target.value.replace(/\D/g, '');
+                  setAmountMasked(formatCurrencyInput(e.target.value));
+                  setValue('amount', Number(raw) / 100, { shouldValidate: true });
+                }}
+                placeholder="R$ 0,00"
               />
               {errors.amount && (
                 <p className="text-sm text-destructive">{errors.amount.message}</p>

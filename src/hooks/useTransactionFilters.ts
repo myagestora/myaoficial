@@ -11,7 +11,7 @@ const getCurrentMonthRange = (): DateRange => {
   };
 };
 
-export const useTransactionFilters = (transactions: any[], selectedAccount: string, selectedCard: string) => {
+export const useTransactionFilters = (transactions: any[]) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(getCurrentMonthRange());
   const [selectedType, setSelectedType] = useState('all');
@@ -56,18 +56,10 @@ export const useTransactionFilters = (transactions: any[], selectedAccount: stri
       });
     }
 
-    // Account filter
-    if (selectedAccount && selectedAccount !== 'all') {
-      filtered = filtered.filter(transaction => transaction.account_id === selectedAccount);
-    }
-
-    // Card filter
-    if (selectedCard && selectedCard !== 'all') {
-      filtered = filtered.filter(transaction => transaction.card_id === selectedCard);
-    }
+    // Remover filtros de conta e cartão daqui
 
     return filtered;
-  }, [transactions, searchTerm, selectedType, selectedCategory, dateRange, selectedAccount, selectedCard]);
+  }, [transactions, searchTerm, selectedType, selectedCategory, dateRange]);
 
   const hasActiveFilters = Boolean(
     searchTerm || 
@@ -76,9 +68,7 @@ export const useTransactionFilters = (transactions: any[], selectedAccount: stri
     (dateRange?.from && dateRange?.to && (
       dateRange.from.getTime() !== getCurrentMonthRange().from?.getTime() ||
       dateRange.to.getTime() !== getCurrentMonthRange().to?.getTime()
-    )) ||
-    (selectedAccount && selectedAccount !== 'all') ||
-    (selectedCard && selectedCard !== 'all')
+    ))
   );
 
   const clearFilters = () => {
@@ -86,8 +76,6 @@ export const useTransactionFilters = (transactions: any[], selectedAccount: stri
     setSelectedType('all');
     setSelectedCategory('all');
     setDateRange(getCurrentMonthRange());
-    setSelectedAccount('all');
-    setSelectedCard('all');
   };
 
   return {

@@ -91,11 +91,11 @@ export const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
       {/* Menu Content */}
       <div 
         className={cn(
-          "absolute right-0 top-0 h-full w-72 bg-background border-l shadow-xl",
+          "absolute left-0 top-0 h-full w-72 bg-background border-r shadow-xl",
           "transform transition-transform duration-300 ease-out",
           "flex flex-col",
           isIOS && "mobile-menu-ios",
-          isOpen ? "translate-x-0" : "translate-x-full"
+          isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Header */}

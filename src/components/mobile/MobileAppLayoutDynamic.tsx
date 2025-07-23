@@ -51,8 +51,8 @@ export const MobileAppLayoutDynamic = () => {
 
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
-      {/* Header - Fixed */}
-      <header className="fixed top-0 left-0 right-0 flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
+      {/* Header - Agora não fixo */}
+      <header className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex items-center space-x-3">
           {logoUrl && (
             <img 
@@ -62,11 +62,10 @@ export const MobileAppLayoutDynamic = () => {
             />
           )}
         </div>
-        
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-hidden pt-20 pb-20">
+      {/* Main Content - Remover padding do topo */}
+      <main className="flex-1 overflow-hidden pb-20">
         <div className="h-full overflow-y-auto">
           <Outlet />
         </div>

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -18,6 +18,7 @@ import { MobilePageWrapper } from '../MobilePageWrapper';
 import { getCurrentDateForInput, getBrazilianTimestamp } from '@/utils/timezoneUtils';
 import { useBankAccounts } from '@/hooks/useBankAccounts';
 import { useCreditCards } from '@/hooks/useCreditCards';
+import { generateRecurrenceDates, formatRecurrenceInfo, calculateTotalDuration } from '@/utils/recurrenceUtils';
 
 const transactionSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
@@ -27,12 +28,31 @@ const transactionSchema = z.object({
   date: z.string().min(1, 'Data é obrigatória'),
   description: z.string().optional(),
   is_recurring: z.boolean().default(false),
-  recurrence_frequency: z.enum(['daily', 'weekly', 'monthly', 'quarterly', 'yearly']).optional(),
+  recurrence_frequency: z.enum([
+    'daily', 'weekly', 'biweekly', 'monthly', 'quarterly', 'semiannual', 'yearly', 'custom'
+  ]).optional(),
+  recurrence_count: z.number().min(0).max(365).optional(), // Permitir 0 no form
+  custom_days: z.number().min(1).optional(),
   recurrence_interval: z.number().min(1).default(1),
   recurrence_end_date: z.string().optional(),
 });
 
 type TransactionFormData = z.infer<typeof transactionSchema>;
+
+// Função utilitária para máscara de moeda
+function formatCurrencyInput(value: string) {
+  // Remove tudo que não for número
+  const onlyNumbers = value.replace(/\D/g, '');
+  // Converte para centavos
+  const cents = parseInt(onlyNumbers, 10);
+  if (isNaN(cents)) return 'R$ 0,00';
+  const formatted = (cents / 100).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2
+  });
+  return formatted;
+}
 
 export const MobileTransactionForm = () => {
   const { user } = useAuth();
@@ -57,6 +77,8 @@ export const MobileTransactionForm = () => {
       date: getCurrentDateForInput(),
       is_recurring: false,
       recurrence_interval: 1,
+      recurrence_count: 0, // Iniciar em 0
+      custom_days: 30,
     },
   });
 
@@ -79,6 +101,19 @@ export const MobileTransactionForm = () => {
     setSelectedAccountId(undefined);
     setSelectedCardId(undefined);
   }, [isEditing, id]);
+
+  // Novo estado para valor formatado
+  const [amountMasked, setAmountMasked] = React.useState('');
+  const amountInputRef = useRef<HTMLInputElement>(null);
+
+  // Sincronizar valor do formulário com a máscara
+  useEffect(() => {
+    if (watch('amount') !== undefined && watch('amount') !== null && !isNaN(watch('amount'))) {
+      setAmountMasked(formatCurrencyInput(String(Math.round(Number(watch('amount') * 100)))));
+    } else {
+      setAmountMasked('R$ 0,00');
+    }
+  }, [watch('amount')]);
 
   // Buscar transação para edição
   const { data: transaction, isLoading: loadingTransaction, error: transactionError } = useQuery({
@@ -133,7 +168,7 @@ export const MobileTransactionForm = () => {
   });
 
   const createTransactionMutation = useMutation({
-    mutationFn: async (data: TransactionFormData) => {
+    mutationFn: async (data: TransactionFormData & { account_id?: string | null, card_id?: string | null }) => {
       if (!user) throw new Error('Usuário não autenticado');
 
       const transactionData: any = {
@@ -145,27 +180,22 @@ export const MobileTransactionForm = () => {
         description: data.description || null,
         user_id: user.id,
         is_recurring: data.is_recurring,
+        account_id: data.account_id || null,
+        card_id: data.card_id || null,
       };
 
       if (data.is_recurring) {
         transactionData.recurrence_frequency = data.recurrence_frequency;
-        transactionData.recurrence_interval = data.recurrence_interval;
-        transactionData.recurrence_end_date = data.recurrence_end_date || null;
-        
-        const { data: nextDate } = await supabase
-          .rpc('calculate_next_recurrence_date', {
-            base_date: data.date,
-            frequency: data.recurrence_frequency,
-            interval_count: data.recurrence_interval
-          });
-        
-        transactionData.next_recurrence_date = nextDate;
+        transactionData.recurrence_count = data.recurrence_count;
+        if (data.recurrence_frequency === 'custom') {
+          transactionData.custom_days = data.custom_days;
+        }
+        transactionData.recurrence_interval = data.recurrence_interval || 1;
       }
 
       const { error } = await supabase
         .from('transactions')
         .insert(transactionData);
-      
       if (error) throw error;
     },
     onSuccess: () => {
@@ -204,6 +234,8 @@ export const MobileTransactionForm = () => {
         description: data.description || null,
         is_recurring: data.is_recurring,
         updated_at: getBrazilianTimestamp(),
+        account_id: (data as any).account_id ?? null,
+        card_id: (data as any).card_id ?? null,
       };
 
       console.log('📝 Dados que serão atualizados:', transactionData);
@@ -264,9 +296,46 @@ export const MobileTransactionForm = () => {
   });
 
   const onSubmit = async (data: TransactionFormData) => {
+    // Se recorrente, exigir pelo menos 1 repetição
+    if (data.is_recurring && (!data.recurrence_count || data.recurrence_count < 1)) {
+      toast({
+        title: 'Erro!',
+        description: 'Informe o número de repetições para recorrência.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    // Checagem manual de campos obrigatórios
+    const missingFields: string[] = [];
+    if (!data.title) missingFields.push('Título');
+    if (!data.amount || isNaN(data.amount) || data.amount <= 0) missingFields.push('Valor');
+    if (!data.type) missingFields.push('Tipo');
+    if (!data.category_id) missingFields.push('Categoria');
+    if (!data.date) missingFields.push('Data');
+    if (data.is_recurring && !data.recurrence_frequency) missingFields.push('Frequência da recorrência');
+    if (data.is_recurring && (!data.recurrence_count || data.recurrence_count < 1)) missingFields.push('Nº de repetições');
+    if (data.is_recurring && data.recurrence_frequency === 'custom' && (!data.custom_days || data.custom_days < 1)) missingFields.push('Dias personalizados da recorrência');
+    if (missingFields.length > 0) {
+      toast({
+        title: 'Erro ao salvar transação!',
+        description: `Preencha os campos obrigatórios: ${missingFields.join(', ')}`,
+        variant: 'destructive',
+      });
+      return;
+    }
     // Se não houver conta selecionada nem padrão, salva como null
-    const account_id = mentionAccount ? selectedAccountId : (defaultAccount ? defaultAccount.id : null);
-    const card_id = mentionCard ? selectedCardId : undefined;
+    let account_id: string | null = null;
+    let card_id: string | null = null;
+    if (mentionAccount) {
+      account_id = selectedAccountId;
+      card_id = null;
+    } else if (mentionCard) {
+      card_id = selectedCardId;
+      account_id = null;
+    } else if (defaultAccount) {
+      account_id = defaultAccount.id;
+      card_id = null;
+    }
 
     if (isEditing) {
       updateTransactionMutation.mutate({ ...(data as any), account_id, card_id } as any);
@@ -294,12 +363,27 @@ export const MobileTransactionForm = () => {
         recurrence_frequency: transaction.recurrence_frequency as any || undefined,
         recurrence_interval: transaction.recurrence_interval || 1,
         recurrence_end_date: transaction.recurrence_end_date || '',
+        recurrence_count: transaction.recurrence_count || 12,
+        custom_days: 'custom_days' in transaction ? Number(transaction.custom_days) : 30,
       });
-      
       // Garantir que os valores dos selects sejam definidos explicitamente
       setValue('type', transaction.type);
       setValue('category_id', transaction.category_id || '');
-      
+      // Preencher conta/cartão
+      if ((transaction as any)?.account_id) {
+        setMentionAccount(true);
+        setSelectedAccountId((transaction as any).account_id);
+      } else {
+        setMentionAccount(false);
+        setSelectedAccountId(undefined);
+      }
+      if ((transaction as any)?.card_id) {
+        setMentionCard(true);
+        setSelectedCardId((transaction as any).card_id);
+      } else {
+        setMentionCard(false);
+        setSelectedCardId(undefined);
+      }
       console.log('✅ Formulário preenchido com sucesso');
       console.log('🔍 Valores setados:', {
         type: transaction.type,
@@ -315,6 +399,34 @@ export const MobileTransactionForm = () => {
       setValue('category_id', transaction.category_id);
     }
   }, [transaction, isEditing, categories, setValue]);
+
+  // Estados para preview de recorrência
+  const recurrenceFrequency = watch('recurrence_frequency');
+  const recurrenceInterval = watch('recurrence_interval') || 1;
+  const recurrenceEndDate = watch('recurrence_end_date');
+  const recurrenceCount = watch('recurrence_count') || 12;
+  const customDays = watch('custom_days') || 30;
+  const startDate = watch('date');
+  const [previewDates, setPreviewDates] = React.useState<string[]>([]);
+
+  React.useEffect(() => {
+    if (isRecurring && recurrenceFrequency && recurrenceCount && startDate) {
+      try {
+        const dates = generateRecurrenceDates({
+          frequency: recurrenceFrequency,
+          interval: recurrenceInterval,
+          startDate: startDate,
+          count: Math.min(recurrenceCount, 5),
+          customDays: recurrenceFrequency === 'custom' ? customDays : undefined
+        });
+        setPreviewDates(dates);
+      } catch (error) {
+        setPreviewDates([]);
+      }
+    } else {
+      setPreviewDates([]);
+    }
+  }, [isRecurring, recurrenceFrequency, recurrenceInterval, recurrenceCount, startDate, customDays]);
 
   // Verificar se transação não existe ou não pertence ao usuário
   if (isEditing && !loadingTransaction && !transaction) {
@@ -347,7 +459,7 @@ export const MobileTransactionForm = () => {
   return (
     <MobilePageWrapper>
       {/* Header com botão voltar */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
           <Button 
             variant="ghost" 
@@ -356,7 +468,7 @@ export const MobileTransactionForm = () => {
           >
             <ArrowLeft size={20} />
           </Button>
-          <h1 className="text-xl font-bold">
+          <h1 className="text-base font-semibold text-gray-900">
             {isEditing ? 'Editar Transação' : 'Nova Transação'}
           </h1>
         </div>
@@ -378,236 +490,293 @@ export const MobileTransactionForm = () => {
 
       {/* Formulário só é exibido se não estiver carregando */}
       {(!isEditing || (isEditing && !loadingTransaction && transaction)) && (
-
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Tipo e Valor */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="type">Tipo</Label>
-            <MobileListSelect
-              value={transactionType}
-              onValueChange={(value) => {
-                setValue('type', value as 'income' | 'expense');
-                setValue('category_id', '');
-              }}
-              placeholder="Selecione o tipo"
-              options={[
-                { value: 'income', label: 'Receita' },
-                { value: 'expense', label: 'Despesa' }
-              ]}
-            />
-            {errors.type && (
-              <p className="text-sm text-destructive">{errors.type.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="amount">Valor</Label>
-            <Input
-              id="amount"
-              type="number"
-              step="0.01"
-              placeholder="0,00"
-              {...register('amount', { valueAsNumber: true })}
-            />
-            {errors.amount && (
-              <p className="text-sm text-destructive">{errors.amount.message}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Título */}
-        <div className="space-y-2">
-          <Label htmlFor="title">Título</Label>
-          <Input
-            id="title"
-            placeholder="Ex: Supermercado, Salário..."
-            {...register('title')}
-          />
-          {errors.title && (
-            <p className="text-sm text-destructive">{errors.title.message}</p>
-          )}
-        </div>
-
-        {/* Categoria e Data */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="category_id">Categoria</Label>
-            <MobileListSelect
-              value={selectedCategoryId || ''}
-              onValueChange={(value) => setValue('category_id', value)}
-              placeholder="Selecione a categoria"
-              options={categories?.map(category => ({
-                value: category.id,
-                label: category.name,
-                content: (
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: category.color }}
-                    />
-                    <span>{category.name}</span>
-                  </div>
-                )
-              })) || []}
-            />
-            {errors.category_id && (
-              <p className="text-sm text-destructive">{errors.category_id.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="date">Data</Label>
-            <Input
-              id="date"
-              type="date"
-              {...register('date')}
-            />
-            {errors.date && (
-              <p className="text-sm text-destructive">{errors.date.message}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Observações */}
-        <div className="space-y-2">
-          <Label htmlFor="description">Observações (opcional)</Label>
-          <Textarea
-            id="description"
-            placeholder="Adicione observações..."
-            className="resize-none"
-            rows={3}
-            {...register('description')}
-          />
-        </div>
-
-        {/* Recorrência */}
-        <div className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="is_recurring"
-              checked={isRecurring}
-              onCheckedChange={(checked) => setValue('is_recurring', !!checked)}
-            />
-            <Label htmlFor="is_recurring">
-              Transação recorrente
-            </Label>
-          </div>
-
-          {isRecurring && (
-            <div className="space-y-4 p-4 bg-muted rounded-lg">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="recurrence_frequency">Frequência</Label>
-                  <MobileListSelect
-                    value={watch('recurrence_frequency') || ''}
-                    onValueChange={(value) => setValue('recurrence_frequency', value as any)}
-                    placeholder="Selecione a frequência"
-                    options={[
-                      { value: 'daily', label: 'Diário' },
-                      { value: 'weekly', label: 'Semanal' },
-                      { value: 'monthly', label: 'Mensal' },
-                      { value: 'quarterly', label: 'Trimestral' },
-                      { value: 'yearly', label: 'Anual' }
-                    ]}
-                  />
-                  {errors.recurrence_frequency && (
-                    <p className="text-sm text-destructive">{errors.recurrence_frequency.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="recurrence_interval">Intervalo</Label>
-                  <Input
-                    id="recurrence_interval"
-                    type="number"
-                    min="1"
-                    placeholder="1"
-                    {...register('recurrence_interval', { valueAsNumber: true })}
-                  />
-                  {errors.recurrence_interval && (
-                    <p className="text-sm text-destructive">{errors.recurrence_interval.message}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="recurrence_end_date">Data final (opcional)</Label>
-                <Input
-                  id="recurrence_end_date"
-                  type="date"
-                  {...register('recurrence_end_date')}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Deixe em branco para recorrência indefinida
-                </p>
-              </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-white rounded-lg shadow-sm p-4 border">
+          {/* Tipo e Valor */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="type">Tipo</Label>
+              <MobileListSelect
+                value={transactionType}
+                onValueChange={(value) => {
+                  setValue('type', value as 'income' | 'expense');
+                  setValue('category_id', '');
+                }}
+                placeholder="Selecione o tipo"
+                options={[
+                  { value: 'income', label: 'Receita' },
+                  { value: 'expense', label: 'Despesa' }
+                ]}
+              />
+              {errors.type && (
+                <p className="text-xs text-destructive">{errors.type.message}</p>
+              )}
             </div>
-          )}
-        </div>
-
-        {/* NOVO BLOCO: Seleção de Conta/Cartão */}
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="mention-account"
-              checked={mentionAccount}
-              onCheckedChange={checked => setMentionAccount(!!checked)}
-            />
-            <Label htmlFor="mention-account">Mencionar Conta bancária</Label>
+            <div className="space-y-2">
+              <Label htmlFor="amount">Valor</Label>
+              <Input
+                id="amount"
+                type="text"
+                inputMode="numeric"
+                ref={amountInputRef}
+                value={amountMasked}
+                onChange={e => {
+                  const raw = e.target.value.replace(/\D/g, '');
+                  setAmountMasked(formatCurrencyInput(e.target.value));
+                  // Atualiza o valor do formulário em centavos
+                  setValue('amount', Number(raw) / 100, { shouldValidate: true });
+                }}
+                placeholder="R$ 0,00"
+                className="font-mono text-lg"
+              />
+              {errors.amount && (
+                <p className="text-xs text-destructive">{errors.amount.message}</p>
+              )}
+            </div>
           </div>
-          {mentionAccount && (
-            <MobileListSelect
-              value={selectedAccountId || ''}
-              onValueChange={setSelectedAccountId}
-              placeholder="Selecione a conta"
-              options={bankAccounts.map(account => ({
-                value: account.id,
-                label: `${account.name}${account.is_default ? ' (Padrão)' : ''}`,
-              }))}
-            />
-          )}
 
-          <div className="flex items-center gap-2 mt-2">
-            <Checkbox
-              id="mention-card"
-              checked={mentionCard}
-              onCheckedChange={checked => setMentionCard(!!checked)}
+          {/* Título */}
+          <div className="space-y-2">
+            <Label htmlFor="title">Título</Label>
+            <Input
+              id="title"
+              placeholder="Ex: Supermercado, Salário..."
+              {...register('title')}
             />
-            <Label htmlFor="mention-card">Mencionar Cartão de Crédito</Label>
+            {errors.title && (
+              <p className="text-sm text-destructive">{errors.title.message}</p>
+            )}
           </div>
-          {mentionCard && (
-            <MobileListSelect
-              value={selectedCardId || ''}
-              onValueChange={setSelectedCardId}
-              placeholder="Selecione o cartão"
-              options={creditCards.map(card => ({
-                value: card.id,
-                label: `${card.name}${card.last_four_digits ? ` •••• ${card.last_four_digits}` : ''}${card.is_default ? ' (Padrão)' : ''}`,
-              }))}
-            />
-          )}
-        </div>
 
-        {/* Botões */}
-        <div className="flex space-x-3 pt-6">
-          <Button 
-            type="button" 
-            variant="outline" 
-            className="flex-1"
-            onClick={() => navigate('/transactions')}
-          >
-            Cancelar
-          </Button>
-          <Button 
-            type="submit" 
-            className="flex-1"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Salvando...' : (isEditing ? 'Atualizar' : 'Salvar')}
-          </Button>
-        </div>
-      </form>
+          {/* Categoria e Data */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="category_id">Categoria</Label>
+              <MobileListSelect
+                value={selectedCategoryId || ''}
+                onValueChange={(value) => setValue('category_id', value)}
+                placeholder="Selecione a categoria"
+                options={categories?.map(category => ({
+                  value: category.id,
+                  label: category.name,
+                  content: (
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: category.color }}
+                      />
+                      <span>{category.name}</span>
+                    </div>
+                  )
+                })) || []}
+              />
+              {errors.category_id && (
+                <p className="text-sm text-destructive">{errors.category_id.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="date">Data</Label>
+              <Input
+                id="date"
+                type="date"
+                {...register('date')}
+              />
+              {errors.date && (
+                <p className="text-sm text-destructive">{errors.date.message}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Observações */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Observações (opcional)</Label>
+            <Textarea
+              id="description"
+              placeholder="Adicione observações..."
+              className="resize-none"
+              rows={3}
+              {...register('description')}
+            />
+          </div>
+
+          {/* Recorrência */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="is_recurring"
+                checked={isRecurring}
+                onCheckedChange={(checked) => setValue('is_recurring', !!checked)}
+              />
+              <Label htmlFor="is_recurring">
+                Transação recorrente
+              </Label>
+            </div>
+
+            {isRecurring && (
+              <div className="space-y-4 p-4 bg-muted rounded-lg">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="recurrence_frequency">Frequência</Label>
+                    <MobileListSelect
+                      value={recurrenceFrequency || ''}
+                      onValueChange={(value) => setValue('recurrence_frequency', value as any)}
+                      placeholder="Selecione a frequência"
+                      options={[
+                        { value: 'daily', label: 'Diário' },
+                        { value: 'weekly', label: 'Semanal' },
+                        { value: 'biweekly', label: 'Quinzenal' },
+                        { value: 'monthly', label: 'Mensal' },
+                        { value: 'quarterly', label: 'Trimestral' },
+                        { value: 'semiannual', label: 'Semestral' },
+                        { value: 'yearly', label: 'Anual' },
+                        { value: 'custom', label: 'Personalizado' }
+                      ]}
+                    />
+                    {errors.recurrence_frequency && (
+                      <p className="text-xs text-destructive">{errors.recurrence_frequency.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="recurrence_count">Nº de repetições</Label>
+                    <Input
+                      id="recurrence_count"
+                      type="number"
+                      min="0"
+                      max="365"
+                      placeholder="0"
+                      {...register('recurrence_count', { valueAsNumber: true })}
+                    />
+                    {errors.recurrence_count && (
+                      <p className="text-xs text-destructive">{errors.recurrence_count.message}</p>
+                    )}
+                  </div>
+                </div>
+                {recurrenceFrequency === 'custom' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="custom_days">Repetir a cada quantos dias?</Label>
+                    <Input
+                      id="custom_days"
+                      type="number"
+                      min="1"
+                      placeholder="30"
+                      {...register('custom_days', { valueAsNumber: true })}
+                    />
+                    {errors.custom_days && (
+                      <p className="text-xs text-destructive">{errors.custom_days.message}</p>
+                    )}
+                  </div>
+                )}
+                {/* Remover campo Data Final */}
+                {/* Resumo e preview só aparecem se frequência e repetições preenchidos */}
+                {(recurrenceFrequency && recurrenceCount > 0) && (
+                  <div className="space-y-2">
+                    <Label>Resumo</Label>
+                    <div className="text-xs text-muted-foreground">
+                      <p>
+                        {formatRecurrenceInfo(recurrenceFrequency, recurrenceInterval, customDays)} • {recurrenceCount} repetições
+                      </p>
+                      <p>
+                        Duração total: {calculateTotalDuration(recurrenceFrequency, recurrenceInterval, recurrenceCount, customDays)}
+                      </p>
+                    </div>
+                    {previewDates.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-xs font-medium text-muted-foreground mb-1">
+                          Primeiras datas ({previewDates.length}):
+                        </p>
+                        <div className="text-xs text-muted-foreground">
+                          {previewDates.map((date, index) => (
+                            <span key={index}>
+                              {new Date(date).toLocaleDateString('pt-BR')}
+                              {index < previewDates.length - 1 && ', '}
+                            </span>
+                          ))}
+                          {recurrenceCount > 5 && '...'}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* NOVO BLOCO: Seleção de Conta/Cartão */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="mention-account"
+                checked={mentionAccount}
+                onCheckedChange={checked => {
+                  setMentionAccount(!!checked);
+                  if (checked) {
+                    setMentionCard(false);
+                    setSelectedCardId(undefined);
+                  }
+                }}
+                disabled={mentionCard}
+              />
+              <Label htmlFor="mention-account">Mencionar Conta bancária</Label>
+            </div>
+            {mentionAccount && (
+              <MobileListSelect
+                value={selectedAccountId || ''}
+                onValueChange={setSelectedAccountId}
+                placeholder="Selecione a conta"
+                options={bankAccounts.map(account => ({
+                  value: account.id,
+                  label: `${account.name}${account.is_default ? ' (Padrão)' : ''}`,
+                }))}
+              />
+            )}
+
+            <div className="flex items-center gap-2 mt-2">
+              <Checkbox
+                id="mention-card"
+                checked={mentionCard}
+                onCheckedChange={checked => {
+                  setMentionCard(!!checked);
+                  if (checked) {
+                    setMentionAccount(false);
+                    setSelectedAccountId(undefined);
+                  }
+                }}
+                disabled={mentionAccount}
+              />
+              <Label htmlFor="mention-card">Mencionar Cartão de Crédito</Label>
+            </div>
+            {mentionCard && (
+              <MobileListSelect
+                value={selectedCardId || ''}
+                onValueChange={setSelectedCardId}
+                placeholder="Selecione o cartão"
+                options={creditCards.map(card => ({
+                  value: card.id,
+                  label: `${card.name}${card.last_four_digits ? ` •••• ${card.last_four_digits}` : ''}${card.is_default ? ' (Padrão)' : ''}`,
+                }))}
+              />
+            )}
+          </div>
+
+          {/* Botões */}
+          <div className="flex space-x-3 pt-6">
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="flex-1"
+              onClick={() => navigate('/transactions')}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              type="submit" 
+              className="flex-1"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Salvando...' : (isEditing ? 'Atualizar' : 'Salvar')}
+            </Button>
+          </div>
+        </form>
       )}
     </MobilePageWrapper>
   );

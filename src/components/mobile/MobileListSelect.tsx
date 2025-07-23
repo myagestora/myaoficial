@@ -11,6 +11,7 @@ interface MobileListSelectProps {
     label: string
     color?: string
     content?: React.ReactNode
+    isLabel?: boolean
   }>
 }
 
@@ -70,7 +71,19 @@ const MobileListSelect = ({ value, onValueChange, placeholder, options }: Mobile
           <div className="max-h-60 overflow-y-auto py-1">
             {options.map((option) => {
               const isSelected = value === option.value
+              const isLabel = option.isLabel;
               
+              if (isLabel) {
+                return (
+                  <div
+                    key={option.value}
+                    className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide select-none cursor-default opacity-80"
+                    style={{ pointerEvents: 'none' }}
+                  >
+                    {option.content || option.label}
+                  </div>
+                );
+              }
               return (
                 <div
                   key={option.value}
@@ -99,7 +112,7 @@ const MobileListSelect = ({ value, onValueChange, placeholder, options }: Mobile
                     <span className="truncate">{option.content || option.label}</span>
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
         </div>

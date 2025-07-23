@@ -299,10 +299,10 @@ const Dashboard = () => {
               <TrendingUp style={cardIconStyle} className="text-green-600" />
             </span>
           }
-          title={<span className="block text-base font-semibold truncate" style={{ minHeight: 24 }}>Receitas</span>}
+          title="Receitas"
           value={`R$ ${currentStats.totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
           valueColor="text-green-600"
-          description={<span className="block text-xs truncate" style={{ minHeight: 18 }}>Total de receitas</span>}
+          description="Total de receitas"
         />
         {/* Despesas Pagas */}
         <ModernCard
@@ -311,10 +311,10 @@ const Dashboard = () => {
               <TrendingDown style={cardIconStyle} className="text-red-600" />
             </span>
           }
-          title={<span className="block text-base font-semibold truncate" style={{ minHeight: 24 }}>Despesas Pagas</span>}
+          title="Despesas Pagas"
           value={`R$ ${currentStats.paidExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
           valueColor="text-red-600"
-          description={<span className="block text-xs truncate" style={{ minHeight: 18 }}>Despesas realizadas</span>}
+          description="Despesas realizadas"
         />
         {/* A Pagar */}
         <ModernCard
@@ -323,10 +323,10 @@ const Dashboard = () => {
               <TrendingDown style={cardIconStyle} className="text-orange-600" />
             </span>
           }
-          title={<span className="block text-base font-semibold truncate" style={{ minHeight: 24 }}>A Pagar</span>}
+          title="A Pagar"
           value={`R$ ${currentStats.pendingExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
           valueColor="text-orange-600"
-          description={<span className="block text-xs truncate" style={{ minHeight: 18 }}>Despesas pendentes</span>}
+          description="Despesas pendentes"
         />
         {/* Saldo Atual */}
         <ModernCard
@@ -335,10 +335,10 @@ const Dashboard = () => {
               <DollarSign style={cardIconStyle} className="text-blue-600" />
             </span>
           }
-          title={<span className="block text-base font-semibold truncate" style={{ minHeight: 24 }}>Saldo</span>}
+          title="Saldo"
           value={`R$ ${currentStats.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
           valueColor={currentStats.balance >= 0 ? 'text-blue-600' : 'text-red-600'}
-          description={<span className="block text-xs truncate" style={{ minHeight: 18 }}>Saldo atual</span>}
+          description="Saldo atual"
         />
         {/* Saldo Previsto */}
         <ModernCard
@@ -347,10 +347,10 @@ const Dashboard = () => {
               <DollarSign style={cardIconStyle} className="text-cyan-600" />
             </span>
           }
-          title={<span className="block text-base font-semibold truncate" style={{ minHeight: 24 }}>Saldo Previsto</span>}
+          title="Saldo Previsto"
           value={`R$ ${predictedBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
           valueColor={predictedBalance >= 0 ? 'text-cyan-600' : 'text-red-600'}
-          description={<span className="block text-xs truncate" style={{ minHeight: 18 }}>Após despesas pagas</span>}
+          description="Após despesas pagas"
         />
         {/* Metas */}
         <ModernCard
@@ -359,10 +359,10 @@ const Dashboard = () => {
               <Target style={cardIconStyle} className="text-purple-600" />
             </span>
           }
-          title={<span className="block text-base font-semibold truncate" style={{ minHeight: 24 }}>Metas</span>}
+          title="Metas"
           value={`${currentGoalsProgress}%`}
           valueColor="text-purple-600"
-          description={<span className="block text-xs truncate" style={{ minHeight: 18 }}>Progresso das metas</span>}
+          description="Progresso das metas"
         />
       </div>
 
@@ -396,7 +396,7 @@ const Dashboard = () => {
                     <span className="text-xs text-gray-700">{utilizacao.toFixed(1)}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
-                    <div className="bg-purple-500 h-2 rounded-full transition-all" style={{ width: `${utilizacao}%` }} />
+                    <div className="h-2 rounded-full transition-all" style={{ width: `${Math.min(utilizacao, 100)}%`, backgroundColor: card.color }} />
                   </div>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-gray-400">Saldo Atual</span>

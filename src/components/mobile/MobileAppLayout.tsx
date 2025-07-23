@@ -8,11 +8,14 @@ import {
   CreditCard, 
   Target, 
   BarChart3, 
-  Menu
+  Menu,
+  Calendar // Adicionar o ícone Calendar
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-
+import { WhatsAppIcon } from '@/components/ui/whatsapp-icon';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 
 interface MobileAppLayoutProps {
@@ -24,6 +27,7 @@ const navigationItems = [
   { path: '/transactions', icon: CreditCard, label: 'Transações' },
   { path: '/goals', icon: Target, label: 'Metas' },
   { path: '/reports', icon: BarChart3, label: 'Relatórios' },
+  { path: '/scheduled', icon: Calendar, label: 'Agendadas' }, // Novo item
 ];
 
 export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
@@ -32,6 +36,34 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const currentPath = location.pathname;
+
+  // Buscar número do WhatsApp do sistema
+  const { data: whatsappNumber } = useQuery({
+    queryKey: ['system-config-support-phone'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase.from('system_config').select('value').eq('key', 'support_phone').maybeSingle();
+        if (error) return null;
+        const numberValue = data?.value;
+        if (typeof numberValue === 'string') {
+          return numberValue.replace(/^"|"$/g, '').replace(/\+/, '');
+        }
+        return numberValue ? JSON.stringify(numberValue).replace(/^"|"$/g, '').replace(/\+/, '') : null;
+      } catch {
+        return null;
+      }
+    },
+    retry: 1,
+    refetchOnWindowFocus: false
+  });
+
+  const formatPhoneNumber = (phone: string) => {
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (cleanPhone.length >= 11) {
+      return `(${cleanPhone.slice(2, 4)}) ${cleanPhone.slice(4, 9)}-${cleanPhone.slice(9)}`;
+    }
+    return phone;
+  };
 
   const NavItem = ({ path, icon: Icon, label, onClick }: {
     path: string;
@@ -62,10 +94,11 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-background overflow-hidden">
-      {/* Header - Fixed */}
-      <header className="fixed top-0 left-0 right-0 flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
-        <div className="flex items-center space-x-3">
+    <div className="min-h-screen flex flex-col bg-background">
+      {/* Header - Agora não fixo */}
+      <header className="grid grid-cols-[1fr_2.2fr_0.7fr_0.7fr] items-center p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        {/* Logo à esquerda */}
+        <div className="flex items-center">
           <button
             onClick={() => navigate('/dashboard')}
             className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
@@ -77,9 +110,30 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
             />
           </button>
         </div>
-        
-        <div className="flex items-center space-x-2">
+        {/* WhatsApp centralizado e maior */}
+        <div className="flex flex-col items-center justify-center">
+          <a
+            href={`https://wa.me/${whatsappNumber || '5531973035490'}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex flex-col items-center justify-center"
+            style={{ textDecoration: 'none' }}
+          >
+            <span className="flex items-center gap-1">
+              <WhatsAppIcon size={18} className="text-green-600" />
+              <span className="text-xs font-semibold text-green-700">
+                {whatsappNumber ? formatPhoneNumber(whatsappNumber) : '(31) 97303-5490'}
+              </span>
+            </span>
+            <span className="text-[11px] text-green-700 font-medium mt-0.5">Use pelo WhatsApp</span>
+          </a>
+        </div>
+        {/* Notificações */}
+        <div className="flex items-center justify-center">
           <NotificationBell />
+        </div>
+        {/* Menu hamburguer */}
+        <div className="flex items-center justify-center">
           <Button 
             variant="ghost" 
             size="icon" 
@@ -91,8 +145,8 @@ export const MobileAppLayout = ({ children }: MobileAppLayoutProps) => {
         </div>
       </header>
 
-      {/* Main Content - With top and bottom padding for fixed header/footer */}
-      <main className="flex-1 overflow-auto pt-20 pb-20">
+      {/* Main Content - Remover padding do topo */}
+      <main className="flex-1 overflow-auto pb-20">
         <div className="p-4">
           {children || <MobileRouteHandler />}
         </div>

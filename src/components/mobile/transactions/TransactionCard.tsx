@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Calendar, Edit, Trash2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Calendar, Edit, Trash2, CreditCard, Ban as Bank } from 'lucide-react';
 
 interface Transaction {
   id: string;
@@ -15,6 +15,11 @@ interface Transaction {
     name: string;
     color: string;
   };
+  account_id?: string;
+  account_name?: string;
+  card_id?: string;
+  card_name?: string;
+  card_last_four_digits?: string;
 }
 
 interface TransactionCardProps {
@@ -25,6 +30,10 @@ interface TransactionCardProps {
   onConfirmDelete: (id: string) => void;
   onCancelDelete: () => void;
   onDelete: (id: string) => void;
+  // Novos props para exibir nome do banco/cartão
+  bankName?: string;
+  cardName?: string;
+  cardLastFour?: string;
 }
 
 export const TransactionCard = ({ 
@@ -70,7 +79,7 @@ export const TransactionCard = ({
 
   return (
     <Card className="hover:shadow-sm transition-shadow">
-      <CardContent className="p-4">
+      <CardContent className="p-4 pb-2">
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -112,49 +121,50 @@ export const TransactionCard = ({
           </div>
           
           {/* Ações */}
-          {deletingId === transaction.id ? (
-            // Confirmação inline
-            <div className="space-y-3 pt-2 border-t">
-              <p className="text-sm text-center text-muted-foreground">
-                Deseja realmente excluir esta transação?
-              </p>
-              <div className="flex space-x-2">
-                <Button 
-                  variant="destructive" 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => onDelete(transaction.id)}
-                >
-                  Confirmar
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={onCancelDelete}
-                >
-                  Cancelar
-                </Button>
-              </div>
+          {/* Rodapé cinza com banco/cartão e ícones */}
+          <div className="bg-gray-100 px-3 py-2 flex items-center justify-between rounded-b-lg border-t">
+            <div className="flex items-center gap-2 min-w-0">
+              {transaction.account_id && (
+                <span className="flex items-center gap-1 text-xs text-gray-700 truncate">
+                  <Bank size={13} className="text-blue-600" />
+                  {transaction.account_name || 'Conta'}
+                </span>
+              )}
+              {transaction.card_id && (
+                <span className="flex items-center gap-1 text-xs text-gray-700 truncate">
+                  <CreditCard size={13} className="text-purple-600" />
+                  {transaction.card_name || 'Cartão'}
+                  {transaction.card_last_four_digits && (
+                    <span className="text-[10px] text-gray-400 ml-1">•••• {transaction.card_last_four_digits}</span>
+                  )}
+                </span>
+              )}
             </div>
-          ) : (
-            <div className="flex space-x-2 pt-2 border-t">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="flex-1"
+            <div className="flex items-center gap-2">
+              <button
+                className="p-1 rounded hover:bg-gray-200"
                 onClick={() => navigate(`/transactions/editar/${transaction.id}`)}
+                title="Editar"
               >
-                <Edit size={14} className="mr-1" />
-                Editar
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
+                <Edit size={16} />
+              </button>
+              <button
+                className="p-1 rounded hover:bg-gray-200"
                 onClick={() => onConfirmDelete(transaction.id)}
+                title="Remover"
               >
-                <Trash2 size={14} />
-              </Button>
+                <Trash2 size={16} />
+              </button>
+            </div>
+          </div>
+          {/* Confirmação inline de remoção */}
+          {deletingId === transaction.id && (
+            <div className="bg-white border-t px-3 py-2 text-center text-sm">
+              <p className="mb-2">Deseja realmente excluir esta transação?</p>
+              <div className="flex gap-2 justify-center">
+                <Button size="sm" variant="destructive" onClick={() => onDelete(transaction.id)}>Confirmar</Button>
+                <Button size="sm" variant="outline" onClick={onCancelDelete}>Cancelar</Button>
+              </div>
             </div>
           )}
         </div>
