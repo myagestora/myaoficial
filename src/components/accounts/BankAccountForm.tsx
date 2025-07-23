@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useBankAccounts, type BankAccount, type CreateBankAccountData } from '@/hooks/useBankAccounts';
 import { SYSTEM_COLORS } from '@/lib/colors';
+import { ChevronRight } from 'lucide-react';
 
 const bankAccountSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
@@ -80,106 +81,110 @@ export const BankAccountForm = ({ account, onSuccess }: BankAccountFormProps) =>
   ];
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="name">Nome da Conta *</Label>
-        <Input
-          id="name"
-          {...register('name')}
-          placeholder="Ex: Conta Corrente Banco XYZ"
-        />
-        {errors.name && (
-          <p className="text-sm text-red-500">{errors.name.message}</p>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="type">Tipo de Conta *</Label>
-        <Select value={watchedType} onValueChange={(value) => setValue('type', value as any)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Selecione o tipo" />
-          </SelectTrigger>
-          <SelectContent>
-            {accountTypes.map((type) => (
-              <SelectItem key={type.value} value={type.value}>
-                {type.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="bank_name">Nome do Banco</Label>
-        <Input
-          id="bank_name"
-          {...register('bank_name')}
-          placeholder="Ex: Banco do Brasil"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="account_number">Número da Conta</Label>
-        <Input
-          id="account_number"
-          {...register('account_number')}
-          placeholder="Ex: 12345-6"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="balance">Saldo Inicial</Label>
-        <Input
-          id="balance"
-          type="number"
-          step="0.01"
-          {...register('balance', { valueAsNumber: true })}
-          placeholder="0.00"
-        />
-        {errors.balance && (
-          <p className="text-sm text-red-500">{errors.balance.message}</p>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <Label>Cor</Label>
-        <div className="flex flex-wrap gap-2 w-full justify-start">
-          {SYSTEM_COLORS.map((color) => (
-            <button
-              key={color}
-              type="button"
-              onClick={() => setValue('color', color)}
-              className={`w-8 h-8 rounded-full border-2 ${
-                watchedColor === color ? 'border-foreground' : 'border-border'
-              }`}
-              style={{ backgroundColor: color }}
-            />
-          ))}
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 px-1">
+      <div className="grid grid-cols-1 gap-3">
+        <div className="space-y-1">
+          <Label htmlFor="name">Nome da Conta *</Label>
+          <Input
+            id="name"
+            {...register('name')}
+            placeholder="Ex: Conta Corrente Banco XYZ"
+            className="text-base"
+          />
+          {errors.name && (
+            <p className="text-sm text-destructive">{errors.name.message}</p>
+          )}
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="type">Tipo de Conta *</Label>
+          <Select value={watchedType} onValueChange={(value) => setValue('type', value as any)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione o tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              {accountTypes.map((type) => (
+                <SelectItem key={type.value} value={type.value}>
+                  {type.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="bank_name">Nome do Banco</Label>
+          <Input
+            id="bank_name"
+            {...register('bank_name')}
+            placeholder="Ex: Banco do Brasil"
+            className="text-base"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="account_number">Número da Conta</Label>
+          <Input
+            id="account_number"
+            {...register('account_number')}
+            placeholder="Ex: 12345-6"
+            className="text-base"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="balance">Saldo Inicial</Label>
+          <Input
+            id="balance"
+            type="number"
+            step="0.01"
+            {...register('balance', { valueAsNumber: true })}
+            placeholder="0.00"
+            className="text-base"
+          />
+          {errors.balance && (
+            <p className="text-sm text-destructive">{errors.balance.message}</p>
+          )}
+        </div>
+        <div className="space-y-1">
+          <Label>Cor</Label>
+          <div className="relative">
+            <div className="flex flex-nowrap gap-2 overflow-x-auto pb-1 hide-scrollbar pr-8">
+              {SYSTEM_COLORS.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => setValue('color', color)}
+                  className={`w-8 h-8 rounded-full border-2 transition-all ${watchedColor === color ? 'border-foreground scale-110' : 'border-muted-foreground/30'}`}
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+            </div>
+            {/* Gradiente à direita */}
+            <div className="pointer-events-none absolute top-0 right-0 h-full w-8 bg-gradient-to-l from-white via-white/80 to-transparent" />
+            {/* Ícone de seta */}
+            <div className="pointer-events-none absolute top-1/2 right-1.5 -translate-y-1/2 flex items-center justify-center">
+              <ChevronRight size={18} className="text-muted-foreground/70" />
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center space-x-2 pt-1">
+          <Switch
+            id="is_default"
+            checked={watchedIsDefault}
+            onCheckedChange={(checked) => setValue('is_default', checked)}
+          />
+          <Label htmlFor="is_default">Definir como conta padrão</Label>
         </div>
       </div>
-
-      <div className="flex items-center space-x-2">
-        <Switch
-          id="is_default"
-          checked={watchedIsDefault}
-          onCheckedChange={(checked) => setValue('is_default', checked)}
-        />
-        <Label htmlFor="is_default">Definir como conta padrão</Label>
-      </div>
-
-      <div className="flex justify-end space-x-2 pt-4">
-        <Button
-          type="submit"
-          disabled={createBankAccount.isPending || updateBankAccount.isPending}
-        >
-          {createBankAccount.isPending || updateBankAccount.isPending
-            ? 'Salvando...'
-            : account
-            ? 'Atualizar'
-            : 'Criar Conta'
-          }
-        </Button>
-      </div>
+      <Button
+        type="submit"
+        className="w-full h-12 text-base mt-2"
+        disabled={createBankAccount.isPending || updateBankAccount.isPending}
+      >
+        {createBankAccount.isPending || updateBankAccount.isPending
+          ? 'Salvando...'
+          : account
+          ? 'Atualizar'
+          : 'Criar Conta'
+        }
+      </Button>
     </form>
   );
 };

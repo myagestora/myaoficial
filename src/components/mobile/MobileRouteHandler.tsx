@@ -10,6 +10,10 @@ import { MobileScheduled } from './pages/MobileScheduled';
 import { MobileScheduledTransactionForm } from './pages/MobileScheduledTransactionForm';
 import { MobileCategories } from './pages/MobileCategories';
 import { MobileSettings } from './pages/MobileSettings';
+import MobileBankAccounts from './pages/MobileBankAccounts';
+import MobileCreditCards from './pages/MobileCreditCards';
+import MobileBankAccountForm from './pages/MobileBankAccountForm';
+import MobileCreditCardForm from './pages/MobileCreditCardForm';
 
 export const MobileRouteHandler = () => {
   return (
@@ -27,6 +31,12 @@ export const MobileRouteHandler = () => {
       <Route path="scheduled/nova" element={<MobileScheduledTransactionForm />} />
       <Route path="scheduled/editar/:id" element={<MobileScheduledTransactionForm />} />
       <Route path="categories" element={<MobileCategories />} />
+      <Route path="accounts" element={<MobileBankAccounts />} />
+      <Route path="accounts/nova" element={<MobileBankAccountForm />} />
+      <Route path="accounts/editar/:id" element={<MobileBankAccountForm />} />
+      <Route path="cards" element={<MobileCreditCards />} />
+      <Route path="cards/nova" element={<MobileCreditCardForm />} />
+      <Route path="cards/editar/:id" element={<MobileCreditCardForm />} />
       <Route path="*" element={<MobileDashboard />} />
     </Routes>
   );

@@ -10,7 +10,8 @@ import {
   Settings,
   X,
   Download,
-  LogOut
+  LogOut,
+  Banknote
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -33,6 +34,8 @@ const navigationItems = [
 const moreItems = [
   { path: '/scheduled', icon: Calendar, label: 'Agendadas' },
   { path: '/categories', icon: Grid3X3, label: 'Categorias' },
+  { path: '/accounts', icon: Banknote, label: 'Contas' },
+  { path: '/cards', icon: CreditCard, label: 'Cartões' },
   { path: '/settings', icon: Settings, label: 'Configurações' },
 ];
 
