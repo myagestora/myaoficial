@@ -211,55 +211,85 @@ export const MobileGoalForm = () => {
     }
   }, [goal, setValue]);
 
+  // Função utilitária para máscara de moeda
+  function formatCurrencyInput(value: string) {
+    const onlyNumbers = value.replace(/\D/g, '');
+    const cents = parseInt(onlyNumbers, 10);
+    if (isNaN(cents)) return 'R$ 0,00';
+    const formatted = (cents / 100).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2
+    });
+    return formatted;
+  }
+
+  // Estado para valor mascarado
+  const [amountMasked, setAmountMasked] = React.useState('');
+  const amountInputRef = React.useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (watch('target_amount') !== undefined && watch('target_amount') !== null && !isNaN(watch('target_amount'))) {
+      setAmountMasked(formatCurrencyInput(String(Math.round(Number(watch('target_amount') * 100)))));
+    } else {
+      setAmountMasked('R$ 0,00');
+    }
+  }, [watch('target_amount')]);
+
   return (
-    <MobilePageWrapper>
-      {/* Header com botão voltar */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-3">
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => navigate('/goals')}
-          >
-            <ArrowLeft size={20} />
-          </Button>
-          <h1 className="text-xl font-bold">
-            {isEditing ? 'Editar Meta' : 'Nova Meta'}
-          </h1>
+    <MobilePageWrapper className="bg-[#F6F8FA] min-h-screen p-2 space-y-3">
+      {/* Header padrão mobile */}
+      <div className="flex items-center gap-2 mb-1">
+        <Button 
+          variant="ghost" 
+          size="icon"
+          className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center"
+          onClick={() => navigate('/goals')}
+        >
+          <ArrowLeft size={20} className="text-blue-700" />
+        </Button>
+        <div>
+          <h1 className="text-base font-semibold text-gray-900">{isEditing ? 'Editar Meta' : 'Nova Meta'}</h1>
+          <p className="text-[11px] text-gray-400">Defina e acompanhe sua meta financeira</p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Título e Valor */}
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Título</Label>
-            <Input
-              id="title"
-              placeholder="Ex: Comprar carro, Viagem..."
-              {...register('title')}
-            />
-            {errors.title && (
-              <p className="text-sm text-destructive">{errors.title.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="target_amount">Valor da Meta</Label>
-            <Input
-              id="target_amount"
-              type="number"
-              step="0.01"
-              placeholder="0,00"
-              {...register('target_amount', { valueAsNumber: true })}
-            />
-            {errors.target_amount && (
-              <p className="text-sm text-destructive">{errors.target_amount.message}</p>
-            )}
-          </div>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-white rounded-lg shadow-sm p-4 border">
+        {/* Título */}
+        <div className="space-y-2">
+          <Label htmlFor="title">Título</Label>
+          <Input
+            id="title"
+            placeholder="Ex: Comprar carro, Viagem..."
+            {...register('title')}
+          />
+          {errors.title && (
+            <p className="text-sm text-destructive">{errors.title.message}</p>
+          )}
         </div>
 
-        {/* Tipo */}
+        {/* Valor da Meta */}
+        <div className="space-y-2">
+          <Label htmlFor="target_amount">Valor da Meta</Label>
+          <Input
+            id="target_amount"
+            type="text"
+            inputMode="numeric"
+            ref={amountInputRef}
+            value={amountMasked}
+            onChange={e => {
+              const raw = e.target.value.replace(/\D/g, '');
+              setAmountMasked(formatCurrencyInput(e.target.value));
+              setValue('target_amount', Number(raw) / 100, { shouldValidate: true });
+            }}
+            placeholder="R$ 0,00"
+            className="font-mono text-lg"
+          />
+          {errors.target_amount && (
+            <p className="text-sm text-destructive">{errors.target_amount.message}</p>
+          )}
+        </div>
+
+        {/* Tipo de Meta */}
         <div className="space-y-2">
           <Label htmlFor="goal_type">Tipo de Meta</Label>
           <MobileListSelect
@@ -278,7 +308,7 @@ export const MobileGoalForm = () => {
 
         {/* Campos condicionais */}
         {goalType === 'monthly_budget' && (
-          <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="category_id">Categoria</Label>
               <MobileListSelect
@@ -295,7 +325,6 @@ export const MobileGoalForm = () => {
                 placeholder="Selecione a categoria"
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="month_year">Mês/Ano</Label>
               <Input

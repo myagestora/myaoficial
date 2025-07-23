@@ -548,19 +548,49 @@ export const MobileDashboard = () => {
             <button className="text-xs text-purple-600 font-semibold hover:underline" onClick={() => navigate('/goals')}>Ver todas</button>
           </div>
           {/* Listar metas do mês */}
-          {(metasLoading ? [] : metasMes || []).slice(0, 2).map((goal: any, idx: number) => (
-            <div key={goal?.id || idx} className="mb-3 last:mb-0 bg-purple-50/40 rounded-lg p-3">
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-medium text-xs text-gray-900 truncate">{goal?.title || 'Meta'}</span>
-                <span className="text-xs text-purple-700 font-semibold">{goal?.progress || 0}%</span>
+          {(metasLoading ? [] : metasMes || []).slice(0, 2).map((goal: any, idx: number) => {
+            // Cálculo de progresso e status igual tela de Metas
+            const progress = goal.target_amount > 0 ? Math.round((goal.current_amount / goal.target_amount) * 100) : 0;
+            let status = 'on_track';
+            if (goal.goal_type === 'monthly_budget') {
+              if (progress > 100) status = 'exceeded';
+              else if (progress >= 80) status = 'warning';
+              else status = 'on_track';
+            } else {
+              if (progress >= 100) status = 'completed';
+              else if (progress >= 80) status = 'warning';
+              else status = 'on_track';
+            }
+            const getStatusColor = (status: string) => {
+              switch (status) {
+                case 'exceeded': return 'text-red-600';
+                case 'warning': return 'text-yellow-600';
+                case 'completed': return 'text-green-600';
+                default: return 'text-blue-600';
+              }
+            };
+            const getStatusText = (status: string) => {
+              switch (status) {
+                case 'exceeded': return 'Excedido';
+                case 'warning': return 'Atenção';
+                case 'completed': return 'Concluído';
+                default: return 'No prazo';
+              }
+            };
+            return (
+              <div key={goal?.id || idx} className="mb-3 last:mb-0 bg-purple-50/40 rounded-lg p-3">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-medium text-xs text-gray-900 truncate">{goal?.title || 'Meta'}</span>
+                  <span className={`text-xs font-semibold ${getStatusColor(status)}`}>{getStatusText(status)} {progress}%</span>
+                </div>
+                <Progress value={Math.min(progress, 100)} className="h-1 bg-purple-200" />
+                <div className="flex items-center justify-between mt-1 text-[11px] text-gray-500">
+                  <span><span className="font-medium text-gray-700">Gasto:</span> {formatCurrency(goal?.current_amount || 0)}</span>
+                  <span><span className="font-medium text-gray-700">Limite:</span> {formatCurrency(goal?.target_amount || 0)}</span>
+                </div>
               </div>
-              <Progress value={goal?.progress || 0} className="h-1 bg-purple-200" />
-              <div className="flex items-center justify-between mt-1 text-[11px] text-gray-500">
-                <span>R$ {goal?.current_amount?.toLocaleString('pt-BR') || '0,00'}</span>
-                <span>R$ {goal?.target_amount?.toLocaleString('pt-BR') || '0,00'}</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
       </div>
 
         {/* Transações Recentes - visual moderno */}
