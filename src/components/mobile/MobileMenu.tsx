@@ -128,7 +128,7 @@ export const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
         {/* Header com logo e botão fechar */}
         <div className="flex items-center justify-between px-5 py-4 border-b bg-gradient-to-r from-primary/5 to-primary/0">
           {logoUrl ? (
-            <img src={logoUrl.replace(/^"|"$/g, '')} alt="Logo" className="h-10 w-auto object-contain" style={{ maxWidth: 120 }} />
+            <img src={logoUrl.trim().replace(/^"|"$/g, '')} alt="Logo" className="h-10 w-auto object-contain max-w-[90px]" />
           ) : (
             <div className="h-10 w-24 bg-gray-100 rounded" />
           )}

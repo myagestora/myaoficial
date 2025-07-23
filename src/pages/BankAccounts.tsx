@@ -111,7 +111,12 @@ export default function BankAccounts() {
             key={account.id}
             icon={<DollarSign className="w-6 h-6" />}
             iconBgColor={account.color}
-            title={account.name}
+            title={
+              <span className="flex items-center gap-2">
+                <span>{account.name}</span>
+                {account.is_default && <Badge variant="secondary">Padrão</Badge>}
+              </span>
+            }
             value={formatBalance(getAccountBalance(account.id, account.balance))}
             valueColor="text-blue-700"
             description={getAccountTypeLabel(account.type)}
@@ -149,9 +154,6 @@ export default function BankAccounts() {
                     </AlertDialogContent>
                   </AlertDialog>
                 </div>
-            {account.is_default && (
-              <Badge variant="secondary" className="absolute top-4 left-16">Padrão</Badge>
-            )}
             <div className="flex flex-col gap-1 mt-2">
               {account.bank_name && (
                 <div className="flex items-center justify-between text-sm">

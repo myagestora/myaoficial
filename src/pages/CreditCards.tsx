@@ -109,7 +109,12 @@ export default function CreditCards() {
               key={card.id}
               icon={<CreditCardIcon className="w-6 h-6" />}
               iconBgColor={card.color}
-              title={card.name}
+              title={
+                <span className="flex items-center gap-2">
+                  <span>{card.name}</span>
+                  {card.is_default && <Badge variant="secondary">Padrão</Badge>}
+                </span>
+              }
               value={formatCurrency(saldoAtual)}
               valueColor="text-blue-700"
               description={card.bank_name || ''}
@@ -147,9 +152,7 @@ export default function CreditCards() {
                     </AlertDialogContent>
                   </AlertDialog>
                 </div>
-              {card.is_default && (
-                <Badge variant="secondary" className="absolute top-4 left-16">Padrão</Badge>
-              )}
+            
               <div className="flex flex-col gap-1 mt-2">
                 {card.credit_limit && (
                   <div className="flex items-center justify-between text-sm">
@@ -163,9 +166,9 @@ export default function CreditCards() {
                       </div>
                 <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
                         <div
-                          className="bg-primary h-2 rounded-full transition-all"
+                          className="h-2 rounded-full transition-all"
                           style={{
-                      width: `${utilizacao}%`,
+                      width: `${Math.min(utilizacao, 100)}%`,
                       backgroundColor: utilizacao > 80 ? '#ef4444' : card.color
                           }}
                         />
