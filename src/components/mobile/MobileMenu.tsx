@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { isIOSDevice } from '@/utils/mobileDetection';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 
 interface MobileMenuProps {
@@ -50,6 +51,31 @@ export const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
   const isAndroid = /android/i.test(userAgent);
   const menuVersion = "v8-android-fix";
   const debugTimestamp = Date.now();
+
+  // Buscar logo do sistema
+  const [logoUrl, setLogoUrl] = useState('');
+  useEffect(() => {
+    const loadLogo = async () => {
+      try {
+        const { data: configs } = await supabase
+          .from('system_config')
+          .select('key, value')
+          .eq('key', 'app_logo')
+          .single();
+        if (configs?.value) {
+          const logoValue = typeof configs.value === 'string' 
+            ? configs.value 
+            : JSON.stringify(configs.value);
+          setLogoUrl(logoValue);
+        } else {
+          setLogoUrl('https://api.myagestora.com.br/storage/v1/object/public/logos/logo-1751933896307.png');
+        }
+      } catch (error) {
+        setLogoUrl('https://api.myagestora.com.br/storage/v1/object/public/logos/logo-1751933896307.png');
+      }
+    };
+    loadLogo();
+  }, []);
 
   const handleNavigate = (path: string) => {
     navigate(path);
@@ -90,78 +116,57 @@ export const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
-      
-      {/* Menu Content */}
+      {/* Menu Content - novo layout */}
       <div 
         className={cn(
-          "absolute left-0 top-0 h-full w-72 bg-background border-r shadow-xl",
-          "transform transition-transform duration-300 ease-out",
-          "flex flex-col",
+          "absolute left-0 top-0 h-full w-80 bg-white border-r shadow-2xl flex flex-col",
+          "transition-transform duration-300 ease-out",
           isIOS && "mobile-menu-ios",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold text-foreground">Menu</h2>
+        {/* Header com logo e botão fechar */}
+        <div className="flex items-center justify-between px-5 py-4 border-b bg-gradient-to-r from-primary/5 to-primary/0">
+          {logoUrl ? (
+            <img src={logoUrl.replace(/^"|"$/g, '')} alt="Logo" className="h-10 w-auto object-contain" style={{ maxWidth: 120 }} />
+          ) : (
+            <div className="h-10 w-24 bg-gray-100 rounded" />
+          )}
           <Button
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="h-8 w-8"
+            className="h-10 w-10 text-primary hover:bg-primary/10"
           >
-            <X size={18} />
+            <X size={24} />
           </Button>
         </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-          {/* Main navigation items */}
-          {navigationItems.map((item) => (
+        {/* Navegação principal */}
+        <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-2">
+          {[...navigationItems, ...moreItems].map((item) => (
             <button
               key={item.path}
               onClick={() => handleNavigate(item.path)}
               className={cn(
-                "flex items-center space-x-3 w-full p-3 rounded-lg transition-colors text-left",
+                "flex items-center gap-4 w-full px-4 py-2 rounded-xl text-left transition-all",
                 location.pathname === item.path
-                  ? "bg-primary/10 text-primary"
-                  : "text-foreground hover:bg-muted"
+                  ? "bg-primary/10 text-primary font-semibold shadow-sm"
+                  : "text-gray-700 hover:bg-gray-100"
               )}
             >
-              <item.icon size={20} />
-              <span className="font-medium">{item.label}</span>
+              <item.icon size={24} className={location.pathname === item.path ? 'text-primary' : 'text-gray-400'} />
+              <span className="text-xs font-medium truncate">{item.label}</span>
             </button>
           ))}
-          
-          <div className="my-4 border-t border-muted" />
-          
-          {/* Additional items */}
-          {moreItems.map((item) => (
-            <button
-              key={item.path}
-              onClick={() => handleNavigate(item.path)}
-              className={cn(
-                "flex items-center space-x-3 w-full p-3 rounded-lg transition-colors text-left",
-                location.pathname === item.path
-                  ? "bg-primary/10 text-primary"
-                  : "text-foreground hover:bg-muted"
-              )}
-            >
-              <item.icon size={20} />
-              <span className="font-medium">{item.label}</span>
-            </button>
-          ))}
-
         </nav>
-
-        {/* Footer com botão de logout */}
-        <div className="p-4 border-t">
+        {/* Footer fixo com botão de logout */}
+        <div className="p-5 border-t bg-gradient-to-r from-primary/5 to-primary/0">
           <button
             onClick={handleLogout}
-            className="flex items-center space-x-3 w-full p-3 rounded-lg transition-colors text-left text-destructive hover:bg-destructive/10"
+            className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-left text-destructive bg-destructive/10 hover:bg-destructive/20 font-semibold text-base shadow-sm"
           >
-            <LogOut size={20} />
-            <span className="font-medium">Sair</span>
+            <LogOut size={22} />
+            Sair
           </button>
         </div>
       </div>
