@@ -5,22 +5,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 
 interface PreferencesTabProps {
-  darkTheme: boolean;
   animations: boolean;
   notificationSound: boolean;
   expenseReminders: boolean;
-  onThemeToggle: (checked: boolean) => void;
   onAnimationsToggle: (checked: boolean) => void;
   onNotificationSoundToggle: (checked: boolean) => void;
   onExpenseRemindersToggle: (checked: boolean) => void;
 }
 
 export const PreferencesTab = ({
-  darkTheme,
   animations,
   notificationSound,
   expenseReminders,
-  onThemeToggle,
   onAnimationsToggle,
   onNotificationSoundToggle,
   onExpenseRemindersToggle
@@ -34,18 +30,6 @@ export const PreferencesTab = ({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <Label>Tema Escuro</Label>
-            <p className="text-sm text-gray-500">
-              Ativar tema escuro automaticamente
-            </p>
-          </div>
-          <Switch 
-            checked={darkTheme}
-            onCheckedChange={onThemeToggle}
-          />
-        </div>
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
             <Label>Animações</Label>
@@ -74,7 +58,7 @@ export const PreferencesTab = ({
           <div className="space-y-0.5">
             <Label>Lembretes de Despesas</Label>
             <p className="text-sm text-gray-500">
-              Receber lembretes de despesas que vencem no dia
+              Receber lembretes de despesas próximas do vencimento
             </p>
           </div>
           <Switch 
