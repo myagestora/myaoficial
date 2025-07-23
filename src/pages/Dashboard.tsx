@@ -275,6 +275,13 @@ const Dashboard = () => {
   // Novo: saldo previsto = receitas - (despesas pagas + a pagar)
   const predictedBalance = currentStats.totalIncome - currentStats.totalExpenses;
 
+  // Padronizar tamanho e alinhamento dos ícones dos cards
+  const cardIconClass = "h-6 w-6 mx-auto my-0";
+  // Padronizar tamanho do círculo e do ícone
+  const cardIconWrapperClass = "flex items-center justify-center rounded-full mx-auto my-0";
+  const cardIconStyle = { width: '1em', height: '1em' };
+  const cardIconBgSize = { width: 30, height: 30, minWidth: 30, minHeight: 30 };
+
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
       {/* Header padrão */}
@@ -284,60 +291,78 @@ const Dashboard = () => {
       </header>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2 xl:gap-4">
         {/* Receitas */}
         <ModernCard
-          icon={<TrendingUp className="h-6 w-6 text-green-600" />}
-          iconBgColor="#DCFCE7"
-          title="Receitas"
+          icon={
+            <span className={cardIconWrapperClass} style={{ ...cardIconBgSize, background: '#DCFCE7' }}>
+              <TrendingUp style={cardIconStyle} className="text-green-600" />
+            </span>
+          }
+          title={<span className="block text-base font-semibold truncate" style={{ minHeight: 24 }}>Receitas</span>}
           value={`R$ ${currentStats.totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
           valueColor="text-green-600"
-          description="Total de receitas"
+          description={<span className="block text-xs truncate" style={{ minHeight: 18 }}>Total de receitas</span>}
         />
         {/* Despesas Pagas */}
         <ModernCard
-          icon={<TrendingDown className="h-6 w-6 text-red-600" />}
-          iconBgColor="#FEE2E2"
-          title="Despesas Pagas"
+          icon={
+            <span className={cardIconWrapperClass} style={{ ...cardIconBgSize, background: '#FEE2E2' }}>
+              <TrendingDown style={cardIconStyle} className="text-red-600" />
+            </span>
+          }
+          title={<span className="block text-base font-semibold truncate" style={{ minHeight: 24 }}>Despesas Pagas</span>}
           value={`R$ ${currentStats.paidExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
           valueColor="text-red-600"
-          description="Despesas realizadas"
+          description={<span className="block text-xs truncate" style={{ minHeight: 18 }}>Despesas realizadas</span>}
         />
         {/* A Pagar */}
         <ModernCard
-          icon={<TrendingDown className="h-6 w-6 text-orange-600" />}
-          iconBgColor="#FFEDD5"
-          title="A Pagar"
+          icon={
+            <span className={cardIconWrapperClass} style={{ ...cardIconBgSize, background: '#FFEDD5' }}>
+              <TrendingDown style={cardIconStyle} className="text-orange-600" />
+            </span>
+          }
+          title={<span className="block text-base font-semibold truncate" style={{ minHeight: 24 }}>A Pagar</span>}
           value={`R$ ${currentStats.pendingExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
           valueColor="text-orange-600"
-          description="Despesas pendentes"
+          description={<span className="block text-xs truncate" style={{ minHeight: 18 }}>Despesas pendentes</span>}
         />
         {/* Saldo Atual */}
         <ModernCard
-          icon={<DollarSign className="h-6 w-6 text-blue-600" />}
-          iconBgColor="#DBEAFE"
-          title="Saldo"
+          icon={
+            <span className={cardIconWrapperClass} style={{ ...cardIconBgSize, background: '#DBEAFE' }}>
+              <DollarSign style={cardIconStyle} className="text-blue-600" />
+            </span>
+          }
+          title={<span className="block text-base font-semibold truncate" style={{ minHeight: 24 }}>Saldo</span>}
           value={`R$ ${currentStats.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
           valueColor={currentStats.balance >= 0 ? 'text-blue-600' : 'text-red-600'}
-          description="Saldo atual"
+          description={<span className="block text-xs truncate" style={{ minHeight: 18 }}>Saldo atual</span>}
         />
         {/* Saldo Previsto */}
         <ModernCard
-          icon={<DollarSign className="h-6 w-6 text-cyan-600" />}
-          iconBgColor="#CFFAFE"
-          title="Saldo Previsto"
+          icon={
+            <span className={cardIconWrapperClass} style={{ ...cardIconBgSize, background: '#CFFAFE' }}>
+              <DollarSign style={cardIconStyle} className="text-cyan-600" />
+            </span>
+          }
+          title={<span className="block text-base font-semibold truncate" style={{ minHeight: 24 }}>Saldo Previsto</span>}
           value={`R$ ${predictedBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
           valueColor={predictedBalance >= 0 ? 'text-cyan-600' : 'text-red-600'}
-          description="Saldo após todas as despesas do período"
+          description={<span className="block text-xs truncate" style={{ minHeight: 18 }}>Após despesas pagas</span>}
         />
         {/* Metas */}
         <ModernCard
-          icon={<Target className="h-6 w-6 text-purple-600" />}
-          iconBgColor="#EDE9FE"
-          title="Metas"
+          icon={
+            <span className={cardIconWrapperClass} style={{ ...cardIconBgSize, background: '#EDE9FE' }}>
+              <Target style={cardIconStyle} className="text-purple-600" />
+            </span>
+          }
+          title={<span className="block text-base font-semibold truncate" style={{ minHeight: 24 }}>Metas</span>}
           value={`${currentGoalsProgress}%`}
           valueColor="text-purple-600"
-          description="Progresso das metas"
+          description={<span className="block text-xs truncate" style={{ minHeight: 18 }}>Progresso das metas</span>}
         />
       </div>
 
@@ -390,7 +415,7 @@ const Dashboard = () => {
                     </div>
                   )}
                 </div>
-              </div>
+        </div>
             );
           })}
         </div>
@@ -433,31 +458,31 @@ const Dashboard = () => {
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-gray-400">Saldo</span>
                   <span className="font-bold text-blue-700">{getAccountBalance(account.id, account.balance).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-                </div>
-              </div>
+            </div>
+            </div>
             </div>
           ))}
-        </div>
+            </div>
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ModernCard className="h-full">
-          <MonthlyOverview dateRange={dateRange} />
+        <MonthlyOverview dateRange={dateRange} />
         </ModernCard>
         <ModernCard className="h-full">
-          <ExpenseChart dateRange={dateRange} />
+        <ExpenseChart dateRange={dateRange} />
         </ModernCard>
       </div>
 
       {/* Daily Movement */}
       <ModernCard className="mt-6">
-        <DailyMovement dateRange={dateRange} />
+      <DailyMovement dateRange={dateRange} />
       </ModernCard>
 
       {/* Recent Transactions */}
       <ModernCard className="mt-6">
-        <RecentTransactions dateRange={dateRange} />
+      <RecentTransactions dateRange={dateRange} />
       </ModernCard>
     </div>
   );

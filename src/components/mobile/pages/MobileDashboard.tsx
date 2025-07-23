@@ -434,18 +434,22 @@ export const MobileDashboard = () => {
           <div className="text-center text-xs text-gray-400">Carregando cartões...</div>
         ) : creditCards.length === 0 ? (
           <div className="text-center text-xs text-gray-400">Nenhum cartão cadastrado</div>
-        ) : creditCards.map((card) => {
+        ) : creditCards.map((card, idx) => {
           const saldoAtual = getCardBalance(card.id, card.current_balance);
           const utilizacao = card.credit_limit ? (saldoAtual / card.credit_limit) * 100 : 0;
           return (
-            <div key={card.id} className="flex items-center gap-2 mt-1 min-h-[38px]">
+            <div key={card.id} className={`flex items-center gap-2 mt-${idx === 0 ? 1 : 4} min-h-[38px]`}>
               <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: card.color }}>
                 <CreditCard className="w-4 h-4 text-white" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1">
                   <span className="font-semibold text-sm text-gray-900 truncate">{card.name}</span>
-                  {card.due_date && <span className="text-[10px] text-gray-400">{card.due_date.toString().padStart(2, '0')}</span>}
+                  {card.due_date && (
+                    <span className="text-[10px] text-gray-400">
+                      {card.last_four_digits && `•••• ${card.last_four_digits} • `}Vence dia {card.due_date.toString().padStart(2, '0')}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-1 mt-0.5">
                   <span className="text-green-700 font-semibold text-[15px]">{formatCurrency(saldoAtual)}</span>
@@ -482,10 +486,15 @@ export const MobileDashboard = () => {
               <Wallet className="w-4 h-4 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <span className="font-semibold text-sm text-gray-900 truncate">{account.name}</span>
-              <div className="flex items-center gap-1 mt-0.5">
-                <span className="text-blue-700 font-semibold text-[15px]">{formatCurrency(getAccountBalance(account.id, account.balance))}</span>
+              <div className="flex flex-col">
+                <span className="font-semibold text-sm text-gray-900 truncate leading-tight">{account.name}</span>
+                {account.account_number && (
+                  <span className="text-[10px] text-gray-400 leading-tight">Conta: {account.account_number}</span>
+                )}
               </div>
+            </div>
+            <div className="ml-auto text-right">
+              <span className={`font-semibold text-[15px] ${getAccountBalance(account.id, account.balance) < 0 ? 'text-red-700' : 'text-blue-700'}`}>{formatCurrency(Number.isFinite(getAccountBalance(account.id, account.balance)) ? getAccountBalance(account.id, account.balance) : 0)}</span>
             </div>
           </div>
         ))}

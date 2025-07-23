@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useBankAccounts, type BankAccount, type CreateBankAccountData } from '@/hooks/useBankAccounts';
+import { SYSTEM_COLORS } from '@/lib/colors';
 
 const bankAccountSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
@@ -48,7 +49,7 @@ export const BankAccountForm = ({ account, onSuccess }: BankAccountFormProps) =>
       type: 'checking',
       balance: 0,
       is_default: bankAccounts && bankAccounts.length === 0 ? true : false,
-      color: '#3B82F6',
+      color: SYSTEM_COLORS[0],
     },
   });
 
@@ -76,31 +77,6 @@ export const BankAccountForm = ({ account, onSuccess }: BankAccountFormProps) =>
     { value: 'checking', label: 'Conta Corrente' },
     { value: 'savings', label: 'Poupança' },
     { value: 'investment', label: 'Investimento' },
-  ];
-
-  const colorOptions = [
-    '#3B82F6', // azul
-    '#EF4444', // vermelho
-    '#10B981', // verde
-    '#F59E0B', // laranja
-    '#8B5CF6', // roxo
-    '#EC4899', // rosa
-    '#06B6D4', // ciano
-    '#84CC16', // verde limão
-    '#6366F1', // azul violeta
-    '#F472B6', // rosa claro
-    '#FBBF24', // amarelo
-    '#A3E635', // verde claro
-    '#F87171', // vermelho claro
-    '#A21CAF', // roxo escuro
-    '#F43F5E', // vermelho magenta
-    '#0EA5E9', // azul claro
-    '#F59E42', // laranja claro
-    '#14B8A6', // teal
-    '#E11D48', // vermelho escuro
-    '#FDE68A', // amarelo pastel
-    '#111827', // preto quase puro
-    '#374151', // cinza escuro
   ];
 
   return (
@@ -168,7 +144,7 @@ export const BankAccountForm = ({ account, onSuccess }: BankAccountFormProps) =>
       <div className="space-y-2">
         <Label>Cor</Label>
         <div className="flex flex-wrap gap-2 w-full justify-start">
-          {colorOptions.map((color) => (
+          {SYSTEM_COLORS.map((color) => (
             <button
               key={color}
               type="button"

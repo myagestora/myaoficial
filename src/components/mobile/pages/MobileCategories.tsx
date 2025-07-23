@@ -18,13 +18,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { MobileOptimizedCard } from '@/components/ui/mobile-optimized-card';
 import { MobilePageWrapper } from '../MobilePageWrapper';
 import { InlineConfirmation } from '@/components/ui/inline-confirmation';
-
-const COLORS = [
-  '#F44336', '#E91E63', '#9C27B0', '#673AB7',
-  '#3F51B5', '#2196F3', '#03A9F4', '#00BCD4',
-  '#009688', '#4CAF50', '#8BC34A', '#CDDC39',
-  '#FFEB3B', '#FFC107', '#FF9800', '#FF5722',
-];
+import { SYSTEM_COLORS } from '@/lib/colors';
 
 const ICONS = [
   'circle', 'home', 'car', 'utensils', 'heart', 'book',
@@ -272,7 +266,7 @@ export const MobileCategories = () => {
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Cor</Label>
                 <div className="grid grid-cols-8 gap-3">
-                  {COLORS.map(color => (
+                  {SYSTEM_COLORS.map(color => (
                     <button
                       key={color}
                       type="button"

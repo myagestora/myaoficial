@@ -11,28 +11,39 @@ const getCurrentMonthRange = (): DateRange => {
   };
 };
 
-export const useTransactionFilters = (transactions: any[]) => {
+export const useTransactionFilters = (transactions: any[], selectedAccount: string, selectedCard: string) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(getCurrentMonthRange());
   const [selectedType, setSelectedType] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
   const filteredTransactions = useMemo(() => {
-    return transactions.filter(transaction => {
-      // Search filter
-      const matchesSearch = !searchTerm || 
-        transaction.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        transaction.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        transaction.categories?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    let filtered = transactions;
 
-      // Type filter
-      const matchesType = selectedType === 'all' || transaction.type === selectedType;
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(transaction => {
+        const matchesSearch = 
+          transaction.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          transaction.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          transaction.categories?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesSearch;
+      });
+    }
 
-      // Category filter
-      const matchesCategory = selectedCategory === 'all' || transaction.category_id === selectedCategory;
+    // Type filter
+    if (selectedType && selectedType !== 'all') {
+      filtered = filtered.filter(transaction => transaction.type === selectedType);
+    }
 
-      // Date range filter
-      const matchesDateRange = !dateRange?.from || !dateRange?.to || (() => {
+    // Category filter
+    if (selectedCategory && selectedCategory !== 'all') {
+      filtered = filtered.filter(transaction => transaction.category_id === selectedCategory);
+    }
+
+    // Date range filter
+    if (dateRange?.from && dateRange?.to) {
+      filtered = filtered.filter(transaction => {
         const transactionDate = new Date(transaction.date + 'T00:00:00');
         const fromDate = new Date(dateRange.from);
         const toDate = new Date(dateRange.to);
@@ -42,11 +53,21 @@ export const useTransactionFilters = (transactions: any[]) => {
         toDate.setHours(23, 59, 59, 999);
         
         return transactionDate >= fromDate && transactionDate <= toDate;
-      })();
+      });
+    }
 
-      return matchesSearch && matchesType && matchesCategory && matchesDateRange;
-    });
-  }, [transactions, searchTerm, selectedType, selectedCategory, dateRange]);
+    // Account filter
+    if (selectedAccount && selectedAccount !== 'all') {
+      filtered = filtered.filter(transaction => transaction.account_id === selectedAccount);
+    }
+
+    // Card filter
+    if (selectedCard && selectedCard !== 'all') {
+      filtered = filtered.filter(transaction => transaction.card_id === selectedCard);
+    }
+
+    return filtered;
+  }, [transactions, searchTerm, selectedType, selectedCategory, dateRange, selectedAccount, selectedCard]);
 
   const hasActiveFilters = Boolean(
     searchTerm || 
@@ -55,7 +76,9 @@ export const useTransactionFilters = (transactions: any[]) => {
     (dateRange?.from && dateRange?.to && (
       dateRange.from.getTime() !== getCurrentMonthRange().from?.getTime() ||
       dateRange.to.getTime() !== getCurrentMonthRange().to?.getTime()
-    ))
+    )) ||
+    (selectedAccount && selectedAccount !== 'all') ||
+    (selectedCard && selectedCard !== 'all')
   );
 
   const clearFilters = () => {
@@ -63,6 +86,8 @@ export const useTransactionFilters = (transactions: any[]) => {
     setSelectedType('all');
     setSelectedCategory('all');
     setDateRange(getCurrentMonthRange());
+    setSelectedAccount('all');
+    setSelectedCard('all');
   };
 
   return {

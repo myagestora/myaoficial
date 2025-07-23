@@ -116,37 +116,37 @@ export default function CreditCards() {
               className="relative"
             >
               <div className="absolute top-4 right-4 flex gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleEdit(card)}
-                >
-                  <Edit className="w-4 h-4" />
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Excluir cartão</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Tem certeza que deseja excluir este cartão? Esta ação não pode ser desfeita.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleEdit(card)}
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir cartão</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Tem certeza que deseja excluir este cartão? Esta ação não pode ser desfeita.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
                         onClick={() => deleteCreditCard.mutate(card.id, { onError: handleDeleteError })}
-                      >
-                        Excluir
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
+                        >
+                          Excluir
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               {card.is_default && (
                 <Badge variant="secondary" className="absolute top-4 left-16">Padrão</Badge>
               )}
@@ -155,21 +155,21 @@ export default function CreditCards() {
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Limite</span>
                     <span className="text-foreground">{formatCurrency(card.credit_limit)}</span>
-                  </div>
+                    </div>
                 )}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Utilização</span>
                   <span className="text-foreground">{utilizacao.toFixed(1)}%</span>
-                </div>
+                      </div>
                 <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
-                  <div
-                    className="bg-primary h-2 rounded-full transition-all"
-                    style={{
+                        <div
+                          className="bg-primary h-2 rounded-full transition-all"
+                          style={{
                       width: `${utilizacao}%`,
                       backgroundColor: utilizacao > 80 ? '#ef4444' : card.color
-                    }}
-                  />
-                </div>
+                          }}
+                        />
+                      </div>
                 {card.last_four_digits && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Final</span>

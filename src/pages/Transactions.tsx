@@ -40,6 +40,8 @@ const Transactions = () => {
   const queryClient = useQueryClient();
   const { bankAccounts } = useBankAccounts();
   const { creditCards } = useCreditCards();
+  const [selectedAccount, setSelectedAccount] = useState('all');
+  const [selectedCard, setSelectedCard] = useState('all');
 
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ['transactions', user?.id],
@@ -113,7 +115,7 @@ const Transactions = () => {
     filteredTransactions,
     hasActiveFilters,
     clearFilters
-  } = useTransactionFilters(transactions);
+  } = useTransactionFilters(transactions, selectedAccount, selectedCard);
 
   const deleteTransactionMutation = useMutation({
     mutationFn: async (transactionId: string) => {
@@ -273,6 +275,13 @@ const Transactions = () => {
     setEditingTransaction(null);
   };
 
+  // Corrigir o reset dos filtros
+  const handleClearFilters = () => {
+    setSelectedAccount('all');
+    setSelectedCard('all');
+    clearFilters();
+  };
+
   if (isLoading) {
     return (
       <div className="p-6 space-y-6">
@@ -326,7 +335,13 @@ const Transactions = () => {
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
           categories={categories}
-          onClearFilters={clearFilters}
+          selectedAccount={selectedAccount}
+          onAccountChange={setSelectedAccount}
+          accounts={bankAccounts}
+          selectedCard={selectedCard}
+          onCardChange={setSelectedCard}
+          cards={creditCards}
+          onClearFilters={handleClearFilters}
           hasActiveFilters={hasActiveFilters}
         />
       </ModernCard>
@@ -357,7 +372,7 @@ const Transactions = () => {
                   }
                 </p>
                 {hasActiveFilters && (
-                  <Button variant="outline" onClick={clearFilters} className="min-h-[44px]">
+                  <Button variant="outline" onClick={handleClearFilters} className="min-h-[44px]">
                     Limpar Filtros
                   </Button>
                 )}

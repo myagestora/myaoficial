@@ -239,59 +239,59 @@ const Reports = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ModernCard className="h-full">
           <div className="mb-2 font-semibold text-lg">Visão Mensal - Receitas vs Despesas</div>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={transactionData?.monthlyData || []}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
-              <Bar dataKey="income" fill="#10b981" name="Receitas" />
-              <Bar dataKey="expenses" fill="#ef4444" name="Despesas" />
-            </BarChart>
-          </ResponsiveContainer>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={transactionData?.monthlyData || []}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
+                <Bar dataKey="income" fill="#10b981" name="Receitas" />
+                <Bar dataKey="expenses" fill="#ef4444" name="Despesas" />
+              </BarChart>
+            </ResponsiveContainer>
         </ModernCard>
         <ModernCard className="h-full">
           <div className="mb-2 font-semibold text-lg">Distribuição de Gastos por Categoria</div>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={transactionData?.categoryData || []}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="value"
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-              >
-                {(transactionData?.categoryData || []).map((entry: any, index: number) => (
-                  <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
-            </PieChart>
-          </ResponsiveContainer>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={transactionData?.categoryData || []}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                >
+                  {(transactionData?.categoryData || []).map((entry: any, index: number) => (
+                    <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
+              </PieChart>
+            </ResponsiveContainer>
         </ModernCard>
       </div>
 
       {/* Trend Analysis */}
       <ModernCard className="mt-6">
         <div className="mb-2 font-semibold text-lg">Tendência de Economia</div>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={transactionData?.trendData || []}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
-            <YAxis />
-            <Tooltip formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
-            <Line 
-              type="monotone" 
-              dataKey="value" 
-              stroke="#8884d8" 
-              strokeWidth={3}
-              dot={{ fill: '#8884d8', strokeWidth: 2, r: 6 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={transactionData?.trendData || []}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
+              <Line 
+                type="monotone" 
+                dataKey="value" 
+                stroke="#8884d8" 
+                strokeWidth={3}
+                dot={{ fill: '#8884d8', strokeWidth: 2, r: 6 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
       </ModernCard>
 
       {/* Goals Section */}

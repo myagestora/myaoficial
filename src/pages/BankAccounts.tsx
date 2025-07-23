@@ -118,37 +118,37 @@ export default function BankAccounts() {
             className="relative"
           >
             <div className="absolute top-4 right-4 flex gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleEdit(account)}
-              >
-                <Edit className="w-4 h-4" />
-              </Button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <Trash2 className="w-4 h-4" />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleEdit(account)}
+                  >
+                    <Edit className="w-4 h-4" />
                   </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Excluir conta</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Tem certeza que deseja excluir esta conta? Esta ação não pode ser desfeita.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir conta</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Tem certeza que deseja excluir esta conta? Esta ação não pode ser desfeita.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
                       onClick={() => deleteBankAccount.mutate(account.id, { onError: handleDeleteError })}
-                    >
-                      Excluir
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
+                        >
+                          Excluir
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
             {account.is_default && (
               <Badge variant="secondary" className="absolute top-4 left-16">Padrão</Badge>
             )}
@@ -163,9 +163,9 @@ export default function BankAccounts() {
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Número</span>
                   <span className="text-foreground">{account.account_number}</span>
-                </div>
-              )}
-            </div>
+                  </div>
+                )}
+              </div>
           </ModernCard>
         ))}
 

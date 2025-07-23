@@ -107,55 +107,55 @@ const SettingsPage = () => {
           {/* Se houver botão de ação, coloque aqui */}
         </header>
         <ModernCard>
-          <SettingsHeader 
-            title="Configurações" 
-            description="Gerencie suas informações pessoais e preferências da conta" 
-          />
-          <Tabs defaultValue="profile" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="profile" className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                Perfil
-              </TabsTrigger>
-              <TabsTrigger value="security" className="flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                Segurança
-              </TabsTrigger>
-              <TabsTrigger value="preferences" className="flex items-center gap-2">
-                <Palette className="h-4 w-4" />
-                Preferências
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="profile">
-              <ProfileTab
-                user={user}
-                profile={profile}
-                whatsappValue={whatsappValue}
-                loading={updateProfileMutation.isPending}
-                accountActive={accountStatus?.accountActive ?? true}
-                onWhatsappChange={setWhatsappValue}
-                onSubmit={handleUpdateProfile}
-              />
-            </TabsContent>
-            <TabsContent value="security">
-              <SecurityTab
-                loading={passwordLoading}
-                onSubmit={handlePasswordChange}
-              />
-            </TabsContent>
-            <TabsContent value="preferences">
-              <PreferencesTab
-                darkTheme={darkTheme}
-                animations={animations}
-                notificationSound={notificationSound}
-                expenseReminders={expenseReminders}
-                onThemeToggle={handleThemeToggle}
-                onAnimationsToggle={handleAnimationsToggle}
-                onNotificationSoundToggle={handleNotificationSoundToggle}
-                onExpenseRemindersToggle={handleExpenseRemindersToggle}
-              />
-            </TabsContent>
-          </Tabs>
+        <SettingsHeader 
+          title="Configurações" 
+          description="Gerencie suas informações pessoais e preferências da conta" 
+        />
+        <Tabs defaultValue="profile" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="profile" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Perfil
+            </TabsTrigger>
+            <TabsTrigger value="security" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Segurança
+            </TabsTrigger>
+            <TabsTrigger value="preferences" className="flex items-center gap-2">
+              <Palette className="h-4 w-4" />
+              Preferências
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="profile">
+            <ProfileTab
+              user={user}
+              profile={profile}
+              whatsappValue={whatsappValue}
+              loading={updateProfileMutation.isPending}
+              accountActive={accountStatus?.accountActive ?? true}
+              onWhatsappChange={setWhatsappValue}
+              onSubmit={handleUpdateProfile}
+            />
+          </TabsContent>
+          <TabsContent value="security">
+            <SecurityTab
+              loading={passwordLoading}
+              onSubmit={handlePasswordChange}
+            />
+          </TabsContent>
+          <TabsContent value="preferences">
+            <PreferencesTab
+              darkTheme={darkTheme}
+              animations={animations}
+              notificationSound={notificationSound}
+              expenseReminders={expenseReminders}
+              onThemeToggle={handleThemeToggle}
+              onAnimationsToggle={handleAnimationsToggle}
+              onNotificationSoundToggle={handleNotificationSoundToggle}
+              onExpenseRemindersToggle={handleExpenseRemindersToggle}
+            />
+          </TabsContent>
+        </Tabs>
         </ModernCard>
       </div>
     </div>

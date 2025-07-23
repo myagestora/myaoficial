@@ -166,29 +166,29 @@ const Scheduled = () => {
 
       {/* Filtros e lista */}
       <ModernCard className="mb-4">
-        <ScheduledFilters
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          filters={filters}
-          onFiltersChange={setFilters}
-          categories={categories}
-        />
+      <ScheduledFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        filters={filters}
+        onFiltersChange={setFilters}
+        categories={categories}
+      />
       </ModernCard>
 
       <ModernCard>
-        <ScheduledTransactionsList
-          transactions={filteredTransactions}
-          onToggleStatus={handleToggleStatus}
-          onDelete={handleDelete}
-          onEdit={handleEdit}
-          hasFiltersOrSearch={hasFiltersOrSearch}
-          deletingId={deletingId}
-          recurringDeletingId={recurringDeletingId}
-          onConfirmDelete={handleConfirmDelete}
-          onDeleteSingle={handleDeleteSingle}
-          onDeleteSeries={handleDeleteSeries}
-          onCancelDelete={handleCancelDelete}
-        />
+      <ScheduledTransactionsList
+        transactions={filteredTransactions}
+        onToggleStatus={handleToggleStatus}
+        onDelete={handleDelete}
+        onEdit={handleEdit}
+        hasFiltersOrSearch={hasFiltersOrSearch}
+        deletingId={deletingId}
+        recurringDeletingId={recurringDeletingId}
+        onConfirmDelete={handleConfirmDelete}
+        onDeleteSingle={handleDeleteSingle}
+        onDeleteSeries={handleDeleteSeries}
+        onCancelDelete={handleCancelDelete}
+      />
       </ModernCard>
 
       <ScheduledTransactionForm 

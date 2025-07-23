@@ -13,17 +13,17 @@ import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
 import { Trash2 } from 'lucide-react';
-
-const COLORS = [
-  '#EF4444', '#F43F5E', '#8B5CF6', '#6366F1', '#3B82F6', '#06B6D4', '#0EA5E9', '#10B981', '#22D3EE', '#4ADE80', '#A3E635', '#FBBF24', '#F59E42', '#F59E0B', '#F87171', '#FDE68A', '#F472B6', '#84CC16', '#FACC15', '#F59E42'
-];
+import { SYSTEM_COLORS } from '@/lib/colors';
+import { Edit } from 'lucide-react';
 
 const Categories = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
-  const [newCategory, setNewCategory] = useState({ name: '', type: 'expense', color: COLORS[0] });
+  const [newCategory, setNewCategory] = useState({ name: '', type: 'expense', color: SYSTEM_COLORS[0] });
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [editValues, setEditValues] = useState<any>(null);
 
   const { data: categories = [] } = useQuery({
     queryKey: ['all-categories', user?.id],
@@ -57,7 +57,7 @@ const Categories = () => {
       queryClient.invalidateQueries({ queryKey: ['all-categories'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       setFormOpen(false);
-      setNewCategory({ name: '', type: 'expense', color: COLORS[0] });
+      setNewCategory({ name: '', type: 'expense', color: SYSTEM_COLORS[0] });
       toast({
         title: 'Sucesso',
         description: 'Categoria criada com sucesso',
@@ -92,6 +92,32 @@ const Categories = () => {
       toast({
         title: 'Erro',
         description: 'Erro ao remover categoria',
+        variant: 'destructive',
+      });
+    }
+  });
+
+  const updateCategoryMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const { id, ...rest } = data;
+      const { error } = await supabase
+        .from('categories')
+        .update(rest)
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      setEditingCategory(null);
+      toast({
+        title: 'Sucesso',
+        description: 'Categoria atualizada com sucesso',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Erro',
+        description: 'Erro ao atualizar categoria',
         variant: 'destructive',
       });
     }
@@ -141,13 +167,15 @@ const Categories = () => {
           <div className="mb-4">
             <label className="block text-sm font-medium mb-1">Cor</label>
             <div className="flex gap-2 flex-wrap">
-              {COLORS.map(color => (
+              {SYSTEM_COLORS.map(color => (
                 <button
                   key={color}
                   type="button"
-                  className={`w-8 h-8 rounded-full border-2 ${newCategory.color === color ? 'border-gray-900' : 'border-gray-300'}`}
+                  className={`w-8 h-8 rounded-full border-2 ${
+                    newCategory.color === color ? 'border-gray-900' : 'border-gray-300'
+                  }`}
                   style={{ backgroundColor: color }}
-                  onClick={() => setNewCategory({ ...newCategory, color })}
+                  onClick={() => setNewCategory(prev => ({ ...prev, color }))}
                 />
               ))}
             </div>
@@ -168,38 +196,84 @@ const Categories = () => {
               <h3 className="font-semibold text-green-600 mb-3">Receitas</h3>
               <div className="space-y-2">
                 {incomeCategories.map(category => (
-                  <div
-                    key={category.id}
-                    className="flex items-center justify-between p-3 border rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-4 h-4 rounded-full"
-                        style={{ backgroundColor: category.color }}
-                      />
-                      <span>{category.name}</span>
-                      {(category as any).is_default && (
-                        <Badge variant="secondary" className="text-xs">
-                          Padrão
-                        </Badge>
-                      )}
-                    </div>
-                    {!(category as any).is_default && (
-                      confirmDeleteId === category.id ? (
-                        <div className="flex gap-2 items-center">
-                          <span className="text-sm text-muted-foreground">Remover?</span>
-                          <Button size="sm" variant="destructive" onClick={() => deleteCategoryMutation.mutate(category.id)} disabled={deleteCategoryMutation.isPending}>Remover</Button>
-                          <Button size="sm" variant="outline" onClick={() => setConfirmDeleteId(null)} disabled={deleteCategoryMutation.isPending}>Cancelar</Button>
+                  <div key={category.id} className="flex items-center justify-between p-3 border rounded-lg mb-2">
+                    {(editingCategory && editingCategory.id === category.id) ? (
+                      <form className="flex-1 flex flex-col gap-2" onSubmit={e => {
+                        e.preventDefault();
+                        updateCategoryMutation.mutate({
+                          id: editingCategory.id,
+                          ...editValues
+                        });
+                      }}>
+                        <div className="flex flex-col md:flex-row md:items-center gap-2">
+                          <input
+                            className="w-32 border rounded px-2 py-1"
+                            value={editValues?.name || ''}
+                            onChange={e => setEditValues((prev: any) => ({ ...prev, name: e.target.value }))}
+                            placeholder="Nome"
+                            required
+                          />
+                          <select
+                            className="w-28 border rounded px-2 py-1"
+                            value={editValues?.type || 'expense'}
+                            onChange={e => setEditValues((prev: any) => ({ ...prev, type: e.target.value }))}
+                          >
+                            <option value="income">Receita</option>
+                            <option value="expense">Despesa</option>
+                          </select>
                         </div>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setConfirmDeleteId(category.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )
+                        <div className="flex flex-wrap gap-1 items-center min-h-[36px] mt-2">
+                          {SYSTEM_COLORS.map(color => (
+                            <button
+                              key={color}
+                              type="button"
+                              className={`w-6 h-6 rounded-full border-2 ${editValues?.color === color ? 'border-gray-900' : 'border-gray-300'}`}
+                              style={{ backgroundColor: color }}
+                              onClick={() => setEditValues((prev: any) => ({ ...prev, color }))}
+                            />
+                          ))}
+                        </div>
+                        <div className="flex gap-1 mt-2">
+                          <button type="submit" className="px-3 py-1 rounded bg-blue-600 text-white">Salvar</button>
+                          <button type="button" className="px-3 py-1 rounded border" onClick={() => setEditingCategory(null)}>Cancelar</button>
+                        </div>
+                      </form>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-4 h-4 rounded-full"
+                            style={{ backgroundColor: category.color }}
+                          />
+                          <span>{category.name}</span>
+                          {(category as any).is_default && (
+                            <span className="ml-2 px-2 py-0.5 rounded bg-gray-100 text-xs">Padrão</span>
+                          )}
+                        </div>
+                        {!(category as any).is_default && (
+                          <div className="flex gap-1">
+                            <button
+                              type="button"
+                              className="p-1 rounded hover:bg-gray-100"
+                              onClick={() => {
+                                setEditingCategory(category);
+                                setEditValues({ name: category.name, type: category.type, color: category.color });
+                              }}
+                              title="Editar categoria"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              className="p-1 rounded hover:bg-gray-100"
+                              onClick={() => setConfirmDeleteId(category.id)}
+                              title="Remover categoria"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 ))}
@@ -209,45 +283,91 @@ const Categories = () => {
               <h3 className="font-semibold text-red-600 mb-3">Despesas</h3>
               <div className="space-y-2">
                 {expenseCategories.map(category => (
-                  <div
-                    key={category.id}
-                    className="flex items-center justify-between p-3 border rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-4 h-4 rounded-full"
-                        style={{ backgroundColor: category.color }}
-                      />
-                      <span>{category.name}</span>
-                      {(category as any).is_default && (
-                        <Badge variant="secondary" className="text-xs">
-                          Padrão
-                        </Badge>
-                      )}
-                    </div>
-                    {!(category as any).is_default && (
-                      confirmDeleteId === category.id ? (
-                        <div className="flex gap-2 items-center">
-                          <span className="text-sm text-muted-foreground">Remover?</span>
-                          <Button size="sm" variant="destructive" onClick={() => deleteCategoryMutation.mutate(category.id)} disabled={deleteCategoryMutation.isPending}>Remover</Button>
-                          <Button size="sm" variant="outline" onClick={() => setConfirmDeleteId(null)} disabled={deleteCategoryMutation.isPending}>Cancelar</Button>
+                  <div key={category.id} className="flex items-center justify-between p-3 border rounded-lg mb-2">
+                    {(editingCategory && editingCategory.id === category.id) ? (
+                      <form className="flex-1 flex flex-col gap-2" onSubmit={e => {
+                        e.preventDefault();
+                        updateCategoryMutation.mutate({
+                          id: editingCategory.id,
+                          ...editValues
+                        });
+                      }}>
+                        <div className="flex flex-col md:flex-row md:items-center gap-2">
+                          <input
+                            className="w-32 border rounded px-2 py-1"
+                            value={editValues?.name || ''}
+                            onChange={e => setEditValues((prev: any) => ({ ...prev, name: e.target.value }))}
+                            placeholder="Nome"
+                            required
+                          />
+                          <select
+                            className="w-28 border rounded px-2 py-1"
+                            value={editValues?.type || 'expense'}
+                            onChange={e => setEditValues((prev: any) => ({ ...prev, type: e.target.value }))}
+                          >
+                            <option value="income">Receita</option>
+                            <option value="expense">Despesa</option>
+                          </select>
                         </div>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setConfirmDeleteId(category.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )
+                        <div className="flex flex-wrap gap-1 items-center min-h-[36px] mt-2">
+                          {SYSTEM_COLORS.map(color => (
+                            <button
+                              key={color}
+                              type="button"
+                              className={`w-6 h-6 rounded-full border-2 ${editValues?.color === color ? 'border-gray-900' : 'border-gray-300'}`}
+                              style={{ backgroundColor: color }}
+                              onClick={() => setEditValues((prev: any) => ({ ...prev, color }))}
+                            />
+                          ))}
+                        </div>
+                        <div className="flex gap-1 mt-2">
+                          <button type="submit" className="px-3 py-1 rounded bg-blue-600 text-white">Salvar</button>
+                          <button type="button" className="px-3 py-1 rounded border" onClick={() => setEditingCategory(null)}>Cancelar</button>
+                        </div>
+                      </form>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-4 h-4 rounded-full"
+                            style={{ backgroundColor: category.color }}
+                          />
+                          <span>{category.name}</span>
+                          {(category as any).is_default && (
+                            <span className="ml-2 px-2 py-0.5 rounded bg-gray-100 text-xs">Padrão</span>
+                          )}
+                        </div>
+                        {!(category as any).is_default && (
+                          <div className="flex gap-1">
+                            <button
+                              type="button"
+                              className="p-1 rounded hover:bg-gray-100"
+                              onClick={() => {
+                                setEditingCategory(category);
+                                setEditValues({ name: category.name, type: category.type, color: category.color });
+                              }}
+                              title="Editar categoria"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              className="p-1 rounded hover:bg-gray-100"
+                              onClick={() => setConfirmDeleteId(category.id)}
+                              title="Remover categoria"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 ))}
               </div>
             </div>
           </div>
-        </div>
+      </div>
       </ModernCard>
     </div>
   );
