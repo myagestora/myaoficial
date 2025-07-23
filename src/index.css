@@ -90,7 +90,7 @@ All colors MUST be HSL.
   }
 
   body, html, main, .container, .max-w-7xl {
-    background-color: #f9f9fb !important;
+    /*background-color: #f9f9fb !important;*/
   }
 
   .bg-background {
