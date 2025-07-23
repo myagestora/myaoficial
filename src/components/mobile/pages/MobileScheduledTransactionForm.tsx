@@ -207,11 +207,16 @@ export const MobileScheduledTransactionForm = () => {
   const filteredCategories = categories.filter(cat => cat.type === watchedType);
 
   const saveScheduledTransaction = useMutation({
-    mutationFn: async (data: ScheduledTransactionFormData) => {
+    mutationFn: async (data: ScheduledTransactionFormData & { account_id?: string | null, card_id?: string | null }) => {
       if (!user?.id) throw new Error('User not authenticated');
+      // Normalizar: só um dos campos pode ser preenchido
+      let account_id = data.account_id || null;
+      let card_id = data.card_id || null;
+      if (account_id) card_id = null;
+      if (card_id) account_id = null;
 
       if (isEditing && id) {
-        // Para edição, apenas atualizar a transação existente
+        // Para edição, atualizar todas as transações filhas se recorrente e conta/cartão alterados
         const transactionData: any = {
           title: data.title,
           description: data.description || '',
@@ -221,23 +226,41 @@ export const MobileScheduledTransactionForm = () => {
           date: data.start_date,
           is_recurring: data.is_recurring || false,
           updated_at: new Date().toISOString(),
-          account_id: (data as any).account_id || null,
+          account_id: account_id || null,
         };
         if ((data as any).card_id !== undefined) transactionData.card_id = (data as any).card_id;
-
         if (data.is_recurring && data.recurrence_frequency) {
           transactionData.recurrence_frequency = data.recurrence_frequency;
           transactionData.recurrence_interval = data.recurrence_interval || 1;
           transactionData.recurrence_count = data.recurrence_count || 12;
         }
-
+        // Atualizar o template
         const { error } = await supabase
           .from('transactions')
           .update(transactionData)
           .eq('id', id);
         if (error) throw error;
+        // Se recorrente, atualizar todas as filhas
+        if (data.is_recurring) {
+          const updateFields: any = {};
+          if ((data as any).account_id !== undefined) updateFields.account_id = (data as any).account_id || null;
+          if ((data as any).card_id !== undefined) updateFields.card_id = (data as any).card_id || null;
+          if (Object.keys(updateFields).length > 0) {
+            const { error: childError } = await supabase
+              .from('transactions')
+              .update(updateFields)
+              .eq('parent_transaction_id', id);
+            if (childError) throw childError;
+          }
+        }
       } else {
         // Para criação nova
+        // Sempre usar conta padrão se não selecionar conta/cartão
+        let account_id = mentionAccount ? selectedAccountId : (defaultAccount ? defaultAccount.id : null);
+        let card_id = mentionCard ? selectedCardId : undefined;
+        if (!account_id && !card_id && defaultAccount) {
+          account_id = defaultAccount.id;
+        }
         if (!data.is_recurring) {
           // Transação única - criar apenas uma transação
           const transactionData = {
@@ -249,8 +272,9 @@ export const MobileScheduledTransactionForm = () => {
             category_id: data.category_id,
             date: data.start_date,
             is_recurring: false,
+            account_id,
+            card_id: card_id || null,
           };
-
           const { error } = await supabase
             .from('transactions')
             .insert(transactionData);
@@ -264,11 +288,9 @@ export const MobileScheduledTransactionForm = () => {
             count: data.recurrence_count,
             customDays: data.custom_days
           });
-
           if (recurrenceDates.length === 0) {
             throw new Error('Nenhuma data de transação gerada. Verifique as configurações de recorrência.');
           }
-
           // Criar transação pai (template)
           const parentTransactionData = {
             user_id: user.id,
@@ -283,16 +305,15 @@ export const MobileScheduledTransactionForm = () => {
             recurrence_frequency: data.recurrence_frequency,
             recurrence_interval: data.recurrence_interval || 1,
             recurrence_count: data.recurrence_count,
+            account_id,
+            card_id: card_id || null,
           };
-
           const { data: parentTransaction, error: parentError } = await supabase
             .from('transactions')
             .insert(parentTransactionData)
             .select()
             .single();
-
           if (parentError) throw parentError;
-
           // Criar transações filhas para cada data
           const childTransactions = recurrenceDates.map(date => ({
             user_id: user.id,
@@ -304,12 +325,12 @@ export const MobileScheduledTransactionForm = () => {
             date: date,
             is_recurring: false,
             parent_transaction_id: parentTransaction.id,
+            account_id,
+            card_id: card_id || null,
           }));
-
           const { error: childError } = await supabase
             .from('transactions')
             .insert(childTransactions);
-
           if (childError) throw childError;
         }
       }
@@ -335,9 +356,18 @@ export const MobileScheduledTransactionForm = () => {
   });
 
   const onSubmit = (data: ScheduledTransactionFormData) => {
-    // Se não houver conta selecionada nem padrão, salva como null
-    const account_id = mentionAccount ? selectedAccountId : (defaultAccount ? defaultAccount.id : null);
-    const card_id = mentionCard ? selectedCardId : undefined;
+    let account_id: string | null = null;
+    let card_id: string | null = null;
+    if (mentionAccount) {
+      account_id = selectedAccountId;
+      card_id = null;
+    } else if (mentionCard) {
+      card_id = selectedCardId;
+      account_id = null;
+    } else if (defaultAccount) {
+      account_id = defaultAccount.id;
+      card_id = null;
+    }
     saveScheduledTransaction.mutate({ ...(data as any), account_id, card_id } as any);
   };
 
@@ -410,24 +440,19 @@ export const MobileScheduledTransactionForm = () => {
 
   return (
     <MobilePageWrapper>
-      {/* Header */}
-      <div className="flex items-center mb-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate('/scheduled')}
-          className="mr-3 p-2"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h1 className="text-xl font-bold flex items-center">
-            <Repeat className="h-5 w-5 mr-2" />
-            {isEditing ? 'Editar Transação' : 'Nova Transação'}
+      {/* Header igual transações */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-3">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigate('/scheduled')}
+          >
+            <ArrowLeft size={20} />
+          </Button>
+          <h1 className="text-base font-semibold text-gray-900">
+            {isEditing ? 'Editar Transação Agendada' : 'Nova Transação Agendada'}
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Configure uma transação única ou recorrente
-          </p>
         </div>
       </div>
 
@@ -438,7 +463,7 @@ export const MobileScheduledTransactionForm = () => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-white rounded-lg shadow-sm p-4 border">
         {/* Tipo e Valor */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -453,10 +478,9 @@ export const MobileScheduledTransactionForm = () => {
               options={typeOptions}
             />
             {errors.type && (
-              <p className="text-sm text-destructive">{errors.type.message}</p>
+              <p className="text-xs text-destructive">{errors.type.message}</p>
             )}
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="amount">Valor</Label>
             <Input
@@ -467,7 +491,7 @@ export const MobileScheduledTransactionForm = () => {
               placeholder="0,00"
             />
             {errors.amount && (
-              <p className="text-sm text-destructive">{errors.amount.message}</p>
+              <p className="text-xs text-destructive">{errors.amount.message}</p>
             )}
           </div>
         </div>
@@ -485,33 +509,46 @@ export const MobileScheduledTransactionForm = () => {
           )}
         </div>
 
-        {/* Categoria */}
-        <div className="space-y-2">
-          <Label htmlFor="category_id">Categoria</Label>
-          <MobileListSelect
-            value={watch('category_id') || ''}
-            onValueChange={(value) => setValue('category_id', value)}
-            placeholder="Selecione a categoria"
-            options={categoryOptions.map(category => ({
-              value: category.value,
-              label: category.label,
-              content: (
-                <div className="flex items-center gap-2">
-                  <div 
-                    className="w-3 h-3 rounded-full" 
-                    style={{ backgroundColor: category.color }}
-                  />
-                  <span>{category.label}</span>
-                </div>
-              )
-            }))}
-          />
-          {errors.category_id && (
-            <p className="text-sm text-destructive">{errors.category_id.message}</p>
-          )}
+        {/* Categoria e Data */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="category_id">Categoria</Label>
+            <MobileListSelect
+              value={watch('category_id') || ''}
+              onValueChange={(value) => setValue('category_id', value)}
+              placeholder="Selecione a categoria"
+              options={categoryOptions.map(category => ({
+                value: category.value,
+                label: category.label,
+                content: (
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: category.color }}
+                    />
+                    <span>{category.label}</span>
+                  </div>
+                )
+              }))}
+            />
+            {errors.category_id && (
+              <p className="text-sm text-destructive">{errors.category_id.message}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="start_date">{watchedIsRecurring ? 'Data de Início' : 'Data'}</Label>
+            <Input
+              id="start_date"
+              type="date"
+              {...register('start_date')}
+            />
+            {errors.start_date && (
+              <p className="text-sm text-destructive">{errors.start_date.message}</p>
+            )}
+          </div>
         </div>
 
-        {/* Descrição */}
+        {/* Observações */}
         <div className="space-y-2">
           <Label htmlFor="description">Observações (opcional)</Label>
           <Textarea
@@ -523,7 +560,7 @@ export const MobileScheduledTransactionForm = () => {
           />
         </div>
 
-        {/* Configuração de Recorrência */}
+        {/* Recorrência igual transações, sem Card extra */}
         <div className="space-y-4">
           <div className="flex items-center space-x-2">
             <Checkbox
@@ -531,106 +568,74 @@ export const MobileScheduledTransactionForm = () => {
               checked={watchedIsRecurring}
               onCheckedChange={(checked) => setValue('is_recurring', !!checked)}
             />
-            <Label htmlFor="is_recurring" className="text-base font-medium cursor-pointer">
+            <Label htmlFor="is_recurring">
               Transação recorrente
             </Label>
           </div>
-          
           {watchedIsRecurring && (
-            <Card className="bg-primary/5 border-primary/20">
-              <CardContent className="p-4">
-                <div className="flex items-center mb-4">
-                  <Repeat className="h-5 w-5 mr-2 text-primary" />
-                  <span className="font-medium">Configuração de Recorrência</span>
+            <div className="space-y-4 p-4 bg-muted rounded-lg">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Frequência</Label>
+                  <MobileListSelect
+                    value={watchedFrequency || ''}
+                    onValueChange={(value) => setValue('recurrence_frequency', value as any)}
+                    options={frequencyOptions}
+                    placeholder="Selecione a frequência"
+                  />
+                  {errors.recurrence_frequency && (
+                    <p className="text-xs text-destructive">{errors.recurrence_frequency.message}</p>
+                  )}
                 </div>
-                
-                <div className="space-y-4">
-                   {/* Frequência */}
-                  <div className="space-y-2">
-                    <Label>Frequência</Label>
-                    <MobileListSelect
-                      value={watchedFrequency || ''}
-                      onValueChange={(value) => setValue('recurrence_frequency', value as any)}
-                      options={frequencyOptions}
-                      placeholder="Selecione a frequência"
-                    />
-                    {errors.recurrence_frequency && (
-                      <p className="text-sm text-destructive">{errors.recurrence_frequency.message}</p>
-                    )}
-                  </div>
-
-                  {/* Preview da frequência */}
-                  {watchedFrequency && (
-                    <Badge variant="secondary" className="w-fit">
-                      {getFrequencyDescription()}
-                    </Badge>
+                <div className="space-y-2">
+                  <Label htmlFor="recurrence_count">Nº de repetições</Label>
+                  <Input
+                    id="recurrence_count"
+                    type="number"
+                    min="1"
+                    max="365"
+                    placeholder="12"
+                    {...register('recurrence_count', { valueAsNumber: true })}
+                  />
+                  {errors.recurrence_count && (
+                    <p className="text-xs text-destructive">{errors.recurrence_count.message}</p>
                   )}
-
-                  {/* Campo personalizado para frequência custom */}
-                  {watchedFrequency === 'custom' && (
-                    <div className="space-y-2">
-                      <Label htmlFor="custom_days">Repetir a cada quantos dias?</Label>
-                      <Input
-                        id="custom_days"
-                        type="number"
-                        min="1"
-                        {...register('custom_days', { valueAsNumber: true })}
-                        placeholder="7"
-                      />
-                      {errors.custom_days && (
-                        <p className="text-sm text-destructive">{errors.custom_days.message}</p>
-                      )}
-                    </div>
+                </div>
+              </div>
+              {watchedFrequency === 'custom' && (
+                <div className="space-y-2">
+                  <Label htmlFor="custom_days">Repetir a cada quantos dias?</Label>
+                  <Input
+                    id="custom_days"
+                    type="number"
+                    min="1"
+                    placeholder="30"
+                    {...register('custom_days', { valueAsNumber: true })}
+                  />
+                  {errors.custom_days && (
+                    <p className="text-xs text-destructive">{errors.custom_days.message}</p>
                   )}
-
-                  {/* Número de Repetições */}
-                  <div className="space-y-2">
-                    <Label htmlFor="recurrence_count">Número de Repetições *</Label>
-                    <Input
-                      id="recurrence_count"
-                      type="number"
-                      min="1"
-                      max="365"
-                      {...register('recurrence_count', { valueAsNumber: true })}
-                      placeholder="12"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Quantas transações serão criadas (máximo 365)
+                </div>
+              )}
+              {/* Preview igual transações */}
+              {(watchedFrequency && watchedCount > 0) && (
+                <div className="space-y-2">
+                  <Label>Resumo</Label>
+                  <div className="text-xs text-muted-foreground">
+                    <p>
+                      {getFrequencyDescription()} • {watchedCount} repetições
                     </p>
-                    {errors.recurrence_count && (
-                      <p className="text-sm text-destructive">{errors.recurrence_count.message}</p>
-                    )}
+                    <p>
+                      Duração total: {calculateTotalDuration(watchedFrequency, watchedInterval, watchedCount, watchedCustomDays)}
+                    </p>
                   </div>
-
-                  {/* Preview das transações */}
-                  {getPreviewInfo() && (
-                    <div className="p-3 bg-background/50 rounded-lg border-2 border-dashed border-primary/30">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        <span>{getPreviewInfo()}</span>
-                      </div>
-                    </div>
-                  )}
                 </div>
-              </CardContent>
-            </Card>
+              )}
+            </div>
           )}
         </div>
 
-        {/* Data de Início */}
-        <div className="space-y-2">
-          <Label htmlFor="start_date">{watchedIsRecurring ? 'Data de Início' : 'Data'}</Label>
-          <Input
-            id="start_date"
-            type="date"
-            {...register('start_date')}
-          />
-          {errors.start_date && (
-            <p className="text-sm text-destructive">{errors.start_date.message}</p>
-          )}
-        </div>
-
-        {/* NOVO BLOCO: Seleção de Conta/Cartão */}
+        {/* Seleção de Conta/Cartão igual transações */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <Checkbox
@@ -638,8 +643,12 @@ export const MobileScheduledTransactionForm = () => {
               checked={mentionAccount}
               onCheckedChange={checked => {
                 setMentionAccount(!!checked);
-                if (!checked) setSelectedAccountId(undefined);
+                if (checked) {
+                  setMentionCard(false);
+                  setSelectedCardId(undefined);
+                }
               }}
+              disabled={mentionCard}
             />
             <Label htmlFor="mention-account">Mencionar Conta bancária</Label>
           </div>
@@ -654,15 +663,18 @@ export const MobileScheduledTransactionForm = () => {
               }))}
             />
           )}
-
           <div className="flex items-center gap-2 mt-2">
             <Checkbox
               id="mention-card"
               checked={mentionCard}
               onCheckedChange={checked => {
                 setMentionCard(!!checked);
-                if (!checked) setSelectedCardId(undefined);
+                if (checked) {
+                  setMentionAccount(false);
+                  setSelectedAccountId(undefined);
+                }
               }}
+              disabled={mentionAccount}
             />
             <Label htmlFor="mention-card">Mencionar Cartão de Crédito</Label>
           </div>
@@ -679,24 +691,22 @@ export const MobileScheduledTransactionForm = () => {
           )}
         </div>
 
-        {/* Botão de salvar */}
-        <div className="pt-6 border-t">
+        {/* Botões iguais transações */}
+        <div className="flex space-x-3 pt-6">
+          <Button 
+            type="button" 
+            variant="outline" 
+            className="flex-1"
+            onClick={() => navigate('/scheduled')}
+          >
+            Cancelar
+          </Button>
           <Button 
             type="submit" 
+            className="flex-1"
             disabled={isSubmitting}
-            className="w-full h-12 text-base"
           >
-            {isSubmitting ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin mr-2" />
-                {isEditing ? 'Atualizando...' : 'Criando...'}
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                {isEditing ? 'Atualizar Agendamento' : 'Criar Agendamento'}
-              </>
-            )}
+            {isSubmitting ? 'Salvando...' : (isEditing ? 'Atualizar' : 'Salvar')}
           </Button>
         </div>
       </form>
