@@ -97,7 +97,7 @@ export const MonthlyGoalCard: React.FC<MonthlyGoalCardProps> = ({
             <CardTitle className="text-lg">{goal.title}</CardTitle>
           </div>
           <div className="flex items-center space-x-2">
-            {getStatusBadge()}
+            { /*{getStatusBadge()} */}
             <div className="flex space-x-1">
               <Button
                 variant="ghost"
