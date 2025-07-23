@@ -144,24 +144,16 @@ export const BankAccountForm = ({ account, onSuccess }: BankAccountFormProps) =>
         </div>
         <div className="space-y-1">
           <Label>Cor</Label>
-          <div className="relative">
-            <div className="flex flex-nowrap gap-2 overflow-x-auto pb-1 hide-scrollbar pr-8">
-              {SYSTEM_COLORS.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  onClick={() => setValue('color', color)}
-                  className={`w-8 h-8 rounded-full border-2 transition-all ${watchedColor === color ? 'border-foreground scale-110' : 'border-muted-foreground/30'}`}
-                  style={{ backgroundColor: color }}
-                />
-              ))}
-            </div>
-            {/* Gradiente à direita */}
-            <div className="pointer-events-none absolute top-0 right-0 h-full w-8 bg-gradient-to-l from-white via-white/80 to-transparent" />
-            {/* Ícone de seta */}
-            <div className="pointer-events-none absolute top-1/2 right-1.5 -translate-y-1/2 flex items-center justify-center">
-              <ChevronRight size={18} className="text-muted-foreground/70" />
-            </div>
+          <div className="flex flex-wrap gap-2 w-full justify-start">
+            {SYSTEM_COLORS.map((color) => (
+              <button
+                key={color}
+                type="button"
+                onClick={() => setValue('color', color)}
+                className={`w-8 h-8 rounded-full border-2 transition-all ${watchedColor === color ? 'border-foreground scale-110' : 'border-muted-foreground/30'}`}
+                style={{ backgroundColor: color }}
+              />
+            ))}
           </div>
         </div>
         <div className="flex items-center space-x-2 pt-1">
