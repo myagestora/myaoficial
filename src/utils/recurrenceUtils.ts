@@ -163,3 +163,42 @@ export const calculateTotalDuration = (frequency: string, interval: number, coun
     return `${years} ${years === 1 ? 'ano' : 'anos'}`;
   }
 };
+
+/**
+ * Gera instâncias previstas de transações recorrentes dentro de um período.
+ * @param recurringTransactions Array de transações recorrentes (precisa ter os campos de recorrência)
+ * @param from Data inicial do período (Date ou string)
+ * @param to Data final do período (Date ou string)
+ * @returns Array de instâncias previstas (com data, valor, etc)
+ */
+export function generateRecurringInstancesInPeriod(recurringTransactions: any[], from: Date, to: Date) {
+  const fromStr = typeof from === 'string' ? from : from.toISOString().split('T')[0];
+  const toStr = typeof to === 'string' ? to : to.toISOString().split('T')[0];
+  const fromDate = new Date(fromStr);
+  const toDate = new Date(toStr);
+  const instances: any[] = [];
+
+  for (const t of recurringTransactions) {
+    if (!t.is_recurring || !t.recurrence_frequency || !t.recurrence_count || !t.date) continue;
+    const config = {
+      frequency: t.recurrence_frequency,
+      interval: t.recurrence_interval || 1,
+      startDate: t.date,
+      count: t.recurrence_count,
+      customDays: t.custom_days,
+    };
+    const allDates = generateRecurrenceDates(config);
+    for (const d of allDates) {
+      const dDate = new Date(d);
+      if (dDate >= fromDate && dDate <= toDate) {
+        // Cria uma instância da transação para essa data
+        instances.push({
+          ...t,
+          date: d,
+          is_future_instance: true,
+        });
+      }
+    }
+  }
+  return instances;
+}

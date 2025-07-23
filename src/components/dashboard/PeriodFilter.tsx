@@ -137,21 +137,20 @@ export const PeriodFilter = ({ dateRange, onDateRangeChange }: PeriodFilterProps
 
   return (
     <div className="space-y-4">
-      {/* Period Buttons */}
-      <div className="flex flex-wrap gap-2">
+      {/* Period Buttons - agora em linha única e scrollável */}
+      <div className="flex flex-nowrap gap-1 overflow-x-auto pb-1 hide-scrollbar">
         {periodOptions.map((period) => (
           <Button
             key={period.key}
             variant={selectedPeriod === period.key ? 'default' : 'outline'}
             size="sm"
             onClick={() => handlePeriodSelect(period.key)}
-            className="min-w-[100px]"
+            className="min-w-[100px] flex-shrink-0"
           >
             {period.label}
           </Button>
         ))}
       </div>
-
       {/* Custom Date Picker */}
       {selectedPeriod === 'custom' && (
         <div className="border rounded-lg p-4 bg-background">

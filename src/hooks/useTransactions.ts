@@ -16,14 +16,14 @@ export const useTransactions = () => {
         .from('transactions')
         .select(`
           *,
+          card_id,
           categories (
             name,
             color
           )
         `)
         .eq('user_id', user.id)
-        .order('date', { ascending: false })
-        .limit(50);
+        .order('date', { ascending: false });
       
       if (error) throw error;
       return data || [];

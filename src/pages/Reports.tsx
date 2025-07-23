@@ -7,12 +7,22 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DateRange } from 'react-day-picker';
 import { startOfMonth, endOfMonth, format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { exportToCSV, exportToPDF, ReportData, TransactionData } from '@/utils/exportUtils';
 import { toast } from 'sonner';
 import { GoalsSection } from '@/components/reports/GoalsSection';
 import { PeriodFilter } from '@/components/dashboard/PeriodFilter';
 import { ModernCard } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, DollarSign, PiggyBank } from 'lucide-react';
+import { useBankAccounts } from '@/hooks/useBankAccounts';
+import { useTransactions } from '@/hooks/useTransactions';
+import { CreditCardReportsBlockDesktop } from '@/components/reports/CreditCardReportsBlockDesktop';
+import { CategoryReportsBlockDesktop } from '@/components/reports/CategoryReportsBlockDesktop';
+import { ComparativeTrendsBlockDesktop } from '@/components/reports/ComparativeTrendsBlockDesktop';
+import { GoalsReportsBlockDesktop } from '@/components/reports/GoalsReportsBlockDesktop';
+import { useGoals } from '@/hooks/useGoals';
+import { RecurringReportsBlockDesktop } from '@/components/reports/RecurringReportsBlockDesktop';
+import { AlertsInsightsBlock } from '@/components/reports/AlertsInsightsBlock';
 
 const Reports = () => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -49,7 +59,7 @@ const Reports = () => {
 
       // Monthly data for bar chart
       const monthlyData = data.reduce((acc: any, transaction) => {
-        const month = format(new Date(transaction.date), 'MMM');
+        const month = format(new Date(transaction.date), 'MMM', { locale: ptBR });
         if (!acc[month]) {
           acc[month] = { month, income: 0, expenses: 0, balance: 0 };
         }
@@ -103,6 +113,10 @@ const Reports = () => {
       };
     }
   });
+
+  const { bankAccounts, isLoading: loadingAccounts } = useBankAccounts();
+  const { transactions, isLoading: loadingTransactions } = useTransactions();
+  const { goals, isLoadingGoals } = useGoals();
 
   const handleDateRangeChange = (range: DateRange | undefined) => {
     setDateRange(range);
@@ -235,6 +249,59 @@ const Reports = () => {
         />
       </div>
 
+      {/* Bloco de Contas e Cartões de Crédito lado a lado */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center">
+              <DollarSign className="h-4 w-4 mr-2 text-blue-600" />
+              Contas
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {loadingAccounts || loadingTransactions ? (
+              <div className="text-center text-xs text-gray-400">Carregando contas...</div>
+            ) : bankAccounts.length === 0 ? (
+              <div className="text-center text-xs text-gray-400">Nenhuma conta cadastrada</div>
+            ) : (
+              bankAccounts.map((account) => {
+                // Entradas e saídas por conta
+                const entradas = transactions.filter(t => t.account_id === account.id && t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0);
+                const saidas = transactions.filter(t => t.account_id === account.id && t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0);
+                const movimentacao = entradas + saidas;
+                // Saldo real: saldo inicial + entradas - saídas
+                const saldoReal = (account.balance || 0) + entradas - saidas;
+                // Conta mais movimentada
+                const maxMov = Math.max(...bankAccounts.map(acc => {
+                  const ent = transactions.filter(t => t.account_id === acc.id && t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0);
+                  const sai = transactions.filter(t => t.account_id === acc.id && t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0);
+                  return ent + sai;
+                }));
+                const isMost = movimentacao === maxMov && movimentacao > 0;
+                return (
+                  <div key={account.id} className={`rounded-lg border p-2 flex flex-col gap-1 ${isMost ? 'border-blue-500 bg-blue-50/30' : 'border-gray-100 bg-white'}`}>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: account.color }} />
+                      <span className="font-semibold text-sm text-gray-900 truncate flex-1">{account.name}</span>
+                      {isMost && <span className="text-xs text-blue-700 font-bold ml-2">+ movimentada</span>}
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>Tipo: {account.type === 'checking' ? 'Corrente' : account.type === 'savings' ? 'Poupança' : 'Investimento'}</span>
+                      <span>Saldo: <span className="font-medium text-gray-700">{saldoReal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>Entradas: <span className="font-medium text-green-700">{entradas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></span>
+                      <span>Saídas: <span className="font-medium text-red-700">{saidas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </CardContent>
+        </Card>
+        <CreditCardReportsBlockDesktop dateRange={dateRange} />
+      </div>
+
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ModernCard className="h-full">
@@ -250,52 +317,17 @@ const Reports = () => {
               </BarChart>
             </ResponsiveContainer>
         </ModernCard>
-        <ModernCard className="h-full">
-          <div className="mb-2 font-semibold text-lg">Distribuição de Gastos por Categoria</div>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={transactionData?.categoryData || []}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                >
-                  {(transactionData?.categoryData || []).map((entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
-              </PieChart>
-            </ResponsiveContainer>
-        </ModernCard>
+        <CategoryReportsBlockDesktop transactionData={transactionData} isLoading={isLoading} />
       </div>
 
-      {/* Trend Analysis */}
-      <ModernCard className="mt-6">
-        <div className="mb-2 font-semibold text-lg">Tendência de Economia</div>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={transactionData?.trendData || []}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} />
-              <Line 
-                type="monotone" 
-                dataKey="value" 
-                stroke="#8884d8" 
-                strokeWidth={3}
-                dot={{ fill: '#8884d8', strokeWidth: 2, r: 6 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-      </ModernCard>
+      {/* Bloco de Comparativos e Tendências */}
+      <ComparativeTrendsBlockDesktop transactionData={transactionData} isLoading={isLoading} />
 
-      {/* Goals Section */}
-      <GoalsSection dateRange={dateRange} />
+      {/* Bloco de Relatórios de Metas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+        <GoalsReportsBlockDesktop goalsData={goals} isLoading={isLoadingGoals} />
+        <RecurringReportsBlockDesktop />
+      </div>
     </div>
   );
 };
