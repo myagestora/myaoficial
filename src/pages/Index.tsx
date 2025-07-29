@@ -80,23 +80,39 @@ const Index = () => {
       });
     }
   };
-  const features = [{
-    icon: BarChart3,
-    title: 'Controle Total',
-    description: 'Monitore todas as suas transações em tempo real com relatórios detalhados e insights inteligentes.'
-  }, {
-    icon: Target,
-    title: 'Metas Inteligentes',
-    description: 'Defina objetivos financeiros e acompanhe seu progresso automaticamente com alertas personalizados.'
-  }, {
-    icon: CreditCard,
-    title: 'Transações Agendadas',
-    description: 'Programe pagamentos recorrentes e nunca mais esqueça uma conta importante.'
-  }, {
-    icon: Shield,
-    title: 'Segurança Total',
-    description: 'Seus dados financeiros protegidos com criptografia de última geração.'
-  }];
+  // Unificar as features
+  const mainFeatures = [
+    {
+      icon: BarChart3,
+      title: 'Controle Total',
+      description: 'Monitore todas as suas transações em tempo real com relatórios detalhados e insights inteligentes.'
+    },
+    {
+      icon: Target,
+      title: 'Metas Inteligentes',
+      description: 'Defina objetivos financeiros e acompanhe seu progresso automaticamente com alertas personalizados.'
+    },
+    {
+      icon: CreditCard,
+      title: 'Cadastro de Contas e Cartões',
+      description: 'Gerencie suas contas bancárias, cartões de crédito e transações agendadas para um controle completo das receitas e despesas.'
+    },
+    {
+      icon: Calculator,
+      title: 'Orçamento Inteligente',
+      description: 'Crie e gerencie seu orçamento mensal com facilidade total e previsões automáticas.'
+    },
+    {
+      icon: PieChart,
+      title: 'Relatórios Visuais',
+      description: 'Gráficos intuitivos e dashboards interativos para entender seus hábitos financeiros.'
+    },
+    {
+      icon: Shield,
+      title: 'Segurança e Suporte',
+      description: 'Seus dados protegidos com criptografia de última geração e suporte humano sempre disponível.'
+    }
+  ];
   const organizationFeatures = [{
     icon: Calculator,
     title: 'Orçamento Inteligente',
@@ -107,12 +123,16 @@ const Index = () => {
     description: 'Gráficos intuitivos e dashboards interativos para entender seus hábitos financeiros'
   }, {
     icon: Bell,
-    title: '(Em breve) Alertas Personalizados',
+    title: 'Alertas Personalizados',
     description: 'Receba avisos inteligentes sobre gastos, prazos e oportunidades de economia'
   }, {
     icon: TrendingUp,
     title: 'Crescimento Financeiro',
     description: 'Acompanhe sua evolução patrimonial e receba dicas para acelerar seus resultados'
+  }, {
+    icon: CreditCard,
+    title: 'Cadastro de Contas e Cartões',
+    description: 'Gerencie suas contas bancárias e cartões de crédito para um controle completo das receitas e despesas.'
   }];
   const whyChooseFeatures = [{
     icon: Shield,
@@ -319,7 +339,7 @@ const Index = () => {
               
               {/* Benefits List */}
               <div className="space-y-4 mb-8">
-                {['Envie mensagem de texto, áudio ou imagem', 'Reconhecimento automático de valores e categorias', 'Relatórios instantâneos e insights personalizados', '(Em breve) Lembretes inteligentes para suas metas financeiras'].map((benefit, index) => <div key={index} className="flex items-start space-x-3">
+                {['Envie mensagem de texto, áudio ou imagem', 'Reconhecimento automático de valores e categorias', 'Relatórios instantâneos e insights personalizados', 'Lembretes inteligentes para suas metas financeiras'].map((benefit, index) => <div key={index} className="flex items-start space-x-3">
                     <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mr-3 mt-0.5">
                       <CheckCircle className="w-4 h-4 text-white" />
                     </div>
@@ -478,7 +498,7 @@ const Index = () => {
       </section>
 
       {/* Organization Features Section - Enhanced */}
-      <section className="py-20 bg-white dark:bg-gray-900">
+      <section className="py-20 bg-gradient-to-b from-[#f8fafd] to-white dark:from-gray-900 dark:to-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <div className="inline-block px-4 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-full mb-6">
@@ -498,30 +518,37 @@ const Index = () => {
               Ferramentas profissionais que tornam o controle financeiro simples e eficaz
             </p>
           </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {organizationFeatures.map((feature, index) => <Card key={index} className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-0 shadow-lg">
-                <CardHeader className="text-center">
-                  <div className="relative">
-                    <div className="w-20 h-20 rounded-2xl mx-auto mb-6 flex items-center justify-center group-hover:scale-110 transition-transform duration-300" style={{
-                  background: `linear-gradient(135deg, ${primaryColor}20, ${secondaryColor}20)`
-                }}>
-                      <feature.icon className="w-10 h-10 group-hover:scale-110 transition-transform duration-300" style={{
-                    color: primaryColor
-                  }} />
-                    </div>
-                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <CheckCircle className="w-4 h-4 text-white" />
-                    </div>
+          {/* Nova seção de prints do sistema */}
+          <div className="flex flex-col md:flex-row items-center justify-center gap-12 mb-16">
+            <div className="flex-1 flex justify-center">
+              <div className="shadow-2xl rounded-2xl overflow-hidden border border-gray-200 bg-white">
+                <img src="/prints/dashboard-desktop.jpg" alt="Dashboard Desktop" className="w-[420px] md:w-[500px]"/>
+              </div>
+            </div>
+            <div className="flex-1 flex flex-col items-center md:items-start gap-6">
+              <h3 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">Visual incrível em qualquer dispositivo</h3>
+              <p className="text-gray-500 dark:text-gray-300 mb-4">Acesse seu controle financeiro de onde estiver, com experiência otimizada para desktop e mobile.</p>
+              <div className="shadow-xl rounded-2xl overflow-hidden border border-gray-200 bg-white w-[220px]">
+                <img src="/prints/dashboard-mobile.jpg" alt="Dashboard Mobile" className="w-full"/>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+            {mainFeatures.map((feature, index) => (
+              <Card key={index} className="hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-0 shadow-lg bg-white dark:bg-gray-900 flex flex-col h-full">
+                <CardHeader className="text-center flex flex-col items-center">
+                  <div className="w-16 h-16 rounded-xl flex items-center justify-center mb-6" style={{
+                    background: `linear-gradient(135deg, ${primaryColor}20, ${secondaryColor}20)`
+                  }}>
+                    <feature.icon className="w-8 h-8" style={{ color: primaryColor }} />
                   </div>
-                  <CardTitle className="text-xl font-bold mb-3">{feature.title}</CardTitle>
+                  <CardTitle className="text-lg font-bold mb-2 text-center">{feature.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                    {feature.description}
-                  </p>
+                  <p className="text-gray-600 dark:text-gray-300 text-center">{feature.description}</p>
                 </CardContent>
-              </Card>)}
+              </Card>
+            ))}
           </div>
         </div>
       </section>
@@ -619,7 +646,7 @@ const Index = () => {
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, index) => <Card key={index} className="text-center hover:shadow-lg transition-shadow">
+            {mainFeatures.map((feature, index) => <Card key={index} className="text-center hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{
                 backgroundColor: `${primaryColor}20`
