@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { useQuery } from '@tanstack/react-query';
 import { checkWhatsappExists } from '@/utils/whatsappValidation';
@@ -15,6 +15,10 @@ const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [isResetPassword, setIsResetPassword] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  // Verificar se há redirect após login
+  const redirectTo = searchParams.get('redirect');
 
   // Buscar cor primária do sistema com tratamento de erro melhorado
   const { data: primaryColor } = useQuery({
@@ -156,7 +160,13 @@ const Login = () => {
             title: 'Sucesso',
             description: 'Login realizado com sucesso!',
           });
-          navigate('/dashboard');
+          
+          // Redirecionar para a página especificada ou dashboard
+          if (redirectTo) {
+            navigate(redirectTo);
+          } else {
+            navigate('/dashboard');
+          }
         }
       }
     } catch (error: any) {

@@ -20,6 +20,7 @@ import React from "react";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
+import Checkout from "./pages/Checkout";
 import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
 import Categories from "./pages/Categories";
@@ -74,6 +75,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/checkout" element={<Checkout />} />
               
               {/* Protected routes with responsive layout and subscription guard */}
               <Route path="/*" element={

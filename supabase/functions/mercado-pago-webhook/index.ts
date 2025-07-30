@@ -273,6 +273,43 @@ serve(async (req) => {
           try {
             await activateUserSubscription(paymentRecord);
             console.log('Assinatura específica ativada:', paymentRecord.subscription_id);
+            
+            // Marcar carrinhos abandonados como convertidos
+            try {
+              console.log('Marcando carrinhos abandonados como convertidos...');
+              
+              // Buscar email do usuário para identificar carrinhos
+              const { data: userProfile } = await supabaseClient
+                .from('profiles')
+                .select('email')
+                .eq('id', paymentRecord.user_id)
+                .single();
+              
+              if (userProfile?.email) {
+                // Chamar função para marcar carrinhos como convertidos
+                const markConvertedResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/mark-cart-converted`, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    userEmail: userProfile.email,
+                    userId: paymentRecord.user_id
+                  })
+                });
+                
+                const markConvertedResult = await markConvertedResponse.json();
+                console.log('Resultado da conversão de carrinhos:', markConvertedResult);
+                
+                if (markConvertedResult.converted_count > 0) {
+                  console.log(`✅ ${markConvertedResult.converted_count} carrinhos marcados como convertidos`);
+                }
+              }
+            } catch (cartError) {
+              console.error('Erro ao marcar carrinhos como convertidos:', cartError);
+              // Não falhar o webhook por causa deste erro
+            }
           } catch (error) {
             console.error('Erro ao ativar assinatura:', error);
             return new Response(JSON.stringify({ 

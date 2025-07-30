@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,7 @@ import { invokeEdgeFunction } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Check, CreditCard, Calendar } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useCartTracking } from '@/hooks/useCartTracking';
 
 interface SubscriptionPlan {
   id: string;
@@ -27,8 +28,33 @@ interface SubscriptionCheckoutProps {
 
 export const SubscriptionCheckout = ({ plan, onCancel }: SubscriptionCheckoutProps) => {
   const { user } = useAuth();
+  const { trackSession, completeSession } = useCartTracking();
   const [frequency, setFrequency] = useState<'monthly' | 'yearly'>('monthly');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [sessionId, setSessionId] = useState<string>('');
+
+  // Gerar sessionId único quando o componente montar
+  useEffect(() => {
+    const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    setSessionId(newSessionId);
+  }, []);
+
+  // Rastrear sessão quando dados mudarem
+  useEffect(() => {
+    if (sessionId && user) {
+      const currentPrice = frequency === 'monthly' ? plan.price_monthly : plan.price_yearly;
+      
+      trackSession({
+        sessionId,
+        planId: plan.id,
+        frequency,
+        amount: currentPrice || 0,
+        userEmail: user.email,
+        userWhatsapp: user.user_metadata?.whatsapp,
+        userName: user.user_metadata?.full_name
+      });
+    }
+  }, [sessionId, user, frequency, plan.id, plan.price_monthly, plan.price_yearly, trackSession]);
 
   const createSubscriptionMutation = useMutation({
     mutationFn: async ({ planId, subscriptionFrequency }: { planId: string; subscriptionFrequency: 'monthly' | 'yearly' }) => {
@@ -40,6 +66,11 @@ export const SubscriptionCheckout = ({ plan, onCancel }: SubscriptionCheckoutPro
       return data;
     },
     onSuccess: (data) => {
+      // Marcar sessão como completada
+      if (sessionId) {
+        completeSession(sessionId);
+      }
+
       if (data.init_point) {
         window.open(data.init_point, '_blank');
         toast({
@@ -99,17 +130,14 @@ export const SubscriptionCheckout = ({ plan, onCancel }: SubscriptionCheckoutPro
                 <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
                   <RadioGroupItem value="monthly" id="monthly" />
                   <Label htmlFor="monthly" className="flex-1 cursor-pointer">
-                    <div className="flex justify-between items-center">
+                    <div className="flex items-center justify-between">
                       <div>
-                        <div className="font-medium">Mensal</div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                          Cobrança todo mês
-                        </div>
+                        <span className="font-medium">Mensal</span>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          R$ {plan.price_monthly}/mês
+                        </p>
                       </div>
-                      <div className="text-right">
-                        <div className="text-xl font-bold">R$ {plan.price_monthly}</div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">por mês</div>
-                      </div>
+                      <Badge variant="outline">Padrão</Badge>
                     </div>
                   </Label>
                 </div>
@@ -119,24 +147,19 @@ export const SubscriptionCheckout = ({ plan, onCancel }: SubscriptionCheckoutPro
                 <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
                   <RadioGroupItem value="yearly" id="yearly" />
                   <Label htmlFor="yearly" className="flex-1 cursor-pointer">
-                    <div className="flex justify-between items-center">
+                    <div className="flex items-center justify-between">
                       <div>
-                        <div className="font-medium flex items-center gap-2">
-                          Anual
-                          {savings > 0 && (
-                            <Badge variant="secondary" className="bg-green-100 text-green-800">
-                              {savings}% OFF
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                          Cobrança anual (economize {savings}%)
-                        </div>
+                        <span className="font-medium">Anual</span>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          R$ {plan.price_yearly}/ano
+                        </p>
+                        {savings > 0 && (
+                          <p className="text-xs text-green-600 dark:text-green-400">
+                            Economia de {savings}%
+                          </p>
+                        )}
                       </div>
-                      <div className="text-right">
-                        <div className="text-xl font-bold">R$ {plan.price_yearly}</div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">por ano</div>
-                      </div>
+                      <Badge variant="secondary">Recomendado</Badge>
                     </div>
                   </Label>
                 </div>
@@ -144,39 +167,32 @@ export const SubscriptionCheckout = ({ plan, onCancel }: SubscriptionCheckoutPro
             </RadioGroup>
           </div>
 
-          {/* Features do Plano */}
-          {plan.features && plan.features.length > 0 && (
+          {/* Resumo do Plano */}
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold mb-4">Resumo do Plano</h3>
             <div className="space-y-3">
-              <Label className="text-lg font-semibold">O que está incluído:</Label>
-              <div className="space-y-2">
-                {plan.features.map((feature, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">{feature}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Resumo do Pagamento */}
-          <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg space-y-2">
-            <div className="flex justify-between items-center">
-              <span>Plano selecionado:</span>
-              <span className="font-medium">{plan.name}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span>Frequência:</span>
-              <span className="font-medium capitalize">{frequency === 'monthly' ? 'Mensal' : 'Anual'}</span>
-            </div>
-            <div className="flex justify-between items-center text-lg font-bold">
-              <span>Total:</span>
-              <span>R$ {currentPrice}</span>
+              {plan.features.map((feature, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <Check className="h-4 w-4 text-green-500" />
+                  <span className="text-sm">{feature}</span>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Botões de Ação */}
-          <div className="flex gap-3">
+          {/* Preço Total */}
+          <div className="border-t pt-6">
+            <div className="flex items-center justify-between text-lg font-semibold">
+              <span>Total:</span>
+              <span>R$ {currentPrice}</span>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              {frequency === 'monthly' ? 'Cobrança mensal' : 'Cobrança anual'}
+            </p>
+          </div>
+
+          {/* Botões */}
+          <div className="flex space-x-4 pt-6">
             <Button
               variant="outline"
               onClick={onCancel}
@@ -187,21 +203,21 @@ export const SubscriptionCheckout = ({ plan, onCancel }: SubscriptionCheckoutPro
             </Button>
             <Button
               onClick={handleSubscribe}
+              className="flex-1"
               disabled={isProcessing}
-              className="flex-1 flex items-center gap-2"
             >
-              <CreditCard className="h-4 w-4" />
-              {isProcessing ? 'Processando...' : 'Assinar Agora'}
+              {isProcessing ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Processando...
+                </>
+              ) : (
+                <>
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Assinar Plano
+                </>
+              )}
             </Button>
-          </div>
-
-          {/* Informações Adicionais */}
-          <div className="text-center text-sm text-gray-600 dark:text-gray-400 space-y-1">
-            <p className="flex items-center justify-center gap-1">
-              <Calendar className="h-4 w-4" />
-              Renovação automática • Cancele a qualquer momento
-            </p>
-            <p>Pagamento processado pelo Mercado Pago</p>
           </div>
         </CardContent>
       </Card>

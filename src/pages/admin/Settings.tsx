@@ -14,6 +14,10 @@ import { SEOSettings } from '@/components/admin/SEOSettings';
 import { PaymentSettingsDynamic } from '@/components/admin/PaymentSettingsDynamic';
 import { APISettings } from '@/components/admin/settings/APISettings';
 import { SpecialUsersManager } from '@/components/admin/settings/SpecialUsersManager';
+import { CartRecoverySettings } from '@/components/admin/CartRecoverySettings';
+import { WhatsAppManager } from '@/components/admin/WhatsAppManager';
+import { EmailSMTPConfig } from '@/components/admin/EmailSMTPConfig';
+
 
 const AdminSettings = () => {
   const [settings, setSettings] = useState<Record<string, string>>({});
@@ -152,8 +156,12 @@ const AdminSettings = () => {
           <TabsTrigger value="notifications">Notificações</TabsTrigger>
           <TabsTrigger value="seo">SEO</TabsTrigger>
           <TabsTrigger value="phrases">Frases Motivacionais</TabsTrigger>
-          <TabsTrigger value="special-users">Usuários Especiais</TabsTrigger>
-        </TabsList>
+                      <TabsTrigger value="special-users">Usuários Especiais</TabsTrigger>
+            <TabsTrigger value="cart-recovery">Recuperação de Carrinho</TabsTrigger>
+            <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
+                          <TabsTrigger value="smtp">SMTP</TabsTrigger>
+
+            </TabsList>
 
         <TabsContent value="branding" className="space-y-6">
           <BrandingSettings
@@ -211,16 +219,17 @@ const AdminSettings = () => {
         <TabsContent value="special-users" className="space-y-6">
           <SpecialUsersManager />
         </TabsContent>
-      </Tabs>
+        <TabsContent value="cart-recovery" className="space-y-6">
+          <CartRecoverySettings />
+        </TabsContent>
+        <TabsContent value="whatsapp" className="space-y-6">
+          <WhatsAppManager />
+        </TabsContent>
+                    <TabsContent value="smtp" className="space-y-6">
+              <EmailSMTPConfig />
+            </TabsContent>
 
-      <div className="flex justify-end">
-        <Button 
-          onClick={handleSave} 
-          disabled={updateSettingsMutation.isPending}
-        >
-          {updateSettingsMutation.isPending ? 'Salvando...' : 'Salvar Configurações'}
-        </Button>
-      </div>
+          </Tabs>
     </div>
   );
 };

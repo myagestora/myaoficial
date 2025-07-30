@@ -16,6 +16,7 @@ import { PaymentSuccessScreen } from './checkout/PaymentSuccessScreen';
 import { PlanHeader } from './checkout/PlanHeader';
 import { usePaymentMutation } from './checkout/usePaymentMutation';
 import { usePaymentValidation } from './checkout/usePaymentValidation';
+import { useCartTracking } from '@/hooks/useCartTracking';
 
 interface SubscriptionPlan {
   id: string;
@@ -36,6 +37,8 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { trackSession, completeSession } = useCartTracking();
+  const [sessionId, setSessionId] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'credit_card'>('pix');
   const [cardData, setCardData] = useState<CardData>({
     cardNumber: '',
@@ -52,6 +55,29 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
   const createPaymentMutation = usePaymentMutation({
     onPixDataReceived: setPixData
   });
+
+  // Gerar sessionId único quando o componente montar
+  useEffect(() => {
+    const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    setSessionId(newSessionId);
+  }, []);
+
+  // Rastrear sessão quando dados mudarem
+  useEffect(() => {
+    if (sessionId && user) {
+      const currentPrice = frequency === 'monthly' ? selectedPlan.price_monthly : selectedPlan.price_yearly;
+      
+      trackSession({
+        sessionId,
+        planId: selectedPlan.id,
+        frequency,
+        amount: currentPrice || 0,
+        userEmail: user.email,
+        userWhatsapp: user.user_metadata?.whatsapp,
+        userName: user.user_metadata?.full_name
+      });
+    }
+  }, [sessionId, user, frequency, selectedPlan.id, selectedPlan.price_monthly, selectedPlan.price_yearly, trackSession]);
 
   // Auto-scroll when credit card is selected
   useEffect(() => {
@@ -103,6 +129,11 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
   // Redirecionar quando pagamento for aprovado
   useEffect(() => {
     if (paymentStatus?.status === 'completed') {
+      // Marcar sessão como completada
+      if (sessionId) {
+        completeSession(sessionId);
+      }
+
       // Invalidar todas as queries necessárias
       queryClient.invalidateQueries({ queryKey: ['user-subscription'] });
       queryClient.invalidateQueries({ queryKey: ['user-active-subscription'] });
@@ -118,7 +149,7 @@ export const TransparentCheckout = ({ selectedPlan, frequency, onClose }: Transp
         navigate('/dashboard');
       }, 2000);
     }
-  }, [paymentStatus, navigate, queryClient]);
+  }, [paymentStatus, navigate, queryClient, sessionId, completeSession]);
 
   const handlePayment = async () => {
     if (!user) {

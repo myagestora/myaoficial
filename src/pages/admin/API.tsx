@@ -1337,6 +1337,423 @@ const AdminAPI = () => {
           }
         }
       ]
+    },
+    {
+      category: "Recuperação de Carrinho",
+      icon: TrendingUp,
+      color: "bg-purple-500",
+      endpoints: [
+        {
+          method: "GET",
+          path: "/api/cart-recovery/abandoned",
+          description: "Listar carrinhos abandonados com filtros e paginação",
+          headers: { Authorization: "Bearer your-service-role-key" },
+          params: { 
+            status: "string?",
+            start_date: "string?",
+            end_date: "string?",
+            email: "string?",
+            whatsapp: "string?",
+            minutes: "number?",
+            limit: "number?",
+            offset: "number?"
+          },
+          paramDetails: {
+            status: {
+              type: "string",
+              description: "Filtrar por status (abandoned, active, converted, completed)",
+              example: "abandoned",
+              required: false,
+              options: ["abandoned", "active", "converted", "completed"]
+            },
+            start_date: {
+              type: "string",
+              description: "Data inicial para filtro (YYYY-MM-DD)",
+              example: "2025-07-01",
+              required: false
+            },
+            end_date: {
+              type: "string",
+              description: "Data final para filtro (YYYY-MM-DD)",
+              example: "2025-07-31",
+              required: false
+            },
+            email: {
+              type: "string",
+              description: "Filtrar por email (busca parcial)",
+              example: "joao@email.com",
+              required: false
+            },
+            whatsapp: {
+              type: "string",
+              description: "Filtrar por WhatsApp (busca parcial)",
+              example: "+5531984798496",
+              required: false
+            },
+            minutes: {
+              type: "number",
+              description: "Filtrar sessões dos últimos X minutos",
+              example: 5,
+              required: false
+            },
+            limit: {
+              type: "number",
+              description: "Limite de resultados por página",
+              example: 50,
+              required: false,
+              default: 50
+            },
+            offset: {
+              type: "number",
+              description: "Offset para paginação",
+              example: 0,
+              required: false,
+              default: 0
+            }
+          },
+          response: { 
+            success: "boolean", 
+            data: "array", 
+            count: "number",
+            total_count: "number",
+            pagination: "object",
+            filters: "object"
+          },
+                      exampleResponse: {
+              success: true,
+              data: [
+                {
+                  id: "uuid",
+                  session_id: "session_123...",
+                  user_name: "João Silva",
+                  user_email: "joao@email.com",
+                  user_whatsapp: "+5531984798496",
+                  amount: 29.90,
+                  frequency: "monthly",
+                  created_at: "2025-07-29T23:51:28.000Z",
+                  abandoned_at: "2025-07-29T23:56:28.000Z",
+                  status: "abandoned",
+                  subscription_plans: {
+                    id: "uuid",
+                    name: "Plano Básico",
+                    description: "Plano básico mensal"
+                  },
+                  attempts: [
+                    {
+                      attempt_number: 1,
+                      method: "whatsapp",
+                      status: "sent",
+                      sent_at: "2025-07-29T23:56:28.000Z",
+                      error_message: null
+                    }
+                  ]
+                }
+              ],
+              count: 1,
+              total_count: 150,
+              pagination: {
+                limit: 50,
+                offset: 0,
+                has_more: true
+              },
+              filters: {
+                status: "abandoned",
+                start_date: "2025-07-01",
+                end_date: "2025-07-31",
+                email: null,
+                whatsapp: null,
+                minutes: null
+              }
+            }
+        },
+        {
+          method: "GET",
+          path: "/api/cart-recovery/config",
+          description: "Obter configurações de recuperação",
+          headers: { Authorization: "Bearer your-service-role-key" },
+          response: { 
+            success: "boolean", 
+            data: "object" 
+          },
+          exampleResponse: {
+            success: true,
+            data: {
+              config: {
+                enabled: true,
+                whatsapp_enabled: true,
+                email_enabled: false,
+                delay_minutes: 5,
+                max_attempts: 3
+              },
+              templates: [
+                {
+                  id: "uuid",
+                  name: "Tentativa 1",
+                  type: "whatsapp",
+                  content: "Olá {{user_name}}! 👋\n\nNotamos que você estava interessado no plano {{plan_name}} por {{amount}}/{{frequency}}, mas não finalizou sua assinatura.\n\nQue tal aproveitar um desconto especial de 10%?\n\n💰 Valor original: {{original_amount}}\n🎉 Com desconto: {{discount_amount}}\n\nClique aqui para finalizar: {{checkout_url}}\n\nAtenciosamente,\nEquipe MYA",
+                  is_active: true
+                }
+              ],
+              whatsapp: {
+                evolution_api_url: "https://api.evolution.com",
+                evolution_api_key: "your-api-key",
+                evolution_instance_name: "mya-instance"
+              }
+            }
+          }
+        },
+        {
+          method: "PUT",
+          path: "/api/cart-recovery/session",
+          description: "Atualizar status da sessão",
+          headers: { 
+            Authorization: "Bearer your-service-role-key",
+            "Content-Type": "application/json"
+          },
+          params: { 
+            sessionId: "string",
+            status: "string",
+            metadata: "object?"
+          },
+          paramDetails: {
+            sessionId: {
+              type: "string",
+              description: "ID da sessão do carrinho",
+              example: "session_123...",
+              required: true
+            },
+            status: {
+              type: "string",
+              description: "Novo status da sessão",
+              example: "completed",
+              required: true,
+              options: ["completed", "converted", "abandoned"]
+            },
+            metadata: {
+              type: "object",
+              description: "Metadados adicionais (opcional)",
+              example: { conversion_source: "whatsapp", payment_method: "pix" },
+              required: false
+            }
+          },
+          exampleRequest: {
+            sessionId: "session_123...",
+            status: "converted",
+            metadata: {
+              conversion_source: "whatsapp",
+              attempt_number: 1
+            }
+          },
+          response: { 
+            success: "boolean", 
+            message: "string" 
+          },
+          exampleResponse: {
+            success: true,
+            message: "Session status updated successfully"
+          }
+        },
+        {
+          method: "POST",
+          path: "/api/cart-recovery/attempt",
+          description: "Registrar tentativa de envio",
+          headers: { 
+            Authorization: "Bearer your-service-role-key",
+            "Content-Type": "application/json"
+          },
+          params: { 
+            sessionId: "string",
+            attemptNumber: "number",
+            method: "string",
+            status: "string",
+            messageContent: "string?",
+            messageId: "string?",
+            errorMessage: "string?"
+          },
+          paramDetails: {
+            sessionId: {
+              type: "string",
+              description: "ID da sessão do carrinho",
+              example: "session_123...",
+              required: true
+            },
+            attemptNumber: {
+              type: "number",
+              description: "Número da tentativa",
+              example: 1,
+              required: true
+            },
+            method: {
+              type: "string",
+              description: "Método de envio",
+              example: "whatsapp",
+              required: true,
+              options: ["whatsapp", "email"]
+            },
+            status: {
+              type: "string",
+              description: "Status da tentativa",
+              example: "sent",
+              required: true,
+              options: ["sent", "failed"]
+            },
+            messageContent: {
+              type: "string",
+              description: "Conteúdo da mensagem enviada",
+              example: "Mensagem enviada...",
+              required: false
+            },
+            messageId: {
+              type: "string",
+              description: "ID da mensagem (WhatsApp)",
+              example: "whatsapp-message-id",
+              required: false
+            },
+            errorMessage: {
+              type: "string",
+              description: "Mensagem de erro se status = failed",
+              example: "Erro de conexão",
+              required: false
+            }
+          },
+          exampleRequest: {
+            sessionId: "session_123...",
+            attemptNumber: 1,
+            method: "whatsapp",
+            status: "sent",
+            messageContent: "Mensagem enviada...",
+            messageId: "whatsapp-message-id"
+          },
+          response: { 
+            success: "boolean", 
+            message: "string" 
+          },
+          exampleResponse: {
+            success: true,
+            message: "Attempt recorded successfully"
+          }
+        },
+        {
+          method: "POST",
+          path: "/mark-cart-converted",
+          description: "Marcar carrinhos como convertidos quando usuário ativa plano",
+          headers: { 
+            Authorization: "Bearer your-service-role-key",
+            "Content-Type": "application/json"
+          },
+          params: { 
+            userEmail: "string?",
+            userWhatsapp: "string?",
+            userId: "string?"
+          },
+          paramDetails: {
+            userEmail: {
+              type: "string",
+              description: "Email do usuário para identificar carrinhos",
+              example: "joao@email.com",
+              required: false
+            },
+            userWhatsapp: {
+              type: "string",
+              description: "WhatsApp do usuário para identificar carrinhos",
+              example: "+5531984798496",
+              required: false
+            },
+            userId: {
+              type: "string",
+              description: "ID do usuário (UUID)",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+              required: false
+            }
+          },
+          exampleRequest: {
+            userEmail: "joao@email.com",
+            userId: "123e4567-e89b-12d3-a456-426614174000"
+          },
+          response: { 
+            success: "boolean", 
+            message: "string",
+            converted_count: "number",
+            sessions: "array"
+          },
+          exampleResponse: {
+            success: true,
+            message: "Cart sessions marked as converted",
+            converted_count: 2,
+            sessions: [
+              {
+                session_id: "session_123...",
+                user_email: "joao@email.com",
+                user_whatsapp: "+5531984798496",
+                previous_status: "abandoned"
+              }
+            ]
+          }
+        },
+        {
+          method: "POST",
+          path: "/manage-cart-templates",
+          description: "Sincronizar templates com configuração de tentativas",
+          headers: { 
+            Authorization: "Bearer your-service-role-key",
+            "Content-Type": "application/json"
+          },
+          params: { 
+            action: "string"
+          },
+          paramDetails: {
+            action: {
+              type: "string",
+              description: "Ação a executar (sync)",
+              example: "sync",
+              required: true,
+              options: ["sync"]
+            }
+          },
+          exampleRequest: {
+            action: "sync"
+          },
+          response: { 
+            success: "boolean", 
+            message: "string",
+            max_attempts: "number",
+            results: "object"
+          },
+          exampleResponse: {
+            success: true,
+            message: "Templates sincronizados com sucesso",
+            max_attempts: 3,
+            results: { created: 4, deleted: 2, errors: [] }
+          }
+        },
+        {
+          method: "GET",
+          path: "/manage-cart-templates",
+          description: "Listar templates de recuperação",
+          headers: { 
+            Authorization: "Bearer your-service-role-key"
+          },
+          response: { 
+            success: "boolean", 
+            data: "array",
+            count: "number"
+          },
+          exampleResponse: {
+            success: true,
+            data: [
+              {
+                id: "uuid",
+                name: "Tentativa 1",
+                type: "whatsapp",
+                attempt_number: 1,
+                content: "Olá {{user_name}}! 👋...",
+                is_active: true
+              }
+            ],
+            count: 6
+          }
+        }
+      ]
     }
   ];
 
@@ -1486,7 +1903,7 @@ const AdminAPI = () => {
                          </div>
                        </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div className="text-center p-4 border rounded-lg">
                           <Shield className="h-8 w-8 text-blue-500 mx-auto mb-2" />
                           <p className="font-medium">Autenticação</p>
@@ -1501,6 +1918,11 @@ const AdminAPI = () => {
                           <Zap className="h-8 w-8 text-orange-500 mx-auto mb-2" />
                           <p className="font-medium">Tempo Real</p>
                           <p className="text-sm text-muted-foreground">Transações via WhatsApp</p>
+                        </div>
+                        <div className="text-center p-4 border rounded-lg">
+                          <TrendingUp className="h-8 w-8 text-purple-500 mx-auto mb-2" />
+                          <p className="font-medium">Recuperação de Carrinho</p>
+                          <p className="text-sm text-muted-foreground">API para gerenciar carrinhos abandonados com filtros e conversão automática</p>
                         </div>
                       </div>
                     </CardContent>
@@ -1550,6 +1972,71 @@ const AdminAPI = () => {
                       </Card>
                     ))}
                   </div>
+
+                  {/* Exemplos Práticos - Recuperação de Carrinho */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5 text-purple-500" />
+                        Exemplos Práticos - Recuperação de Carrinho
+                      </CardTitle>
+                      <CardDescription>
+                        Casos de uso comuns e exemplos de implementação
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-3">
+                        <div>
+                          <h4 className="font-medium text-sm mb-2">1. Buscar carrinhos abandonados com filtros</h4>
+                          <div className="bg-muted p-3 rounded text-xs font-mono">
+                            GET /api/cart-recovery/abandoned?start_date=2025-07-01&end_date=2025-07-31&limit=10
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h4 className="font-medium text-sm mb-2">2. Buscar por email específico</h4>
+                          <div className="bg-muted p-3 rounded text-xs font-mono">
+                            GET /api/cart-recovery/abandoned?email=joao@email.com&status=abandoned
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h4 className="font-medium text-sm mb-2">3. Buscar sessões dos últimos 5 minutos</h4>
+                          <div className="bg-muted p-3 rounded text-xs font-mono">
+                            GET /api/cart-recovery/abandoned?minutes=5&status=abandoned
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h4 className="font-medium text-sm mb-2">4. Marcar carrinho como convertido</h4>
+                          <div className="bg-muted p-3 rounded text-xs font-mono">
+                            POST /mark-cart-converted<br/>
+                            {"{"}<br/>
+                            &nbsp;&nbsp;"userEmail": "joao@email.com",<br/>
+                            &nbsp;&nbsp;"userId": "123e4567-e89b-12d3-a456-426614174000"<br/>
+                            {"}"}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h4 className="font-medium text-sm mb-2">5. Conversão automática via webhook</h4>
+                          <div className="text-xs text-muted-foreground">
+                            Quando um usuário ativa um plano, o webhook automaticamente marca todos os carrinhos abandonados como convertidos.
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 className="font-medium text-sm mb-2">6. Sincronizar templates</h4>
+                          <div className="bg-muted p-3 rounded text-xs font-mono">
+                            POST /manage-cart-templates
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Sincroniza templates automaticamente baseado na configuração de tentativas.
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               ) : (
                 // Detalhes do Endpoint Selecionado
