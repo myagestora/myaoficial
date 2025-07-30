@@ -20,7 +20,7 @@ Use a **Service Role Key** padrão do Supabase:
 
 ### 1. Listar Carrinhos Abandonados
 
-**GET** `/api/cart-recovery/abandoned`
+**GET** `/cart-recovery-api/abandoned`
 
 Retorna carrinhos abandonados com filtros e paginação.
 
@@ -37,22 +37,22 @@ Retorna carrinhos abandonados com filtros e paginação.
 **Exemplos:**
 ```bash
 # Buscar apenas abandonados (padrão)
-GET /api/cart-recovery/abandoned
+GET /cart-recovery-api/abandoned
 
 # Filtrar por data
-GET /api/cart-recovery/abandoned?start_date=2025-07-01&end_date=2025-07-31
+GET /cart-recovery-api/abandoned?start_date=2025-07-01&end_date=2025-07-31
 
 # Filtrar por email
-GET /api/cart-recovery/abandoned?email=joao@email.com
+GET /cart-recovery-api/abandoned?email=joao@email.com
 
 # Filtrar sessões dos últimos 5 minutos
-GET /api/cart-recovery/abandoned?minutes=5
+GET /cart-recovery-api/abandoned?minutes=5
 
 # Paginação
-GET /api/cart-recovery/abandoned?limit=10&offset=20
+GET /cart-recovery-api/abandoned?limit=10&offset=20
 
 # Buscar todos os status
-GET /api/cart-recovery/abandoned?status=converted
+GET /cart-recovery-api/abandoned?status=converted
 ```
 
 **Resposta:**
@@ -107,7 +107,7 @@ GET /api/cart-recovery/abandoned?status=converted
 
 ### 2. Obter Configurações de Recuperação
 
-**GET** `/api/cart-recovery/config`
+**GET** `/cart-recovery-api/config`
 
 Retorna as configurações de recuperação, templates e configurações do WhatsApp.
 
@@ -143,7 +143,7 @@ Retorna as configurações de recuperação, templates e configurações do What
 
 ### 3. Atualizar Status da Sessão
 
-**PUT** `/api/cart-recovery/session`
+**PUT** `/cart-recovery-api/session`
 
 Atualiza o status de uma sessão de carrinho.
 
@@ -174,7 +174,7 @@ Atualiza o status de uma sessão de carrinho.
 
 ### 4. Registrar Tentativa de Envio
 
-**POST** `/api/cart-recovery/attempt`
+**POST** `/cart-recovery-api/attempt`
 
 Registra uma tentativa de envio de mensagem de recuperação.
 
@@ -331,13 +331,13 @@ AND created_at < NOW() - INTERVAL '5 minutes';
 
 ### 2. Buscar Carrinhos Abandonados
 ```bash
-curl -X GET "https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1/cart-recovery-api/api/cart-recovery/abandoned" \
+curl -X GET "https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1/cart-recovery-api/abandoned" \
   -H "Authorization: Bearer YOUR_SERVICE_ROLE_KEY"
 ```
 
 ### 3. Obter Configurações
 ```bash
-curl -X GET "https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1/cart-recovery-api/api/cart-recovery/config" \
+curl -X GET "https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1/cart-recovery-api/config" \
   -H "Authorization: Bearer YOUR_SERVICE_ROLE_KEY"
 ```
 
@@ -359,7 +359,7 @@ const response = await fetch(`${evolutionUrl}/message/sendText/${instanceName}`,
 
 ### 5. Registrar Tentativa
 ```bash
-curl -X POST "https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1/cart-recovery-api/api/cart-recovery/attempt" \
+curl -X POST "https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1/cart-recovery-api/attempt" \
   -H "Authorization: Bearer YOUR_SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -374,7 +374,7 @@ curl -X POST "https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1/cart-recover
 
 ### 6. Atualizar Status (se convertido)
 ```bash
-curl -X PUT "https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1/cart-recovery-api/api/cart-recovery/session" \
+curl -X PUT "https://fimgalqlsezgxqbmktpz.supabase.co/functions/v1/cart-recovery-api/session" \
   -H "Authorization: Bearer YOUR_SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -413,13 +413,13 @@ Os templates suportam as seguintes variáveis:
 // Exemplo de script para processar carrinhos abandonados
 async function processAbandonedCarts() {
   // 1. Buscar carrinhos abandonados
-  const abandonedResponse = await fetch('/api/cart-recovery/abandoned', {
+  const abandonedResponse = await fetch('/cart-recovery-api/abandoned', {
     headers: { 'Authorization': 'Bearer YOUR_SERVICE_ROLE_KEY' }
   });
   const { data: abandonedCarts } = await abandonedResponse.json();
 
   // 2. Buscar configurações
-  const configResponse = await fetch('/api/cart-recovery/config', {
+  const configResponse = await fetch('/cart-recovery-api/config', {
     headers: { 'Authorization': 'Bearer YOUR_SERVICE_ROLE_KEY' }
   });
   const { data: config } = await configResponse.json();

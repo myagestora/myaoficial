@@ -39,20 +39,20 @@ Deno.serve(async (req) => {
     }
 
     // Rotas da API
-    if (path === '/api/cart-recovery/abandoned' && method === 'GET') {
+    if (path === '/abandoned' && method === 'GET') {
       return await getAbandonedCarts(supabase, req)
     }
     
-    if (path === '/api/cart-recovery/config' && method === 'GET') {
+    if (path === '/config' && method === 'GET') {
       return await getRecoveryConfig(supabase)
     }
     
-    if (path === '/api/cart-recovery/session' && method === 'PUT') {
+    if (path === '/session' && method === 'PUT') {
       const body = await req.json()
       return await updateSessionStatus(body, supabase)
     }
     
-    if (path === '/api/cart-recovery/attempt' && method === 'POST') {
+    if (path === '/attempt' && method === 'POST') {
       const body = await req.json()
       return await recordAttempt(body, supabase)
     }

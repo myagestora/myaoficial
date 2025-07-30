@@ -1343,10 +1343,10 @@ const AdminAPI = () => {
       icon: TrendingUp,
       color: "bg-purple-500",
       endpoints: [
-        {
-          method: "GET",
-          path: "/api/cart-recovery/abandoned",
-          description: "Listar carrinhos abandonados com filtros e paginação",
+                    {
+              method: "GET",
+              path: "/cart-recovery-api/abandoned",
+              description: "Listar carrinhos abandonados com filtros e paginação",
           headers: { Authorization: "Bearer your-service-role-key" },
           params: { 
             status: "string?",
@@ -1468,7 +1468,7 @@ const AdminAPI = () => {
         },
         {
           method: "GET",
-          path: "/api/cart-recovery/config",
+          path: "/cart-recovery-api/config",
           description: "Obter configurações de recuperação",
           headers: { Authorization: "Bearer your-service-role-key" },
           response: { 
@@ -1504,7 +1504,7 @@ const AdminAPI = () => {
         },
         {
           method: "PUT",
-          path: "/api/cart-recovery/session",
+          path: "/cart-recovery-api/session",
           description: "Atualizar status da sessão",
           headers: { 
             Authorization: "Bearer your-service-role-key",
@@ -1555,7 +1555,7 @@ const AdminAPI = () => {
         },
         {
           method: "POST",
-          path: "/api/cart-recovery/attempt",
+          path: "/cart-recovery-api/attempt",
           description: "Registrar tentativa de envio",
           headers: { 
             Authorization: "Bearer your-service-role-key",
@@ -1989,21 +1989,21 @@ const AdminAPI = () => {
                         <div>
                           <h4 className="font-medium text-sm mb-2">1. Buscar carrinhos abandonados com filtros</h4>
                           <div className="bg-muted p-3 rounded text-xs font-mono">
-                            GET /api/cart-recovery/abandoned?start_date=2025-07-01&end_date=2025-07-31&limit=10
+                            GET /cart-recovery-api/abandoned?start_date=2025-07-01&end_date=2025-07-31&limit=10
                           </div>
                         </div>
                         
                         <div>
                           <h4 className="font-medium text-sm mb-2">2. Buscar por email específico</h4>
                           <div className="bg-muted p-3 rounded text-xs font-mono">
-                            GET /api/cart-recovery/abandoned?email=joao@email.com&status=abandoned
+                            GET /cart-recovery-api/abandoned?email=joao@email.com&status=abandoned
                           </div>
                         </div>
                         
                         <div>
                           <h4 className="font-medium text-sm mb-2">3. Buscar sessões dos últimos 5 minutos</h4>
                           <div className="bg-muted p-3 rounded text-xs font-mono">
-                            GET /api/cart-recovery/abandoned?minutes=5&status=abandoned
+                            GET /cart-recovery-api/abandoned?minutes=5&status=abandoned
                           </div>
                         </div>
                         
